@@ -19,15 +19,17 @@ STEMMER_INC = $(STEMMER_DIR)/include
 BZLIB_DIR = lib/bzlib
 BZLIB_INC = $(BZLIB_DIR)
 
-CC       = gcc
+CC       = emcc
 CINCS    = -Iinclude -I$(STEMMER_INC) -I$(BZLIB_INC) -Itest
 DEFS     = -DBZ_NO_STDIO -D_FILE_OFFSET_BITS=64 -DDEBUG -D_POSIX_C_SOURCE=2
 DEFS    += -DHAVE_GDB
+DEFS    += -Di386
 CFLAGS   = -std=c99 -pedantic -Wall -Wextra $(CINCS) -g -fno-common $(DEFS)
-LDFLAGS  = -lm -lpthread -lz
+LDFLAGS  = -lm
 DEP_DIR  = .deps
 GCOV_DIR = .gcov
 VPATH    = test:src:benchmark
+EXECUTOR  = nodejs
 
 ###
 # Objects
@@ -82,26 +84,26 @@ all: libferret.a
 
 libferret.a: $(OBJS) $(BZLIB_OBJS) $(STEMMER_OBJS)
 	@echo Generating library: $@ ...
-	@$(AR) -cru $@ $^
+	@$(AR) cru $@ $^
 
-test: testall
+test: testall.js
 	@rm -f *.gcda
-	@./testall -q -v
+	@$(EXECUTOR) ./testall.js -q -v
 
-testall: $(TEST_OBJS) libferret.a
+testall.js: $(TEST_OBJS) libferret.a
 	@echo Building task: $@ ...
 	@$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
 
-benchall: $(BENCH_OBJS) libferret.a
+benchall.js: $(BENCH_OBJS) libferret.a
 	@echo Building task: $@ ...
-	@$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
+	@$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@ -s ALLOW_MEMORY_GROWTH=1
 
-bench: benchall
-	@./benchall
+bench: benchall.js
+	@$(EXECUTOR) ./benchall.js
 
 clean:
 	@rm -f  $(FRT_OBJS) $(FRT_OBJS:%.o=%.gcov) $(FRT_OBJS:%.o=%.gcno)
-	@rm -f  libferret.a testall gmon.out
+	@rm -f  libferret.a testall.js gmon.out
 	@rm -rf $(DEP_DIR) $(GCOV_DIR)
 
 realclean: clean
