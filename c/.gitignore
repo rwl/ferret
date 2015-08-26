@@ -1,8 +1,10 @@
+testall
+benchall
+search_bench
+bench
+tokenize
 testall.js
 benchall.js
-search_bench.js
-bench.js
-tokenize.js
 .deps
 .gdb-bt
 .gcov
