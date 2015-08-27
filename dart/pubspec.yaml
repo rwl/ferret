@@ -1,1 +1,3 @@
 name: ferret
+dependencies:
+  test: any
