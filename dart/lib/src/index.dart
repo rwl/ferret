@@ -1,5 +1,7 @@
 library ferret.index;
 
+part 'field_infos.dart';
+
 class Index {
   var key;
   FieldInfos _field_infos;
