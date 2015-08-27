@@ -33,10 +33,7 @@ VPATH    = test:src:benchmark
 # Emscripten
 ###
 
-CC       = emcc
-CFLAGS  += -Di386 -O0
-LDFLAGS  = -lm
-NODE_JS  = nodejs
+include ./make.emscripten
 
 ###
 # Objects

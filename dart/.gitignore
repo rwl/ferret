@@ -8,3 +8,6 @@ pubspec.lock
 *.iml
 .project
 .settings/
+
+*.js.mem
+ferret.js

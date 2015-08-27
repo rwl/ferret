@@ -1,0 +1,6 @@
+
+CC       = emcc
+CFLAGS  += -Di386 -O2
+LDFLAGS  = -lm
+NODE_JS  = nodejs
+

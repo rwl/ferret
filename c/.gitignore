@@ -8,3 +8,4 @@ benchall.js
 .deps
 .gdb-bt
 .gcov
+*.js.mem
