@@ -142,6 +142,8 @@ class IndexWriter {
     frb_iw_add_doc;
   }
 
+  operator <<() => frb_iw_add_doc;
+
   optimize() {
     frb_iw_optimize;
   }
@@ -447,6 +449,8 @@ class FieldInfos {
   add() {
     frb_fis_add;
   }
+
+  operator <<() => frb_fis_add;
 
   add_field() {
     frb_fis_add_field;
