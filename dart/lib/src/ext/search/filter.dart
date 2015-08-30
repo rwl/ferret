@@ -11,7 +11,13 @@ library ferret.ext.search.filter;
 /// TODO: add example of user implemented Filter.
 class Filter {
   var _bits;
-  bits() => frb_f_get_bits;
+
+  /// Get the bit_vector used by this filter. This method will usually be used
+  /// to group filters or apply filters to other filters.
+  BitVector bits(index_reader) => frb_f_get_bits;
+
+  /// Return a human readable string representing the [Filter] object that the
+  /// method was called on.
   to_s() => frb_f_to_s;
 }
 
@@ -25,7 +31,23 @@ class Filter {
 /// See [RangeQuery] for notes on how to use the [RangeFilter] on a field
 /// containing numbers.
 class RangeFilter {
-  RangeFilter() {
+  /// Create a new [RangeFilter] on field [field]. There are two ways to build
+  /// a range filter. With the old-style options; [lower], [upper],
+  /// [include_lower] and [include_upper] or the new style options; [le],
+  /// [leq], [ge] and [geq]. The options' names should speak for themselves.
+  /// In the old-style options, limits are inclusive by default.
+  ///
+  ///     var f = new RangeFilter('date', lower: "200501", include_lower: false);
+  ///     // is equivalent to
+  ///     var f = new RangeFilter('date', le: "200501");
+  ///     // is equivalent to
+  ///     var f = new RangeFilter('date', lower_exclusive: "200501");
+  ///
+  ///     var f = new RangeFilter('date', lower: "200501", upper: 200502);
+  ///     // is equivalent to
+  ///     var f = new RangeFilter('date', geq: "200501", leq: 200502);
+  RangeFilter(field, {lower, upper, bool include_lower, bool include_upper, le,
+      leq, ge, geq}) {
     frb_rf_init;
   }
 }
@@ -40,7 +62,24 @@ class RangeFilter {
 ///
 ///     var filter = new TypedRangeFilter('created_on', leq: "50.00");
 class TypedRangeFilter {
-  TypedRangeFilter() {
+  /// Create a new [TypedRangeFilter] on field [field]. There are two ways to
+  /// build a range filter. With the old-style options; [lower], [upper],
+  /// [include_lower] and [include_upper] or the new style options; [le],
+  /// [leq], [ge] and [geq]. The options' names should speak for themselves.
+  /// In the old-style options, limits are inclusive by default.
+  ///
+  ///     var f = new TypedRangeFilter('date', lower: "0.1", include_lower: false);
+  ///     // is equivalent to
+  ///     var f = new TypedRangeFilter('date', le: "0.1");
+  ///     // is equivalent to
+  ///     var f = new TypedRangeFilter('date', lower_exclusive: "0.1");
+  ///
+  ///     // Note that you numbers can be strings or actual numbers
+  ///     var f = new TypedRangeFilter('date', lower: "-132.2", upper: -1.4);
+  ///     // is equivalent to
+  ///     var f = new TypedRangeFilter('date', geq: "-132.2", leq: -1.4);
+  TypedRangeFilter(field, {lower, upper, bool include_lower, bool include_upper,
+      le, leq, ge, geq}) {
     frb_trf_init;
   }
 }
@@ -62,7 +101,8 @@ class TypedRangeFilter {
 /// Just remember to use the same QueryFilter each time to take advantage of
 /// caching. Don't create a new one for each request.
 class QueryFilter {
-  QueryFilter() {
+  /// Create a new [QueryFilter] which applies the query [query].
+  QueryFilter(query) {
     frb_qf_init;
   }
 }

@@ -25,7 +25,10 @@ class Hit {
 class TopDocs {
   var total_hits, hits, max_score, searcher;
 
+  /// Returns a string representation of the top_doc in readable format.
   to_s() => frb_td_to_s;
+
+  /// Returns a json representation of the top_doc.
   to_json() => frb_td_to_json;
 }
 
@@ -38,7 +41,15 @@ class TopDocs {
 ///
 ///     print(searcher.explain(query, doc_id).to_s);
 class Explanation {
+  /// Returns a string representation of the explanation in readable format.
   to_s() => frb_expl_to_s;
+
+  /// Returns an html representation of the explanation in readable format.
   to_html() => frb_expl_to_html;
-  score() => frb_expl_score;
+
+  /// Returns the score represented by the query. This can be used for
+  /// debugging purposes mainly to check that the score returned by the
+  /// explanation matches that of the score for the document in the original
+  /// query.
+  double score() => frb_expl_score;
 }

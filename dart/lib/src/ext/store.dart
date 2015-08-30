@@ -23,14 +23,35 @@ library ferret.ext.store;
 abstract class Directory {
   static const LOCK_PREFIX;
 
+  /// It is a good idea to close a directory when you have finished using it.
+  /// Although the garbage collector will currently handle this for you, this
+  /// behaviour may change in future.
   close() => frb_dir_close;
-  bool exists() => frb_dir_exists;
-  touch() => frb_dir_touch;
-  delete() => frb_dir_delete;
-  file_count() => frb_dir_file_count;
+
+  /// Return true if a file with the name [file_name] exists in the directory.
+  bool exists(String file_name) => frb_dir_exists;
+
+  /// Create an empty file in the directory with the name [file_name].
+  touch(String file_name) => frb_dir_touch;
+
+  /// Remove file [file_name] from the directory. Returns true if successful.
+  delete(String file_name) => frb_dir_delete;
+
+  /// Return a count of the number of files in the directory.
+  int file_count() => frb_dir_file_count;
+
+  /// Delete all files in the directory. It gives you a clean slate.
   refresh() => frb_dir_refresh;
-  rename() => frb_dir_rename;
-  make_lock() => frb_dir_make_lock;
+
+  /// Rename a file from [from] to [to]. An error will be raised if the file
+  /// doesn't exist or there is some other type of IOError.
+  rename(String from, String to) => frb_dir_rename;
+
+  /// Make a lock with the name [lock_name]. Note that lockfiles will be
+  /// stored in the directory with other files but they won't be visible to
+  /// you. You should avoid using files with a `.lck` extension as this
+  /// extension is reserved for lock files.
+  Lock make_lock(String lock_name) => frb_dir_make_lock;
 }
 
 /// A [Lock] is used to lock a data source so that not more than one
@@ -53,9 +74,31 @@ abstract class Directory {
 ///       ... # Do your file modifications # ...
 ///     });
 class Lock {
-  obtain() => frb_lock_obtain;
-  while_locked() => frb_lock_while_locked;
+  /// Obtain a lock. Returns true if lock was successfully obtained. Make sure
+  /// the lock is released using [Lock.release]. Otherwise you'll be left with
+  /// a stale lock file.
+  ///
+  /// The [timeout] defaults to 1 second and 5 attempts are made to obtain
+  /// the lock. If you're doing large batch updates on the index with multiple
+  /// processes you may need to increase the lock timeout but 1 second will be
+  /// substantial in most cases.
+  ///
+  /// Returns `true` if lock was successfully obtained. Raises a [LockError]
+  /// otherwise.
+  bool obtain({timeout = 1}) => frb_lock_obtain;
+
+  /// Run the code in a block while a lock is obtained, automatically
+  /// releasing the lock when the block returns.
+  ///
+  /// Returns `true` if lock was successfully obtained. Raises a [LockError]
+  /// otherwise.
+  bool while_locked({timeout = 1, fn}) => frb_lock_while_locked;
+
+  /// Release the lock. This should only be called by the process which
+  /// obtains the lock.
   release() => frb_lock_release;
+
+  /// Returns `true` if the lock has been obtained.
   bool locked() => frb_lock_is_locked;
 }
 
@@ -67,7 +110,12 @@ class LockError implements Exception {}
 /// things up, on most operating systems there won't be much difference so
 /// it wouldn't be worth your trouble.
 class RAMDirectory extends Directory {
-  RAMDirectory() {
+  /// Create a new RAMDirectory.
+  ///
+  /// You can optionally load another [Directory] (usually a [FSDirectory])
+  /// into memory. This may be useful to speed up search performance but
+  /// usually the speedup won't be worth the trouble. Be sure to benchmark.
+  RAMDirectory({dir: null}) {
     frb_ramdir_init;
   }
 }
@@ -78,7 +126,12 @@ class RAMDirectory extends Directory {
 /// corrupt the index. The one exception to this rule is you may need to delete
 /// stale lock files which have a `.lck` extension.
 class FSDirectory extends Directory {
-  static FSDirectory create() {
+  /// Create a new FSDirectory at [path] which must be a valid path on your
+  /// file system. If it doesn't exist it will be created. You can also
+  /// specify the [create] parameter. If [create] is true the [FSDirectory]
+  /// will be refreshed as new. That is to say, any existing files in the
+  /// directory will be deleted.
+  static FSDirectory create(path, {bool create: false}) {
     frb_fsdir_new;
   }
 }

@@ -29,13 +29,41 @@ library ferret.ext.search.query;
 /// for train rails you might also add the tern Ruby but Rails is the more
 /// important term so you'd give it a boost.
 class Query {
+  /// Return a string representation of the query. Most of the time, passing
+  /// this string through the [Query] parser will give you the exact [Query]
+  /// you began with. This can be a good way to explore how the [QueryParser]
+  /// works.
   to_s() => frb_q_to_s;
+
+  /// Returns the queries boost value. See the [Query] description for more
+  /// information on [Query] boosts.
   get boost() => frb_q_get_boost;
+
+  /// Set the boost for a query. See the [Query] description for more
+  /// information on [Query] boosts.
   set boost() => frb_q_set_boost;
-  bool eql() => frb_q_eql;
+
+  /// Return true if query equals [other_query]. Theoretically, two queries
+  /// are equal if the always return the same results, no matter what the
+  /// contents of the index. Practically, however, this is difficult to
+  /// implement efficiently for queries like [BooleanQuery] since the ordering
+  /// of clauses unspecified. "Ruby AND Rails" will not match "Rails AND Ruby"
+  /// for example, although their result sets will be identical. Most queries
+  /// should match as expected however.
+  bool eql(other_query) => frb_q_eql;
+
+  /// Alias for [eql].
   operator ==() => frb_q_eql;
+
+  /// Return a hash value for the query. This is used for caching query results
+  /// in a hash object.
   hash() => frb_q_hash;
-  terms() => frb_q_get_terms;
+
+  /// Returns an array of terms searched for by this query. This can be used
+  /// for implementing an external query highlighter for example. You must
+  /// supply a searcher so that the query can be rewritten and optimized like
+  /// it would be in a real search.
+  List terms(searcher) => frb_q_get_terms;
 }
 
 /// [TermQuery] is the most basic query and it is the building block for most
@@ -51,7 +79,9 @@ class Query {
 /// will downcase all text added to the index. The title in this case was not
 /// tokenized so the case would have been left as is.
 class TermQuery extends Query {
-  TermQuery() {
+  /// Create a new [TermQuery] object which will match all documents with the
+  /// term [term] in the field [field].
+  TermQuery(field, term) {
     frb_tq_init;
   }
 }
@@ -78,16 +108,36 @@ class MultiTermQuery extends Query {
 
   int _max_terms, _min_score;
 
-  MultiTermQuery() {
+  /// Create a new [MultiTermQuery] on field [field]. You will also need to
+  /// add terms to the query using the [add_term] method.
+  ///
+  /// You can specify the maximum number of terms that can be added to the
+  /// query using [max_terms]. This is to prevent memory usage overflow,
+  /// particularly when don't directly control the addition of terms to the
+  /// [Query] object like when you create Wildcard queries. For example,
+  /// searching for "content:*" would cause problems without this limit.
+  /// [min_score] is the minimum score a term must have to be added to the
+  /// query. For example you could implement your own wild-card queries
+  /// that gives matches a score. To limit the number of terms added to the
+  /// query you could set a lower limit to this score. [FuzzyQuery] in
+  /// particular makes use of this parameter.
+  MultiTermQuery(field, {max_terms, min_score}) {
     frb_mtq_init;
   }
 
-  static get default_max_terms() => frb_mtq_get_dmt;
+  /// Get the default value for [max_terms] in a [MultiTermQuery]. This value
+  /// is also used by [PrefixQuery], [FuzzyQuery] and [WildcardQuery].
+  static double get default_max_terms() => frb_mtq_get_dmt;
 
+  /// Set the default value for [max_terms] in a [MultiTermQuery]. This value
+  /// is also used by [PrefixQuery], [FuzzyQuery] and [WildcardQuery].
   static set default_max_terms() => frb_mtq_set_dmt;
 
-  add_term() => frb_mtq_add_term;
+  /// Add a term to the [MultiTermQuery] with the score 1.0 unless specified
+  /// otherwise.
+  add_term(term, [score = 1.0]) => frb_mtq_add_term;
 
+  /// Alias for [add_term].
   operator <<() => frb_mtq_add_term;
 }
 
@@ -107,16 +157,33 @@ class BooleanClause {
   var must;
   var must_not;
 
-  BooleanClause() {
+  ///
+  BooleanClause(query, occur: 'should') {
     frb_bc_init;
   }
 
-  get query() => frb_bc_get_query;
-  set query() => frb_bc_set_query;
+  /// Return the query object wrapped by this [BooleanClause].
+  Query get query() => frb_bc_get_query;
+
+  /// Set the [query] wrapped by this [BooleanClause].
+  set query(Query query) => frb_bc_set_query;
+
+  /// Return `true` if this clause is required. ie, this will be true if occur
+  /// was equal to `must`.
   bool required() => frb_bc_is_required;
+
+  /// Return `true` if this clause is prohibited. ie, this will be true if
+  /// occur was equal to `must_not`.
   bool prohibited() => frb_bc_is_prohibited;
-  set occur() => frb_bc_set_occur;
-  to_s() => frb_bc_to_s;
+
+  /// Set the [occur] value for this [BooleanClause]. [occur] must be one of
+  /// `must`, `should` or `must_not`.
+  set occur(String val) => frb_bc_set_occur;
+
+  /// Return a string representation of this clause. This will not be used by
+  /// [BooleanQuery.to_s]. It is only used by [BooleanClause.to_s] and will
+  /// specify whether the clause is `must`, `should` or `must_not`.
+  String to_s() => frb_bc_to_s;
 }
 
 /// A [BooleanQuery] is used for combining many queries into one. This is best
@@ -139,12 +206,28 @@ class BooleanClause {
 ///       ..add_query(bq2, 'must')
 ///       ..add_query(rq3, 'must');
 class BooleanQuery extends Query {
-  BooleanQuery() {
+  /// Create a new [BooleanQuery]. If you don't care about the scores of the
+  /// sub-queries added to the query (as would be the case for many
+  /// automatically generated queries) you can disable the coord_factor of the
+  /// score. This will slightly improve performance for the query. Usually you
+  /// should leave this parameter as is.
+  BooleanQuery({coord_disable: false}) {
     frb_bq_init;
   }
 
-  add_query() => frb_bq_add_query;
+  /// Us this method to add sub-queries to a [BooleanQuery]. You can either
+  /// add a straight [Query] or a [BooleanClause]. When adding a [Query], the
+  /// default occurrence requirement is `should`. That is the [Query]'s match
+  /// will be scored but it isn't essential for a match. If the query should
+  /// be essential, use `must`. For exclusive queries use `must_not`.
+  ///
+  /// When adding a [BooleanClause] to a [BooleanQuery] there is no need to
+  /// set the occurrence property because it is already set in the
+  /// [BooleanClause].  Therefor the [occur] parameter will be ignored in this
+  /// case.
+  BooleanClause add_query(query, {occur: 'should'}) => frb_bq_add_query;
 
+  /// Alias for [add_term].
   operator <<() => frb_bq_add_query;
 }
 
@@ -183,7 +266,21 @@ class RangeQuery extends Query {
 
   var le, leq, ge, geq;
 
-  RangeQuery() {
+  /// Create a new [RangeQuery] on field [field]. There are two ways to build
+  /// a range query. With the old-style options; [lower], [upper],
+  /// [include_lower] and [include_upper] or the new style options; [le],
+  /// [leq], [ge] and [geq].
+  ///
+  ///     var q = new RangeQuery('date', lower: "200501", include_lower: false);
+  ///     // is equivalent to
+  ///     var q = new RangeQuery('date', le: "200501");
+  ///     // is equivalent to
+  ///     var q = new RangeQuery('date', lower_exclusive: "200501");
+  ///
+  ///     var q = new RangeQuery('date', lower: "200501", upper: 200502);
+  ///     // is equivalent to
+  ///     var q = new RangeQuery('date', geq: "200501", leq: 200502);
+  RangeQuery(field, {lower, upper, bool include_lower, bool include_upper, le, leq, ge, geq}) {
     frb_rq_init;
   }
 }
@@ -204,7 +301,29 @@ class RangeQuery extends Query {
 /// usually better to use a standard [RangeQuery]. This will require a little
 /// work on your behalf. See [RangeQuery] for notes on how to do this.
 class TypedRangeQuery extends Query {
-  TypedRangeQuery() {
+  /// Create a new [TypedRangeQuery] on field [field]. This differs from the
+  /// standard [RangeQuery] in that it allows range queries with unpadded
+  /// numbers, both positive and negative, integer and float. You can even use
+  /// hexadecimal numbers. However it could be a lot slower than the standard
+  /// [RangeQuery] on large indexes.
+  ///
+  /// There are two ways to build a range query. With the old-style options;
+  /// [lower], [upper], [include_lower] and [include_upper] or the new style
+  /// options; [le], [leq], [ge] and [geq]. The options' names should speak
+  /// for themselves. In the old-style options, limits are inclusive by
+  /// default.
+  ///
+  ///      var q = new TypedRangeQuery('date', lower: "0.1", include_lower: false);
+  ///      // is equivalent to
+  ///      var q = new TypedRangeQuery('date', le: "0.1");
+  ///      // is equivalent to
+  ///      var q = new TypedRangeQuery('date', lower_exclusive: "0.1")
+  ///
+  ///      // Note that you numbers can be strings or actual numbers
+  ///      var q = new TypedRangeQuery('date', lower: "-12.32", upper: 0.21);
+  ///      // is equivalent to
+  ///      var q = new TypedRangeQuery('date', geq: "-12.32", leq: 0.21);
+  TypedRangeQuery(field, {lower, upper, bool include_lower, bool include_upper, le, leq, ge, geq}) {
     frb_trq_init;
   }
 }
@@ -268,14 +387,34 @@ class TypedRangeQuery extends Query {
 /// 0. With a little help from your analyzer you can actually tag bold or
 /// italic text for example.
 class PhraseQuery extends Query {
-  PhraseQuery() {
+  /// Create a new [PhraseQuery] on the field [field]. You need to add terms
+  /// to the query it will do anything of value. See [add_term].
+  PhraseQuery(field, {slop = 0}) {
     frb_phq_init;
   }
 
-  add_term() => frb_phq_add;
+  /// Add a term to the phrase query. By default the position_increment is set
+  /// to 1 so each term you add is expected to come directly after the
+  /// previous term. By setting position_increment to 2 you are specifying
+  /// that the term you just added should occur two terms after the previous
+  /// term. For example:
+  ///
+  ///     phrase_query..add_term("big")..add_term("house", 2);
+  ///     // matches => "big brick house"
+  ///     // matches => "big red house"
+  ///     // doesn't match => "big house"
+  add_term(term, [int position_increment = 1]) => frb_phq_add;
+
+  /// Alias for [add_term].
   operator <<() frb_phq_add;
-  get slop() => frb_phq_get_slop;
-  set slop() => frb_phq_set_slop;
+
+  /// Return the slop set for this phrase query. See the [PhraseQuery]
+  /// description for more information on slop.
+  int get slop => frb_phq_get_slop;
+
+  /// Set the slop set for this phrase query. See the [PhraseQuery]
+  /// description for more information on slop.
+  set slop(int s) => frb_phq_set_slop;
 }
 
 /// A prefix query is like a [TermQuery] except that it matches any term with
@@ -300,7 +439,20 @@ class PhraseQuery extends Query {
 ///     // matches => "cat2/sub_cat1"
 ///     // matches => "cat2/sub_cat2"
 class PrefixQuery extends Query {
-  PrefixQuery() {
+  /// Create a new [PrefixQuery] to search for all terms with the prefix
+  /// [prefix] in the field [field]. There is one option that you can set to
+  /// change the behaviour of this query. [max_terms] specifies the maximum
+  /// number of terms to be added to the query when it is expanded into a
+  /// [MultiTermQuery].
+  /// Let's say for example you search an index with a million terms for all
+  /// terms beginning with the letter "s". You would end up with a very large
+  /// query which would use a lot of memory and take a long time to get
+  /// results, not to mention that it would probably match every document in
+  /// the index.
+  /// To prevent queries like this crashing your application you can set
+  /// [max_terms] which limits the number of terms that get added to the
+  /// query. By default it is set to 512.
+  PrefixQuery(field, prefix, {max_terms: 512}) {
     frb_prq_init
   }
 }
@@ -324,7 +476,20 @@ class PrefixQuery extends Query {
 ///     // matches => "falling"
 ///     // matches => "folly"
 class WildcardQuery extends Query {
-  WildcardQuery() {
+  /// Create a new [WildcardQuery] to search for all terms where the pattern
+  /// [pattern] matches in the field [field].
+  ///
+  /// There is one option that you can set to change the behaviour of this
+  /// query. [max_terms] specifies the maximum number of terms to be added to
+  /// the query when it is expanded into a [MultiTermQuery]. Let's say for
+  /// example you have a million terms in your index and you let your users do
+  /// wild-card queries and one runs a search for "*". You would end up with a
+  /// very large query which would use a lot of memory and take a long time to
+  /// get results, not to mention that it would probably match every document
+  /// in the index. To prevent queries like this crashing your application you
+  /// can set [max_terms] which limits the number of terms that get added to
+  /// the query. By default it is set to 512.
+  WildcardQuery(field, pattern, {max_terms: 512}) {
     frb_wcq_init
   }
 }
@@ -346,20 +511,57 @@ class FuzzyQuery extends Query {
   static double _default_min_similarity = 0.5;
   static int _default_prefix_length = 0;
 
-  get default_min_similarity() => frb_fq_get_dms;
-  set default_min_similarity() => frb_fq_set_dms;
+  /// Get the default value for [min_similarity].
+  get default_min_similarity => frb_fq_get_dms;
 
-  get default_prefix_length() => frb_fq_get_dpl;
-  set default_prefix_length() => frb_fq_set_dpl;
+  /// Set the default value for [min_similarity].
+  set default_min_similarity(dms) => frb_fq_set_dms;
+
+  /// Get the default value for [prefix_length].
+  get default_prefix_length => frb_fq_get_dpl;
+
+  /// Set the default value for [prefix_length].
+  set default_prefix_length(dpl) => frb_fq_set_dpl;
 
   var _min_similarity;
   var _prefix_length;
 
-  FuzzyQuery() {
+  /// Create a new [FuzzyQuery] that will match terms with a similarity of at
+  /// least [min_similarity] to [term]. Similarity is scored using the
+  /// Levenshtein edit distance formula. See
+  ///
+  ///     http://en.wikipedia.org/wiki/Levenshtein_distance
+  ///
+  /// If a [prefix_length] > 0 is specified, a common prefix of that length is
+  /// also required.
+  ///
+  /// You can also set [max_terms] to prevent memory overflow problems. By
+  /// default it is set to 512.
+  ///
+  ///     new FuzzyQuery('content', "levenshtein",
+  ///       min_similarity: 0.8,
+  ///       prefix_length: 5,
+  ///       max_terms: 1024);
+  ///
+  /// [min_similarity] is the minimum levenshtein distance score for a match.
+  /// [prefix_length] is the minimum prefix_match before levenshtein
+  /// distance is measured. This parameter is used to improve performance.
+  /// With a [prefix_length] of 0, all terms in the index must be checked
+  /// which can be quite a performance hit. By setting the prefix length to a
+  /// larger number you minimize the number of terms that need to be checked.
+  /// Even 1 will cut down the work by a factor of about 26 depending on your
+  /// character set and the first letter.
+  /// [max_terms] limits the number of terms that can be added to the query
+  /// when it is expanded as a [MultiTermQuery]. This is not usually a problem
+  /// with FuzzyQueries unless you set [min_similarity] to a very low value.
+  FuzzyQuery(field, term, {min_similarity: 0.5, prefix_length: 0, max_terms: 512}) {
     frb_fq_init;
   }
 
-  prefix_length() => frb_fq_pre_len;
+  /// Get the [prefix_length] for the query.
+  get prefix_length => frb_fq_pre_len;
+
+  /// Get the [min_similarity] for the query.
   min_similarity() => frb_fq_min_sim;
 }
 
@@ -367,6 +569,7 @@ class FuzzyQuery extends Query {
 /// this query in combination with a filter, however, [ConstantScoreQuery] is
 /// probably better in that circumstance.
 class MatchAllQuery extends Query {
+  /// Create a query which matches all documents.
   MatchAllQuery() {
     frb_maq_init;
   }
@@ -385,7 +588,9 @@ class MatchAllQuery extends Query {
 /// Once this is run once the results are cached and will be returned very
 /// quickly in future requests.
 class ConstantScoreQuery extends Query {
-  ConstantScoreQuery() {
+  /// Create a [ConstantScoreQuery] which uses [filter] to match documents
+  /// giving each document a constant score.
+  ConstantScoreQuery(filter) {
     frb_csq_init;
   }
 }
@@ -396,7 +601,8 @@ class ConstantScoreQuery extends Query {
 /// directly to a [Searcher.search] method unless you are applying more than
 /// one filter since the search method also takes a filter as a parameter.
 class FilteredQuery extends Query {
-  FilteredQuery() {
+  /// Create a new FilteredQuery which filters [query] with [filter].
+  FilteredQuery(query, filter) {
     frb_fqq_init;
   }
 }

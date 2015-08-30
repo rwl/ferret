@@ -9,7 +9,9 @@ library ferret.ext.search.span;
 /// being that it returns the start and end offset of all of its matches for
 /// use by enclosing SpanQueries.
 class SpanTermQuery extends Query {
-  SpanTermQuery() {
+  /// Create a new [SpanTermQuery] which matches all documents with the term
+  /// [term] in the field [field].
+  SpanTermQuery(field, term) {
     frb_spantq_init;
   }
 }
@@ -18,7 +20,9 @@ class SpanTermQuery extends Query {
 /// difference being that it returns the start and end offset of all of its
 /// matches for use by enclosing SpanQueries.
 class SpanMultiTermQuery extends Query {
-  SpanMultiTermQuery() {
+  /// Create a new [SpanMultiTermQuery] which matches all documents with the
+  /// terms [terms] in the field [field].
+  SpanMultiTermQuery(field, List<String> terms) {
     frb_spanmtq_init
   }
 }
@@ -27,7 +31,9 @@ class SpanMultiTermQuery extends Query {
 /// difference being that it returns the start and end offset of all of its
 /// matches for use by enclosing SpanQueries.
 class SpanPrefixQuery extends Query {
-  SpanPrefixQuery() {
+  /// Create a new [SpanPrefixQuery] which matches all documents with the
+  /// prefix [prefix] in the field [field].
+  SpanPrefixQuery(field, prefix, {max_terms = 256}) {
     frb_spanprq_init;
   }
 }
@@ -43,7 +49,10 @@ class SpanPrefixQuery extends Query {
 ///
 /// NOTE: [SpanFirstQuery] only works with other SpanQueries.
 class SpanFirstQuery extends Query {
-  SpanFirstQuery() {
+  /// Create a new [SpanFirstQuery] which matches all documents where
+  /// [span_query] matches before [end] where [end] is a byte-offset from the
+  /// start of the field.
+  SpanFirstQuery(span_query, end) {
     frb_spanfq_init;
   }
 }
@@ -79,11 +88,32 @@ class SpanFirstQuery extends Query {
 class SpanNearQuery extends Query {
   var _slop, _in_order, _clauses;
 
-  SpanNearQuery() {
+  /// Create a new [SpanNearQuery]. You can add an array of clauses with the
+  /// [clause] parameter or you can add clauses individually using the
+  /// [add] method.
+  ///
+  ///     var query = new SpanNearQuery(clauses: [spanq1, spanq2, spanq3]);
+  ///     // is equivalent to
+  ///     var query = new SpanNearQuery()
+  ///       ..add(spanq1)
+  ///       ..add(spanq2)
+  ///       ..add(spanq3);
+  ///
+  /// [slop] works exactly like a [PhraseQuery] slop. It is the amount of slop
+  /// allowed in the match (the term edit distance allowed in the match).
+  /// [in_order] specifies whether or not the matches have to occur in the
+  /// order they were added to the query. When slop is set to 0, this
+  /// parameter will make no difference.
+  SpanNearQuery({slop: 0, in_order: false}) {
     frb_spannq_init;
   }
 
-  add() => frb_spannq_add;
+  /// Add a clause to the [SpanNearQuery]. Clauses are stored in the order
+  /// they are added to the query which is important for matching. Note that
+  /// clauses must be SpanQueries, not other types of query.
+  add(span_query) => frb_spannq_add;
+
+  /// Alias for [add].
   operator <<() => frb_spannq_add;
 }
 
@@ -116,10 +146,18 @@ class SpanNearQuery extends Query {
 ///
 /// NOTE: [SpanOrQuery] only works with other SpanQueries.
 class SpanOrQuery extends Query {
+  /// Create a new [SpanOrQuery]. This is just like a [BooleanQuery] with all
+  /// clauses with the occur value of `should`. The difference is that it can
+  /// be passed to other SpanQuerys like [SpanNearQuery].
   SpanOrQuery() {
     frb_spanoq_init;
   }
-  add() => frb_spanoq_add;
+
+  /// Add a clause to the [SpanOrQuery]. Note that clauses must be SpanQueries,
+  /// not other types of query.
+  add(span_query) => frb_spanoq_add;
+
+  /// Alias for [add].
   operator <<() => frb_spanoq_add;
 }
 
@@ -137,7 +175,9 @@ class SpanOrQuery extends Query {
 ///
 /// NOTE: [SpanOrQuery] only works with other SpanQueries.
 class SpanNotQuery extends Query {
-  SpanNotQuery() {
+  /// Create a new [SpanNotQuery] which matches all documents which match
+  /// [include_query] and don't match [exclude_query].
+  SpanNotQuery(include_query, exclude_query) {
     frb_spanxq_init;
   }
 }

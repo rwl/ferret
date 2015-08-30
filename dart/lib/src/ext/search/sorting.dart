@@ -42,14 +42,35 @@ class SortField {
   var score;
   var byte;
 
-  SortField() {
+  /// Create a new [SortField] which can be used to sort the result-set by the
+  /// value in field [field].
+  ///
+  /// [type] specifies how a field should be sorted. Choose from one of;
+  /// `auto`, `integer`, `float`, `string`, `byte`, `doc_id` or `score`.
+  /// `auto` will check the datatype of the field by trying to parse it into
+  /// either a number or a float before settling on a string sort. String sort
+  /// is locale dependent and works for multibyte character sets like UTF-8 if
+  /// you have your locale set correctly.
+  /// Set [reverse] to `true` if you want to reverse the sort.
+  SortField(field, {type: 'auto', bool reverse: false}) {
     frb_sf_init;
   }
 
-  bool reverse() => frb_sf_is_reverse;
-  name() => frb_sf_get_name;
+  /// Return `true` if the field is to be reverse sorted. This attribute is
+  /// set when you create the sort_field.
+  bool get reverse => frb_sf_is_reverse;
+
+  /// Returns the name of the field to be sorted.
+  String get name => frb_sf_get_name;
+
+  /// Return the type of sort. Should be one of; `auto`, `integer`, `float`,
+  /// `string`, `byte`, `doc_id` or `score`.
   type() => frb_sf_get_type;
+
+  /// TODO: currently unsupported
   comparator() => frb_sf_get_comparator;
+
+  /// Return a human readable string describing this sort_field.
   to_s() => frb_sf_to_s;
 
   static final ScoreField SCORE;
@@ -71,12 +92,18 @@ class SortField {
 /// Remember that the [type] parameter for [SortField] is set to `auto` be
 /// default be I strongly recommend you specify a `type` value.
 class Sort {
-  Sort() {
+  /// Create a new Sort object. If [reverse] is true, all sort_fields will be
+  /// reversed so if any of them are already reversed the  will be turned back
+  /// to their natural order again.
+  Sort({sort_fields: const [SortField::SCORE, SortField::DOC_ID], reverse: false}) {
     frb_sort_init;
   }
 
-  fields() => frb_sort_get_fields;
-  to_s() => frb_sort_to_s;
+  /// Returns an array of the [SortField]s held by the [Sort] object.
+  List<SortField> get fields => frb_sort_get_fields;
+
+  /// Returns a human readable string representing the sort object.
+  String to_s() => frb_sort_to_s;
 
   static final Sort RELEVANCE;
   static final Sort INDEX_ORDER;
