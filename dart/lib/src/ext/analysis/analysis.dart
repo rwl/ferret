@@ -46,19 +46,90 @@ library ferret.ext.analysis;
 /// be equal to [text.length], as the term text may have been altered by a
 /// stemmer or some other filter.
 class Token implements Comparable {
-  Token() {
+
+  /// Creates a new token setting the text, start and end offsets of the token
+  /// and the position increment for the token.
+  ///
+  /// The position increment is usually set to 1 but you can set it to other
+  /// values as needed.  For example, if you have a stop word filter you will
+  /// be skipping tokens. Let's say you have the stop words "the" and "and"
+  /// and you parse the title "The Old Man and the Sea". The terms "Old",
+  /// "Man" and "Sea" will have the position increments 2, 1 and 3
+  /// respectively.
+  ///
+  /// Another reason you might want to vary the position increment is if you
+  /// are adding synonyms to the index. For example let's say you have the
+  /// synonym group "quick", "fast" and "speedy". When tokenizing the phrase
+  /// "Next day speedy delivery", you'll add "speedy" first with a position
+  /// increment of 1 and then "fast" and "quick" with position increments of
+  /// 0 since they are represented in the same position.
+  ///
+  /// The offset set values [start] and [end] should be byte offsets, not
+  /// character offsets. This makes it easy to use those offsets to quickly
+  /// access the token in the input string and also to insert highlighting
+  /// tags when necessary.
+  ///
+  /// [text] is the main text for the token. [start] is the start offset of
+  /// the token in bytes. [end] is the end offset of the token in bytes.
+  /// [pos_inc] is the position increment of a token.
+  Token(text, start, end, [num pos_inc = 1]) {
     frb_token_init;
   }
 
-  compareTo() => frb_token_cmp;
+  /// Used to compare two tokens. Token is extended by [Comparable] so you
+  /// can also use `<`, `>`, `<=`, `>=` etc. to compare tokens.
+  ///
+  /// Tokens are sorted by the position in the text at which they occur, ie
+  /// the start offset. If two tokens have the same start offset, (see
+  /// [pos_inc]) then, they are sorted by the end offset and then lexically
+  /// by the token text.
+  compareTo(Token other_token) => frb_token_cmp;
+
+  /// Returns the text that this token represents.
   get text() => frb_token_get_text;
+
+  /// Set the text for this token.
   set text() => frb_token_set_text;
+
+  /// Start byte-position of this token.
   get start() => frb_token_get_start_offset;
+
+  /// Set start byte-position of this token.
   set start() => frb_token_set_start_offset;
+
+  /// End byte-position of this token.
   get end() => frb_token_get_end_offset;
+
+  /// Set end byte-position of this token.
   set end() => frb_token_set_end_offset;
+
+  /// Position Increment for this token.
   get pos_inc() => frb_token_get_pos_inc;
+
+  /// Set the position increment. This determines the position of this token
+  /// relative to the previous Token in a TokenStream, used in phrase
+  /// searching.
+  ///
+  /// The default value is 1.
+  ///
+  /// Some common uses for this are:
+  ///
+  /// * Set it to zero to put multiple terms in the same position.  This is
+  ///   useful if, e.g., a word has multiple stems.  Searches for phrases
+  ///   including either stem will match.  In this case, all but the first
+  ///   stem's increment should be set to zero: the increment of the first
+  ///   instance should be one.  Repeating a token with an increment of zero
+  ///   can also be used to boost the scores of matches on that token.
+  ///
+  /// * Set it to values greater than one to inhibit exact phrase matches.
+  ///   If, for example, one does not want phrases to match across removed
+  ///   stop words, then one could build a stop word filter that removes stop
+  ///   words and also sets the increment to the number of stop words removed
+  ///   before each non-stop word.  Then exact phrase queries will only match
+  ///   when the terms occur with no intervening stop words.
   set pos_inc() => frb_token_set_pos_inc;
+
+  /// Return a string representation of the token.
   to_s() => frb_token_to_s;
 }
 
@@ -70,7 +141,16 @@ class Token implements Comparable {
 /// * [Tokenizer]: a [TokenStream] whose input is a string
 /// * [TokenFilter]: a [TokenStream] whose input is another [TokenStream]
 abstract class TokenStream {
+  /// Return the next token from the [TokenStream] or null if there are no
+  /// more tokens.
   next() => frb_ts_next;
+
+  /// Set the text attribute of the [TokenStream] to the text you wish to be
+  /// tokenized. For example, you may do this:
+  ///
+  ///     token_stream.text = File.read(file_name);
   set text() => frb_ts_set_text;
+
+  /// Return the text that the TokenStream is tokenizing.
   get text() => frb_ts_get_text;
 }

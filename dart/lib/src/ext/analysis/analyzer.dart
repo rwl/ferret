@@ -23,10 +23,17 @@ library ferret.ext.analysis.analyzer;
 ///       }
 ///     }
 abstract class Analyzer {
-  Analyzer() {
+  /// Create a new [LetterAnalyzer] which downcases tokens by default but can
+  /// optionally leave case as is. Lowercasing will be done based on the current
+  /// locale.
+  Analyzer({bool lower: true}) {
     frb_letter_analyzer_init;
   }
-  token_stream() => frb_analyzer_token_stream;
+
+  /// Create a new [TokenStream] to tokenize [input]. The [TokenStream]
+  /// created may also depend on the [field_name]. Although this parameter is
+  /// typically ignored.
+  token_stream(field_name, input) => frb_analyzer_token_stream;
 }
 
 /// An [AsciiLetterAnalyzer] creates a [TokenStream] that splits the input up
@@ -52,7 +59,10 @@ abstract class Analyzer {
 /// characters so you should use the [LetterAnalyzer] is you want to analyze
 /// multi-byte data like "UTF-8".
 class AsciiLetterAnalyzer extends Analyzer {
-  AsciiLetterAnalyzer() {
+  /// Create a new [AsciiWhiteSpaceAnalyzer] which downcases tokens by default
+  /// but can optionally leave case as is. Lowercasing will only be done to
+  /// ASCII characters.
+  AsciiLetterAnalyzer({bool lower: true}) {
     frb_a_letter_analyzer_init;
   }
 }
@@ -73,7 +83,10 @@ class AsciiLetterAnalyzer extends Analyzer {
 ///
 /// As you can see it makes use of the [LetterTokenizer].
 class LetterAnalyzer extends Analyzer {
-  LetterAnalyzer() {
+  /// Create a new [LetterAnalyzer] which downcases tokens by default but can
+  /// optionally leave case as is. Lowercasing will be done based on the
+  /// current locale.
+  LetterAnalyzer({bool lower: true}) {
     frb_letter_analyzer_init;
   }
 }
@@ -100,7 +113,10 @@ class LetterAnalyzer extends Analyzer {
 /// use [WhiteSpaceAnalyzer] if you want to recognize multibyte encodings such
 /// as "UTF-8".
 class AsciiWhiteSpaceAnalyzer extends Analyzer {
-  AsciiWhiteSpaceAnalyzer() {
+  /// Create a new [AsciiWhiteSpaceAnalyzer] which downcases tokens by default
+  /// but can optionally leave case as is. Lowercasing will only be done to
+  /// ASCII characters.
+  AsciiWhiteSpaceAnalyzer({bool lower: true}) {
     frb_a_white_space_analyzer_init;
   }
 }
@@ -121,7 +137,10 @@ class AsciiWhiteSpaceAnalyzer extends Analyzer {
 ///
 /// As you can see it makes use of the [WhiteSpaceTokenizer].
 class WhiteSpaceAnalyzer extends Analyzer {
-  WhiteSpaceAnalyzer() {
+  /// Create a new [WhiteSpaceAnalyzer] which downcases tokens by default but
+  /// can optionally leave case as is. Lowercasing will be done based on the
+  /// current locale.
+  WhiteSpaceAnalyzer({bool lower: true}) {
     frb_white_space_analyzer_init;
   }
 }
@@ -150,7 +169,11 @@ class WhiteSpaceAnalyzer extends Analyzer {
 /// won't recognize non-ASCII characters so you should use the
 /// [StandardAnalyzer] is you want to analyze multi-byte data like "UTF-8".
 class AsciiStandardAnalyzer extends Analyzer {
-  AsciiStandardAnalyzer() {
+  /// Create a new [AsciiStandardAnalyzer] which downcases tokens by default
+  /// but can optionally leave case as is. Lowercasing will be done based on
+  /// the current locale. You can also set the list of stop-words to be used
+  /// by the [StopFilter].
+  AsciiStandardAnalyzer({lower: true, stop_words: FULL_ENGLISH_STOP_WORDS}) {
     frb_a_standard_analyzer_init;
   }
 }
@@ -176,7 +199,11 @@ class AsciiStandardAnalyzer extends Analyzer {
 /// As you can see it makes use of the StandardTokenizer and you can also add
 /// your own list of stopwords if you wish.
 class StandardAnalyzer extends Analyzer {
-  StandardAnalyzer() {
+  /// Create a new [StandardAnalyzer] which downcases tokens by default but
+  /// can optionally leave case as is. Lowercasing will be done based on the
+  /// current locale. You can also set the list of stop-words to be used by
+  /// the [StopFilter].
+  StandardAnalyzer({lower: true, stop_words: FULL_ENGLISH_STOP_WORDS}) {
     frb_standard_analyzer_init;
   }
 }
@@ -194,19 +221,26 @@ class StandardAnalyzer extends Analyzer {
 ///     // Use a custom analyzer on the 'created_at' field
 ///     pfa['created_at'] = new DateAnalyzer();
 class PerFieldAnalyzer extends Analyzer {
-  PerFieldAnalyzer() {
+  /// Create a new [PerFieldAnalyzer] specifying the default analyzer to use
+  /// on all fields that are set specifically.
+  PerFieldAnalyzer(Analyzer default_analyzer) {
     frb_per_field_analyzer_init;
   }
 
-  add_field() {
+  /// Set the analyzer to be used on field [field_name].
+  add_field(String field_name, Analyzer default_analyzer) {
     frb_per_field_analyzer_add_field;
   }
 
-  operator []=() {
+  /// Alias for [add_field].
+  operator []=(String field_name, Analyzer default_analyzer) {
     frb_per_field_analyzer_add_field;
   }
 
-  token_stream() {
+  /// Create a new [TokenStream] to tokenize [input]. The [TokenStream]
+  /// created will also depend on the [field_name] in the case of the
+  /// [PerFieldAnalyzer].
+  TokenStream token_stream(String field_name, input) {
     frb_pfa_analyzer_token_stream;
   }
 }
@@ -233,11 +267,16 @@ class PerFieldAnalyzer extends Analyzer {
 ///
 ///     var csv_analyzer = new RegExpAnalyzer(r"[^,]+", false);
 class RegExpAnalyzer extends Analyzer {
-  RegExpAnalyzer() {
+  /// Create a new [RegExpAnalyzer] which will create tokenizers based on the
+  /// regular expression and lowercasing if required.
+  RegExpAnalyzer(RegExp reg_exp, {bool lower: true}) {
     frb_re_analyzer_init;
   }
 
-  token_stream() {
+  /// Create a new [TokenStream] to tokenize [input]. The [TokenStream]
+  /// created may also depend on the [field_name]. Although this parameter
+  /// is typically ignored.
+  TokenStream token_stream(String field_name, input) {
     frb_re_analyzer_token_stream;
   }
 }

@@ -20,7 +20,9 @@ class AsciiLetterTokenizer extends TokenStream {
 ///     "Dave's résumé, at http://www.davebalmain.com/ 1234"
 ///     => ["Dave", "s", "résumé", "at", "http", "www", "davebalmain", "com"]
 class LetterTokenizer extends TokenStream {
-  LetterTokenizer() {
+  /// Create a new [LetterTokenizer] which optionally downcases tokens.
+  /// Downcasing is done according the current locale.
+  LetterTokenizer({bool lower: true}) {
     frb_letter_tokenizer_init;
   }
 }
@@ -42,7 +44,9 @@ class AsciiWhiteSpaceTokenizer extends TokenStream {
 ///     "Dave's résumé, at http://www.davebalmain.com/ 1234"
 ///     => ["Dave's", "résumé,", "at", "http://www.davebalmain.com", "1234"]
 class WhiteSpaceTokenizer extends TokenStream {
-  WhiteSpaceTokenizer() {
+  /// Create a new [WhiteSpaceTokenizer] which optionally downcases tokens.
+  /// Downcasing is done according the current locale.
+  WhiteSpaceTokenizer({bool lower: true}) {
     frb_whitespace_tokenizer_init;
   }
 }
@@ -66,7 +70,9 @@ class AsciiStandardTokenizer extends TokenStream {
 ///     "Dave's résumé, at http://www.davebalmain.com/ 1234"
 ///     => ["Dave's", "résumé", "at", "http://www.davebalmain.com", "1234"]
 class StandardTokenizer extends TokenStream {
-  StandardTokenizer() {
+  /// Create a new StandardTokenizer which optionally downcases tokens.
+  /// Downcasing is done according the current locale.
+  StandardTokenizer({bool lower: true}) {
     frb_standard_tokenizer_init
   }
 }
@@ -84,9 +90,15 @@ class StandardTokenizer extends TokenStream {
 ///     "Dave's résumé, at http://www.davebalmain.com/ 1234"
 ///     => ["Dave", "s", "résumé", "at", "http", "www", "davebalmain", "com"]
 class RegExpTokenizer extends TokenStream {
-  RegExpTokenizer() {
+  /// Create a new tokenizer based on a regular expression.
+  RegExpTokenizer(String text, RegExp regexp) {
     frb_rets_init;
   }
+
+  /// Set the text to be tokenized by the tokenizer. The tokenizer gets reset
+  /// to tokenize the text from the beginning.
   set text() => frb_rets_set_text;
+
+  /// Get the text being tokenized by the tokenizer.
   get text() => frb_rets_get_text;
 }

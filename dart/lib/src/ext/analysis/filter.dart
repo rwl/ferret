@@ -5,7 +5,10 @@ library ferret.ext.analysis.filter;
 ///
 ///     ["One", "TWO", "three", "RÉSUMÉ"] => ["one", "two", "three", "rÉsumÉ"]
 class AsciiLowerCaseFilter extends TokenStream {
-  AsciiLowerCaseFilter() {
+  /// Create an [AsciiLowerCaseFilter] which normalizes a token's text to
+  /// lowercase but only for ASCII characters. For other characters use
+  /// [LowerCaseFilter].
+  AsciiLowerCaseFilter(TokenStream token_stream) {
     frb_a_lowercase_filter_init;
   }
 }
@@ -15,7 +18,9 @@ class AsciiLowerCaseFilter extends TokenStream {
 ///
 ///     ["One", "TWO", "three", "RÉSUMÉ"] => ["one", "two", "three", "résumé"]
 class LowerCaseFilter extends TokenStream {
-  LowerCaseFilter() {
+  /// Create an [LowerCaseFilter] which normalizes a token's text to
+  /// lowercase based on the current locale.
+  LowerCaseFilter(TokenStream token_stream) {
     frb_lowercase_filter_init;
   }
 }
@@ -28,7 +33,12 @@ class LowerCaseFilter extends TokenStream {
 ///
 ///     ["e-mail", "set-up"] => ["email", "e", "mail", "setup", "set", "up"]
 class HyphenFilter extends TokenStream {
-  HyphenFilter() {
+  /// Create an [HyphenFilter] which filters hyphenated words. The way it
+  /// works is by adding both the word concatenated into a single word and
+  /// split into multiple words. ie "e-mail" becomes "email" and "e mail".
+  /// This way a search for "e-mail", "email" and "mail" will all match.
+  /// This filter is used by default by the [StandardAnalyzer].
+  HyphenFilter(TokenStream token_stream) {
     frb_hyphen_filter_init;
   }
 }
@@ -67,7 +77,22 @@ class HyphenFilter extends TokenStream {
 ///     }
 ///     filt = new MappingFilter.new(token_stream, mapping);
 class MappingFilter extends TokenStream {
-  MappingFilter() {
+  /// Create an [MappingFilter] which maps strings in tokens. This is usually
+  /// used to map UTF-8 characters to ASCII characters for easier searching
+  /// and better search recall. The mapping is compiled into a Deterministic
+  /// Finite Automata so it is super fast. This Filter can therefor be used
+  /// for indexing very large datasets. Currently regular expressions are not
+  /// supported.
+  ///
+  /// [mapping] is a hash of mappings to apply to tokens. The key can be a
+  /// [String] or a [List] of Strings. The value must be a [String]:
+  ///
+  ///     var filt = new MappingFilter(token_stream,
+  ///       {
+  ///         ['à','á','â','ã','ä','å'] => 'a',
+  ///         ['è','é','ê','ë','ē','ę'] => 'e'
+  ///       });
+  MappingFilter(TokenStream token_stream, Map mapping) {
     frb_mapping_filter_init;
   }
 }
@@ -78,7 +103,13 @@ class MappingFilter extends TokenStream {
 ///
 ///     ["the", "pig", "and", "whistle"] => ["pig", "whistle"]
 class StopFilter extends TokenStream {
-  StopFilter() {
+  /// Create an StopFilter which removes *stop-words* from a [TokenStream].
+  /// You can optionally specify the stopwords you wish to have removed.
+  ///
+  /// [stop_words] is a [List] of *stop-words* you wish to be filtered out.
+  /// This defaults to a list of English stop-words. The Analysis library
+  /// contains a number of stop-word lists.
+  StopFilter(TokenStream token_stream, [List<String> stop_words]) {
     frb_stop_filter_init;
   }
 }
@@ -124,6 +155,9 @@ class StopFilter extends TokenStream {
 ///     "debate debates debated debating debater"
 ///     => ["debat", "debat", "debat", "debat", "debat"]
 class StemFilter extends TokenStream {
+  /// Create an [StemFilter] which uses a snowball stemmer (thank you Martin
+  /// Porter) to stem words. You can optionally specify the [algorithm] and
+  /// [encoding].
   StemFilter(TokenStream token_stream,
       {String algorithm: "english", String encoding: "UTF-8"}) {
     frb_stem_filter_init;
