@@ -1,3 +1,4 @@
 name: ferret
 dependencies:
   test: any
+  yaml: any
