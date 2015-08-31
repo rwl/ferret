@@ -22,7 +22,7 @@ part of ferret.ext.analysis;
 ///         return new StemFilter(new LowerCaseFilter(new StandardTokenizer(str)));
 ///       }
 ///     }
-abstract class Analyzer {
+class Analyzer {
   /// Create a new [LetterAnalyzer] which downcases tokens by default but can
   /// optionally leave case as is. Lowercasing will be done based on the current
   /// locale.

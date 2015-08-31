@@ -1,4 +1,8 @@
-part of ferret.index;
+library ferret.index.field_infos_utils;
+
+import 'package:yaml/yaml.dart';
+
+import 'ext/index.dart';
 
 class FieldInfosUtils {
   /// Load FieldInfos from a YAML file. The YAML file should look something
@@ -20,8 +24,8 @@ class FieldInfosUtils {
   ///       content:
   ///         term_vector: :with_positions_offsets
   static load(String yaml_str) {
-    var info = YAML.load(yaml_str);
-    _convert_strings_to_symbols(info);
+    var info = loadYaml(yaml_str);
+    //_convert_strings_to_symbols(info);
     var fis = new FieldInfos(info['default']);
     var fields = info['fields'];
     if (fields != null) {
@@ -30,15 +34,15 @@ class FieldInfosUtils {
     return fis;
   }
 
-  static _convert_strings_to_symbols(Map hash) {
-    hash.keys.each((key) {
+  /*static _convert_strings_to_symbols(Map hash) {
+    hash.keys.toList().forEach((key) {
       if (hash[key] is Map) {
         _convert_strings_to_symbols(hash[key]);
       }
-      if (key is String) {
+      /*if (key is String) {
         hash[key.intern] = hash[key];
         hash.delete(key);
-      }
+      }*/
     });
-  }
+  }*/
 }

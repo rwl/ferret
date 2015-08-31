@@ -15,6 +15,9 @@ library ferret.ext.index;
 import 'dart:js';
 import 'dart:collection' show MapBase;
 
+import 'store.dart' show Directory;
+import 'analysis/analysis.dart' as analysis;
+
 /// The IndexWriter is the class used to add documents to an index. You can
 /// also delete documents from the index using this class. The indexing
 /// process is highly customizable.
@@ -137,7 +140,7 @@ class IndexWriter {
   ///
   ///     index_writer.delete('id', "/path/to/indexed/file");
   IndexWriter({Directory dir, String path, bool create_if_missing: true,
-      bool create: false, FieldInfo field_infos, Analyzer analyzer,
+      bool create: false, FieldInfo field_infos, analysis.Analyzer analyzer,
       int chunk_size: 0x100000, int max_buffer_memory: 0x1000000,
       int term_index_interval: 128, int doc_skip_interval: 16,
       int merge_factor: 10, int max_buffered_docs: 10000, max_merge_docs,
@@ -426,7 +429,7 @@ class TermEnum {
   ///     //   ["banana",2],
   ///     //   ["cantaloupe",12]
   ///     // ]
-  List to_json() => frb_te_to_json;
+  List to_json({bool fast: false}) => frb_te_to_json;
 }
 
 /// Use a [TermDocEnum] to iterate through the documents that contain a
@@ -584,9 +587,9 @@ class TermDocEnum {
 /// doesn't know about then the default properties are used for the new field.
 class FieldInfos {
   /// Create a new [FieldInfos] object which uses the default values for
-  /// fields specified in the [default] hash parameter. See [FieldInfo] for
-  /// available property values.
-  FieldInfos() {
+  /// fields specified in the [default_values] hash parameter. See [FieldInfo]
+  /// for available property values.
+  FieldInfos(default_values) {
     frb_fis_init;
   }
 
@@ -947,7 +950,7 @@ class IndexReader {
   /// Expert: Returns a string containing the norm values for a field. The
   /// string length will be equal to the number of documents in the index and
   /// it could have null bytes.
-  String norms() => frb_ir_norms;
+  String norms(String field) => frb_ir_norms;
 
   /// Expert: Get the norm values into a string [buffer] starting at [offset].
   StringBuffer get_norms_into(field, StringBuffer buffer, int offset) =>
@@ -1001,19 +1004,19 @@ class IndexReader {
   /// Retrieve a document from the index. See [LazyDoc] for more details on
   /// the document returned. Documents are referenced internally by document
   /// ids which are returned by the Searchers search methods.
-  LazyDoc get_document() => frb_ir_get_doc;
+  LazyDoc get_document(id) => frb_ir_get_doc;
 
   /// Alias for [get_document].
-  operator [](id) => frb_ir_get_doc;
+  LazyDoc operator [](id) => frb_ir_get_doc;
 
   /// Return the [TermVector] for the field [field] in the document at
   /// [doc_id] in the index. Return `null` if no such term_vector exists.
   TermVector term_vector(doc_id, field) => frb_ir_term_vector;
 
-  /// Return the [TermVector]s for the document at `doc_id` in the index. The
+  /// Return the [TermVector]s for the document at [doc_id] in the index. The
   /// value returned is a hash of the [TermVector]s for each field in the
   /// document and they are referenced by field names (as symbols).
-  Map term_vectors() => frb_ir_term_vectors;
+  Map term_vectors(doc_id) => frb_ir_term_vectors;
 
   /// Builds a [TermDocEnum] (term-document enumerator) for the index. You can
   /// use this object to iterate through the documents in which certain terms

@@ -1,107 +1,111 @@
 library ferret.test.index.reader;
 
+import 'package:test/test.dart';
+import 'package:ferret/ferret.dart';
+
+import 'index_test_helper.dart';
+
 class IndexReaderCommon {
+  IndexReader _ir;
+
   test_index_reader() {
     do_test_get_field_names();
-
     do_test_term_enum();
-
     do_test_term_doc_enum();
-
     do_test_term_vectors();
-
     do_test_get_doc();
   }
 
   do_test_get_field_names() {
-    field_names = _ir.field_names;
+    var field_names = _ir.field_names();
 
-    assert(field_names.include('body'));
-    assert(field_names.include('changing_field'));
-    assert(field_names.include('author'));
-    assert(field_names.include('title'));
-    assert(field_names.include('text'));
-    assert(field_names.include('year'));
+    expect(field_names.contains('body'), isTrue);
+    expect(field_names.contains('changing_field'), isTrue);
+    expect(field_names.contains('author'), isTrue);
+    expect(field_names.contains('title'), isTrue);
+    expect(field_names.contains('text'), isTrue);
+    expect(field_names.contains('year'), isTrue);
   }
 
   do_test_term_enum() {
-    te = _ir.terms('author');
+    var te = _ir.terms('author');
 
-    assert_equal(
-        '[{"term":"Leo","frequency":1},{"term":"Tolstoy","frequency":1}]',
-        te.to_json);
+    expect('[{"term":"Leo","frequency":1},{"term":"Tolstoy","frequency":1}]',
+        equals(te.to_json));
     te.field = 'author';
-    assert_equal('[["Leo",1],["Tolstoy",1]]', te.to_json('fast'));
+    expect('[["Leo",1],["Tolstoy",1]]', equals(te.to_json(fast: true)));
     te.field = 'author';
 
-    assert(te.next() != null);
-    assert_equal("Leo", te.term);
-    assert_equal(1, te.doc_freq);
-    assert(te.next() != null);
-    assert_equal("Tolstoy", te.term);
-    assert_equal(1, te.doc_freq);
-    assert(te.next == null);
+    expect(te.next(), isNotNull);
+    expect("Leo", equals(te.term));
+    expect(1, equals(te.doc_freq));
+    expect(te.next(), isNotNull);
+    expect("Tolstoy", equals(te.term));
+    expect(1, equals(te.doc_freq));
+    expect(te.next(), isNull);
 
     te.field = 'body';
-    assert(te.next() != null);
-    assert_equal("And", te.term);
-    assert_equal(1, te.doc_freq);
+    expect(te.next(), isNotNull);
+    expect("And", equals(te.term));
+    expect(1, equals(te.doc_freq));
 
-    assert(te.skip_to("Not"));
-    assert_equal("Not", te.term);
-    assert_equal(1, te.doc_freq);
-    assert(te.next != null);
-    assert_equal("Random", te.term);
-    assert_equal(16, te.doc_freq);
+    expect(te.skip_to("Not"), isTrue);
+    expect("Not", equals(te.term));
+    expect(1, equals(te.doc_freq));
+    expect(te.next(), isNotNull);
+    expect("Random", equals(te.term));
+    expect(16, equals(te.doc_freq));
 
     te.field = 'text';
-    assert(te.skip_to("which"));
+    expect(te.skip_to("which"), isTrue);
     expect(te.term, equals("which"));
-    assert_equal(1, te.doc_freq);
-    assert(te.next == null);
+    expect(1, equals(te.doc_freq));
+    expect(te.next(), isNull);
 
     te.field = 'title';
-    assert(te.next != null);
-    assert_equal("War And Peace", te.term);
-    assert_equal(1, te.doc_freq);
-    assert(te.next == null);
+    expect(te.next(), isNotNull);
+    expect("War And Peace", equals(te.term));
+    expect(1, equals(te.doc_freq));
+    expect(te.next(), isNull);
 
     var expected; // = %w{is 1 more 1 not 1 skip 42 stored 1 text 1 which 1}
     te = _ir.terms('text');
     te.each((term, doc_freq) {
-      assert_equal(expected.shift, term);
-      assert_equal(expected.shift.to_i, doc_freq);
+      expect(expected.shift, equals(term));
+      expect(expected.shift.to_i, equals(doc_freq));
     });
 
     te = _ir.terms_from('body', "Not");
-    assert_equal("Not", te.term);
-    assert_equal(1, te.doc_freq);
-    assert(te.next != null);
-    assert_equal("Random", te.term);
-    assert_equal(16, te.doc_freq);
+    expect("Not", equals(te.term));
+    expect(1, equals(te.doc_freq));
+    expect(te.next, isNotNull);
+    expect("Random", equals(te.term));
+    expect(16, equals(te.doc_freq));
   }
 
   do_test_term_doc_enum() {
-    assert_equal(IndexTestHelper.INDEX_TEST_DOCS.size, _ir.num_docs());
-    assert_equal(IndexTestHelper.INDEX_TEST_DOCS.size, _ir.max_doc());
+    expect(IndexTestHelper.INDEX_TEST_DOCS.size, equals(_ir.num_docs()));
+    expect(IndexTestHelper.INDEX_TEST_DOCS.size, equals(_ir.max_doc()));
 
-    assert_equal(4, _ir.doc_freq('body', "Wally"));
+    expect(4, equals(_ir.doc_freq('body', "Wally")));
 
-    tde = _ir.term_docs_for('body', "Wally");
+    var tde = _ir.term_docs_for('body', "Wally");
 
-    [[0, 1], [5, 1], [18, 3], [20, 6]].each((doc, freq) {
-      assert(tde.next != null);
-      assert_equal(doc, tde.doc());
-      assert_equal(freq, tde.freq());
+    [[0, 1], [5, 1], [18, 3], [20, 6]].forEach((row) {
+      var doc = row[0],
+          freq = row[1];
+      expect(tde.next, isNotNull);
+      expect(doc, equals(tde.doc()));
+      expect(freq, equals(tde.freq()));
     });
-    assert(tde.next == null);
+    expect(tde.next(), isNull);
 
     tde = _ir.term_docs_for('body', "Wally");
-    assert_equal(
+    expect(
         '[{"document":0,"frequency":1},{"document":5,"frequency":1},{"document":18,"frequency":3},{"document":20,"frequency":6}]',
-        tde.to_json);
+        equals(tde.to_json));
     tde = _ir.term_docs_for('body', "Wally");
-    assert_equal('[[0,1],[5,1],[18,3],[20,6]]', tde.to_json('fast'));
+    expect('[[0,1],[5,1],[18,3],[20,6]]', equals(tde.to_json(fast: true)));
 
     do_test_term_docpos_enum_skip_to(tde);
 
@@ -114,22 +118,26 @@ class IndexReaderCommon {
       [false, 9, 3, [0, 4]],
       [true, 16, 2, [2]],
       [true, 21, 6, [3, 4, 5, 8, 9, 10]]
-    ].each((skip, doc, freq, positions) {
+    ].forEach((row) {
+      var skip = row[0],
+          doc = row[1],
+          freq = row[2],
+          positions = row[3];
       if (skip) {
-        assert(tde.skip_to(doc));
+        expect(tde.skip_to(doc), isTrue);
       } else {
-        assert(tde.next != null);
+        expect(tde.next, isNotNull);
       }
-      assert_equal(doc, tde.doc());
-      assert_equal(freq, tde.freq());
-      positions.each((pos) => assert_equal(pos, tde.next_position()));
+      expect(doc, equals(tde.doc()));
+      expect(freq, equals(tde.freq()));
+      positions.each((pos) => expect(pos, equals(tde.next_position())));
     });
 
-    assert_nil(tde.next_position());
-    assert(tde.next == null);
+    expect(tde.next_position(), isNull);
+    expect(tde.next, isNotNull);
 
     tde = _ir.term_positions_for('body', "read");
-    assert_equal('[' +
+    expect('[' +
             '{"document":1,"frequency":1,"positions":[3]},' +
             '{"document":2,"frequency":2,"positions":[1,4]},' +
             '{"document":6,"frequency":4,"positions":[3,4,5,6]},' +
@@ -139,9 +147,9 @@ class IndexReaderCommon {
             '{"document":17,"frequency":1,"positions":[2]},' +
             '{"document":20,"frequency":1,"positions":[21]},' +
             '{"document":21,"frequency":6,"positions":[3,4,5,8,9,10]}]',
-        tde.to_json());
+        equals(tde.to_json()));
     tde = _ir.term_positions_for('body', "read");
-    assert_equal('[' +
+    expect('[' +
         '[1,1,[3]],' +
         '[2,2,[1,4]],' +
         '[6,4,[3,4,5,6]],' +
@@ -150,7 +158,7 @@ class IndexReaderCommon {
         '[16,2,[2,3]],' +
         '[17,1,[2]],' +
         '[20,1,[21]],' +
-        '[21,6,[3,4,5,8,9,10]]]', tde.to_json('fast'));
+        '[21,6,[3,4,5,8,9,10]]]', equals(tde.to_json(fast: true)));
 
     tde = _ir.term_positions_for('body', "read");
 
@@ -160,80 +168,78 @@ class IndexReaderCommon {
   do_test_term_docpos_enum_skip_to(tde) {
     tde.seek('text', "skip");
 
-    [
-      [10, 22],
-      [44, 44],
-      [60, 60],
-      [62, 62],
-      [63, 63],
-    ].each((skip_doc, doc_and_freq) {
-      assert(tde.skip_to(skip_doc));
-      assert_equal(doc_and_freq, tde.doc());
-      assert_equal(doc_and_freq, tde.freq());
+    [[10, 22], [44, 44], [60, 60], [62, 62], [63, 63],].forEach((row) {
+      var skip_doc = row[0],
+          doc_and_freq = row[1];
+      expect(tde.skip_to(skip_doc), isTrue);
+      expect(doc_and_freq, equals(tde.doc()));
+      expect(doc_and_freq, equals(tde.freq()));
     });
 
-    assert(!tde.skip_to(IndexTestHelper.INDEX_TEST_DOC_COUNT));
-    assert(!tde.skip_to(IndexTestHelper.INDEX_TEST_DOC_COUNT));
-    assert(!tde.skip_to(IndexTestHelper.INDEX_TEST_DOC_COUNT + 100));
+    expect(tde.skip_to(IndexTestHelper.INDEX_TEST_DOC_COUNT), isFalse);
+    expect(tde.skip_to(IndexTestHelper.INDEX_TEST_DOC_COUNT), isFalse);
+    expect(tde.skip_to(IndexTestHelper.INDEX_TEST_DOC_COUNT + 100), isFalse);
 
     tde.seek('text', "skip");
-    assert(!tde.skip_to(IndexTestHelper.INDEX_TEST_DOC_COUNT));
+    expect(tde.skip_to(IndexTestHelper.INDEX_TEST_DOC_COUNT), isFalse);
   }
 
   do_test_term_vectors() {
-    expected_tv = new TermVector('body', [
+    var expected_tv = new TermVector('body', [
       new TVTerm("word1", 3, [2, 4, 7]),
       new TVTerm("word2", 1, [3]),
       new TVTerm("word3", 4, [0, 5, 8, 9]),
       new TVTerm("word4", 2, [1, 6])
     ], [range(0, 10)].collect((i) => new TVOffsets(i * 6, (i + 1) * 6 - 1)));
 
-    tv = _ir.term_vector(3, 'body');
+    var tv = _ir.term_vector(3, 'body');
 
-    assert_equal(expected_tv, tv);
+    expect(expected_tv, equals(tv));
 
-    tvs = _ir.term_vectors(3);
-    assert_equal(3, tvs.size);
+    var tvs = _ir.term_vectors(3);
+    expect(3, equals(tvs.length));
 
-    assert_equal(expected_tv, tvs['body']);
+    expect(expected_tv, equals(tvs['body']));
 
     tv = tvs['author'];
-    assert_equal('author', tv.field);
-    assert_equal(
-        [new TVTerm("Leo", 1, [0]), new TVTerm("Tolstoy", 1, [1])], tv.terms);
-    assert(tv.offsets == null);
+    expect('author', equals(tv.field));
+    expect([
+      new TVTerm("Leo", 1, [0]),
+      new TVTerm("Tolstoy", 1, [1])
+    ], equals(tv.terms));
+    expect(tv.offsets, isNull);
 
     tv = tvs['title'];
-    assert_equal('title', tv.field);
-    assert_equal([new TVTerm("War And Peace", 1, null)], tv.terms);
-    assert_equal([new TVOffsets(0, 13)], tv.offsets);
+    expect('title', equals(tv.field));
+    expect([new TVTerm("War And Peace", 1, null)], equals(tv.terms));
+    expect([new TVOffsets(0, 13)], equals(tv.offsets));
   }
 
   do_test_get_doc() {
-    doc = _ir.get_document(3);
-    ['author', 'body', 'title', 'year'].each((fn) {
-      assert(doc.fields.include(fn));
+    var doc = _ir.get_document(3);
+    ['author', 'body', 'title', 'year'].forEach((fn) {
+      expect(doc.fields().contains(fn), isTrue);
     });
-    assert_equal(4, doc.fields.size);
-    assert_equal(0, doc.size);
-    assert_equal([], doc.keys);
+    expect(4, equals(doc.fields().length));
+    expect(0, equals(doc.length));
+    expect([], equals(doc.keys));
 
-    assert_equal("Leo Tolstoy", doc['author']);
-    assert_equal("word3 word4 word1 word2 word1 word3 word4 word1 word3 word3",
-        doc['body']);
-    assert_equal("War And Peace", doc['title']);
-    assert_equal("1865", doc['year']);
-    assert_nil(doc['text']);
+    expect("Leo Tolstoy", equals(doc['author']));
+    expect("word3 word4 word1 word2 word1 word3 word4 word1 word3 word3",
+        equals(doc['body']));
+    expect("War And Peace", equals(doc['title']));
+    expect("1865", equals(doc['year']));
+    expect(doc['text'], isNull);
 
-    assert_equal(4, doc.size);
-    ['author', 'body', 'title', 'year'].each((fn) {
-      assert(doc.keys.include(fn));
+    expect(4, equals(doc.length));
+    ['author', 'body', 'title', 'year'].forEach((fn) {
+      expect(doc.keys.contains(fn), isTrue);
     });
-//    assert_equal([_ir[0].load, _ir[1].load, _ir[2].load], _ir[0, 3].collect((d) => d.load());
-//    assert_equal([_ir[61].load, _ir[62].load, _ir[63].load], _ir[61, 100].collect((d) => d.load());
-//    assert_equal([_ir[0].load, _ir[1].load, _ir[2].load], _ir[0..2].collect((d) => d.load());
-//    assert_equal([_ir[61].load, _ir[62].load, _ir[63].load], _ir[range(61, 100)].collect((d) => d.load));
-    assert_equal(_ir[-60], _ir[4]);
+//    expect([_ir[0].load, _ir[1].load, _ir[2].load], _ir[0, 3].collect((d) => d.load());
+//    expect([_ir[61].load, _ir[62].load, _ir[63].load], _ir[61, 100].collect((d) => d.load());
+//    expect([_ir[0].load, _ir[1].load, _ir[2].load], _ir[0..2].collect((d) => d.load());
+//    expect([_ir[61].load, _ir[62].load, _ir[63].load], _ir[range(61, 100)].collect((d) => d.load));
+    expect(_ir[-60], _ir[4]);
   }
 
   test_ir_norms() {
@@ -246,152 +252,154 @@ class IndexReaderCommon {
     _ir.set_norm(50, 'text', 200);
     _ir.set_norm(63, 'text', 155);
 
-    norms = _ir.norms('text');
+    var norms = _ir.norms('text');
 
-    assert_equal(202, norms.bytes.to_a[3]);
-    assert_equal(20, norms.bytes.to_a[25]);
-    assert_equal(200, norms.bytes.to_a[50]);
-    assert_equal(155, norms.bytes.to_a[63]);
+    expect(202, equals(norms.codeUnitAt(3)));
+    expect(20, equals(norms.codeUnitAt(25)));
+    expect(200, equals(norms.codeUnitAt(50)));
+    expect(155, equals(norms.codeUnitAt(63)));
 
     norms = _ir.norms('title');
-    assert_equal(1, norms.bytes.to_a[3]);
+    expect(1, equals(norms.codeUnitAt(3)));
 
     norms = _ir.norms('body');
-    assert_equal(12, norms.bytes.to_a[3]);
+    expect(12, equals(norms.codeUnitAt(3)));
 
     norms = _ir.norms('author');
-    assert_equal(145, norms.bytes.to_a[3]);
+    expect(145, equals(norms.codeUnitAt(3)));
 
     norms = _ir.norms('year');
     // TODO: this returns two possible results depending on whether it is
     // a multi reader or a segment reader. If it is a multi reader it will
     // always return an empty set of norms, otherwise it will return nil.
     // I'm not sure what to do here just yet or if this is even an issue.
-    //assert(norms.nil?);
+    //expect(norms.nil?);
 
     norms = " " * 164;
     _ir.get_norms_into('text', norms, 100);
-    assert_equal(202, norms.bytes.to_a[103]);
-    assert_equal(20, norms.bytes.to_a[125]);
-    assert_equal(200, norms.bytes.to_a[150]);
-    assert_equal(155, norms.bytes.to_a[163]);
+    expect(202, equals(norms.codeUnitAt(103)));
+    expect(20, equals(norms.codeUnitAt(125)));
+    expect(200, equals(norms.codeUnitAt(150)));
+    expect(155, equals(norms.codeUnitAt(163)));
 
     _ir.commit();
 
     iw_optimize();
 
-    ir2 = ir_new();
+    var ir2 = ir_new();
 
     norms = " " * 164;
     ir2.get_norms_into('text', norms, 100);
-    assert_equal(202, norms.bytes.to_a[103]);
-    assert_equal(20, norms.bytes.to_a[125]);
-    assert_equal(200, norms.bytes.to_a[150]);
-    assert_equal(155, norms.bytes.to_a[163]);
+    expect(202, equals(norms.codeUnitAt(103)));
+    expect(20, equals(norms.codeUnitAt(125)));
+    expect(200, equals(norms.codeUnitAt(150)));
+    expect(155, equals(norms.codeUnitAt(163)));
     ir2.close();
   }
 
   test_ir_delete() {
-    doc_count = IndexTestHelper.INDEX_TEST_DOCS.size;
+    var doc_count = IndexTestHelper.INDEX_TEST_DOCS.size;
     _ir.delete(1000); // non existant doc_num
-    assert(!_ir.has_deletions());
-    assert_equal(doc_count, _ir.max_doc());
-    assert_equal(doc_count, _ir.num_docs());
-    assert(!_ir.deleted(10));
+    expect(_ir.has_deletions(), isFalse);
+    expect(doc_count, equals(_ir.max_doc()));
+    expect(doc_count, equals(_ir.num_docs()));
+    expect(_ir.deleted(10), isFalse);
 
     [
       [10, doc_count - 1],
       [10, doc_count - 1],
       [doc_count - 1, doc_count - 2],
       [doc_count - 2, doc_count - 3],
-    ].each((del_num, num_docs) {
+    ].forEach((row) {
+      var del_num = row[0],
+          num_docs = row[1];
       _ir.delete(del_num);
-      assert(_ir.has_deletions());
-      assert_equal(doc_count, _ir.max_doc());
-      assert_equal(num_docs, _ir.num_docs());
-      assert(_ir.deleted(del_num));
+      expect(_ir.has_deletions(), isTrue);
+      expect(doc_count, equals(_ir.max_doc()));
+      expect(num_docs, equals(_ir.num_docs()));
+      expect(_ir.deleted(del_num), isTrue);
     });
 
     _ir.undelete_all();
-    assert(!_ir.has_deletions());
-    assert_equal(doc_count, _ir.max_doc());
-    assert_equal(doc_count, _ir.num_docs());
-    assert(!_ir.deleted(10));
-    assert(!_ir.deleted(doc_count - 2));
-    assert(!_ir.deleted(doc_count - 1));
+    expect(_ir.has_deletions(), isFalse);
+    expect(doc_count, equals(_ir.max_doc()));
+    expect(doc_count, equals(_ir.num_docs()));
+    expect(_ir.deleted(10), isFalse);
+    expect(_ir.deleted(doc_count - 2), isFalse);
+    expect(_ir.deleted(doc_count - 1), isFalse);
 
-    del_list = [10, 20, 30, 40, 50, doc_count - 1];
+    var del_list = [10, 20, 30, 40, 50, doc_count - 1];
 
-    del_list.each((doc_num) => _ir.delete(doc_num));
-    assert(_ir.has_deletions());
-    assert_equal(doc_count, _ir.max_doc());
-    assert_equal(doc_count - del_list.size, _ir.num_docs());
-    del_list.each((doc_num) {
-      assert(_ir.deleted(doc_num));
+    del_list.forEach((doc_num) => _ir.delete(doc_num));
+    expect(_ir.has_deletions(), isTrue);
+    expect(doc_count, equals(_ir.max_doc()));
+    expect(doc_count - del_list.length, equals(_ir.num_docs()));
+    del_list.forEach((doc_num) {
+      expect(_ir.deleted(doc_num), isTrue);
     });
 
-    ir2 = ir_new();
-    assert(!ir2.has_deletions());
-    assert_equal(doc_count, ir2.max_doc());
-    assert_equal(doc_count, ir2.num_docs());
+    var ir2 = ir_new();
+    expect(ir2.has_deletions(), isFalse);
+    expect(doc_count, equals(ir2.max_doc()));
+    expect(doc_count, equals(ir2.num_docs()));
 
     _ir.commit();
 
-    assert(!ir2.has_deletions());
-    assert_equal(doc_count, ir2.max_doc());
-    assert_equal(doc_count, ir2.num_docs());
+    expect(ir2.has_deletions(), isFalse);
+    expect(doc_count, equals(ir2.max_doc()));
+    expect(doc_count, equals(ir2.num_docs()));
 
     ir2.close();
     ir2 = ir_new();
-    assert(ir2.has_deletions());
-    assert_equal(doc_count, ir2.max_doc());
-    assert_equal(doc_count - 6, ir2.num_docs());
-    del_list.each((doc_num) {
-      assert(ir2.deleted(doc_num));
+    expect(ir2.has_deletions(), isTrue);
+    expect(doc_count, equals(ir2.max_doc()));
+    expect(doc_count - 6, equals(ir2.num_docs()));
+    del_list.forEach((doc_num) {
+      expect(ir2.deleted(doc_num), isTrue);
     });
 
     ir2.undelete_all();
-    assert(!ir2.has_deletions());
-    assert_equal(doc_count, ir2.max_doc());
-    assert_equal(doc_count, ir2.num_docs());
-    del_list.each((doc_num) {
-      assert(!ir2.deleted(doc_num));
+    expect(ir2.has_deletions(), isFalse);
+    expect(doc_count, equals(ir2.max_doc()));
+    expect(doc_count, equals(ir2.num_docs()));
+    del_list.forEach((doc_num) {
+      expect(ir2.deleted(doc_num), isFalse);
     });
 
-    del_list.each((doc_num) {
-      assert(_ir.deleted(doc_num));
+    del_list.forEach((doc_num) {
+      expect(_ir.deleted(doc_num), isTrue);
     });
 
     ir2.commit();
 
-    del_list.each((doc_num) {
-      assert(_ir.deleted(doc_num));
+    del_list.forEach((doc_num) {
+      expect(_ir.deleted(doc_num), isTrue);
     });
 
-    del_list.each((doc_num) => ir2.delete(doc_num));
+    del_list.forEach((doc_num) => ir2.delete(doc_num));
     ir2.commit();
 
     iw_optimize();
 
-    ir3 = ir_new();
+    var ir3 = ir_new();
 
-    assert(!ir3.has_deletions());
-    assert_equal(doc_count - 6, ir3.max_doc());
-    assert_equal(doc_count - 6, ir3.num_docs());
+    expect(ir3.has_deletions(), isFalse);
+    expect(doc_count - 6, equals(ir3.max_doc()));
+    expect(doc_count - 6, equals(ir3.num_docs()));
 
     ir2.close();
     ir3.close();
   }
 
   test_latest() {
-    assert(_ir.latest);
-    ir2 = ir_new();
-    assert(ir2.latest);
+    expect(_ir.latest, isTrue);
+    var ir2 = ir_new();
+    expect(ir2.latest, isTrue);
 
     ir2.delete(0);
     ir2.commit();
-    assert(ir2.latest);
-    assert(!_ir.latest);
+    expect(ir2.latest, isTrue);
+    expect(_ir.latest, isFalse);
 
     ir2.close();
   }
@@ -406,7 +414,7 @@ class MultiReaderTest {
   }
 
   iw_optimize() {
-    iw = new IndexWriter(dir: _dir, analyzer: new WhiteSpaceAnalyzer());
+    var iw = new IndexWriter(dir: _dir, analyzer: new WhiteSpaceAnalyzer());
     iw.optimize();
     iw.close();
   }
@@ -414,7 +422,7 @@ class MultiReaderTest {
   setup() {
     _dir = new RAMDirectory();
 
-    iw = new IndexWriter(
+    var iw = new IndexWriter(
         dir: _dir,
         analyzer: new WhiteSpaceAnalyzer(),
         create: true,
@@ -441,13 +449,13 @@ class MultiExternalReaderTest {
   //include IndexReaderCommon
 
   ir_new() {
-    readers = _dirs.collect((dir) => new IndexReader(dir));
+    var readers = _dirs.collect((dir) => new IndexReader(dir));
     new IndexReader(readers);
   }
 
   iw_optimize() {
     _dirs.each((dir) {
-      iw = new IndexWriter(dir: dir, analyzer: new WhiteSpaceAnalyzer());
+      var iw = new IndexWriter(dir: dir, analyzer: new WhiteSpaceAnalyzer());
       iw.optimize();
       iw.close();
     });
@@ -460,11 +468,13 @@ class MultiExternalReaderTest {
       [0, 10],
       [10, 30],
       [30, IndexTestHelper.INDEX_TEST_DOCS.size]
-    ].each((start, finish) {
-      dir = new RAMDirectory();
+    ].forEach((row) {
+      var start = row[0],
+          finish = row[1];
+      var dir = new RAMDirectory();
       _dirs.add(dir);
 
-      iw = new IndexWriter(
+      var iw = new IndexWriter(
           dir: dir,
           analyzer: new WhiteSpaceAnalyzer(),
           create: true,
@@ -488,12 +498,12 @@ class MultiExternalReaderDirTest {
   //include IndexReaderCommon
 
   ir_new() {
-    new IndexReader(_dirs);
+    return new IndexReader(_dirs);
   }
 
   iw_optimize() {
     _dirs.each((dir) {
-      iw = new IndexWriter(dir: dir, analyzer: new WhiteSpaceAnalyzer());
+      var iw = new IndexWriter(dir: dir, analyzer: new WhiteSpaceAnalyzer());
       iw.optimize();
       iw.close();
     });
@@ -506,11 +516,13 @@ class MultiExternalReaderDirTest {
       [0, 10],
       [10, 30],
       [30, IndexTestHelper.INDEX_TEST_DOCS.size]
-    ].each((start, finish) {
-      dir = new RAMDirectory();
+    ].forEach((row) {
+      var start = row[0],
+          finish = row[1];
+      var dir = new RAMDirectory();
       _dirs.add(dir);
 
-      iw = new IndexWriter(
+      var iw = new IndexWriter(
           dir: dir,
           analyzer: new WhiteSpaceAnalyzer(),
           create: true,
@@ -534,12 +546,12 @@ class MultiExternalReaderPathTest {
   //include IndexReaderCommon
 
   ir_new() {
-    new IndexReader(_paths);
+    return new IndexReader(_paths);
   }
 
   iw_optimize() {
     _paths.each((path) {
-      iw = new IndexWriter(path: path, analyzer: new WhiteSpaceAnalyzer());
+      var iw = new IndexWriter(path: path, analyzer: new WhiteSpaceAnalyzer());
       iw.optimize();
       iw.close();
     });
@@ -555,14 +567,17 @@ class MultiExternalReaderPathTest {
       File.join(base_dir, "i3")
     ];
 
+    int i = 0;
     [
       [0, 10],
       [10, 30],
       [30, IndexTestHelper.INDEX_TEST_DOCS.size]
-    ].each_with_index((start, finish, i) {
-      path = _paths[i];
+    ].each_with_index((row) {
+      var start = row[0],
+          finish = row[1];
+      var path = _paths[i];
 
-      iw = new IndexWriter(
+      var iw = new IndexWriter(
           path: path,
           analyzer: new WhiteSpaceAnalyzer(),
           create: true,
@@ -571,6 +586,7 @@ class MultiExternalReaderPathTest {
         iw.add(IndexTestHelper.INDEX_TEST_DOCS[doc_id]);
       });
       iw.close();
+      i++;
     });
     _ir = ir_new;
   }
@@ -596,11 +612,11 @@ class IndexReaderTest {
   test_ir_multivalue_fields() {
     _fs_dpath =
         File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'));
-    _fs_dir = new FSDirectory(_fs_dpath, true);
+    _fs_dir = FSDirectory.create(_fs_dpath, create: true);
 
-    iw = new IndexWriter(
+    var iw = new IndexWriter(
         dir: _fs_dir, analyzer: new WhiteSpaceAnalyzer(), create: true);
-    doc = {
+    var doc = {
       'tag': ["Ruby", "C", "Lucene", "Ferret"],
       'body': "this is the body Document Field",
       'title': "this is the title DocField",
@@ -611,52 +627,54 @@ class IndexReaderTest {
     iw.close();
 
     _dir = new RAMDirectory(_fs_dir);
-    ir = new IndexReader(_dir);
-    assert_equal(doc, ir.get_document(0).load);
+    var ir = new IndexReader(_dir);
+    expect(doc, ir.get_document(0).load);
     ir.close();
   }
 
   do_test_term_vectors(ir) {
-    expected_tv = new TermVector('body', [
+    var expected_tv = new TermVector('body', [
       new TVTerm("word1", 3, [2, 4, 7]),
       new TVTerm("word2", 1, [3]),
       new TVTerm("word3", 4, [0, 5, 8, 9]),
       new TVTerm("word4", 2, [1, 6])
     ], [range(0, 10)].collect((i) => new TVOffsets(i * 6, (i + 1) * 6 - 1)));
 
-    tv = ir.term_vector(3, 'body');
+    var tv = ir.term_vector(3, 'body');
 
-    assert_equal(expected_tv, tv);
+    expect(expected_tv, equals(tv));
 
-    tvs = ir.term_vectors(3);
-    assert_equal(3, tvs.size);
+    var tvs = ir.term_vectors(3);
+    expect(3, equals(tvs.size));
 
-    assert_equal(expected_tv, tvs['body']);
+    expect(expected_tv, equals(tvs['body']));
 
     tv = tvs['author'];
-    assert_equal('author', tv.field);
-    assert_equal(
-        [new TVTerm("Leo", 1, [0]), new TVTerm("Tolstoy", 1, [1])], tv.terms);
-    assert(tv.offsets == null);
+    expect('author', equals(tv.field));
+    expect([
+      new TVTerm("Leo", 1, [0]),
+      new TVTerm("Tolstoy", 1, [1])
+    ], equals(tv.terms));
+    expect(tv.offsets, isNull);
 
     tv = tvs['title'];
-    assert_equal('title', tv.field);
-    assert_equal([new TVTerm("War And Peace", 1, null)], tv.terms);
-    assert_equal([new TVOffsets(0, 13)], tv.offsets);
+    expect('title', equals(tv.field));
+    expect([new TVTerm("War And Peace", 1, null)], equals(tv.terms));
+    expect([new TVOffsets(0, 13)], equals(tv.offsets));
   }
 
   do_test_ir_read_while_optimizing(dir) {
-    iw = new IndexWriter(
+    var iw = new IndexWriter(
         dir: dir,
         analyzer: new WhiteSpaceAnalyzer(),
         create: true,
         field_infos: IndexTestHelper.INDEX_TEST_FIS);
 
-    IndexTestHelper.INDEX_TEST_DOCS.each((doc) => iw.add(doc));
+    IndexTestHelper.INDEX_TEST_DOCS.each((doc) => iw.add_document(doc));
 
     iw.close();
 
-    ir = new IndexReader(dir);
+    var ir = new IndexReader(dir);
     do_test_term_vectors(ir);
 
     iw = new IndexWriter(dir: dir, analyzer: new WhiteSpaceAnalyzer());
@@ -673,35 +691,35 @@ class IndexReaderTest {
   }
 
   test_ir_read_while_optimizing_on_disk() {
-    dpath =
+    var dpath =
         File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'));
-    fs_dir = new FSDirectory(dpath, true);
+    var fs_dir = FSDirectory.create(dpath, create: true);
     do_test_ir_read_while_optimizing(fs_dir);
     fs_dir.close();
   }
 
   test_latest() {
-    dpath =
+    var dpath =
         File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'));
-    fs_dir = new FSDirectory(dpath, true);
+    var fs_dir = FSDirectory.create(dpath, create: true);
 
-    iw = new IndexWriter(
+    var iw = new IndexWriter(
         dir: fs_dir, analyzer: new WhiteSpaceAnalyzer(), create: true);
-    iw.add({'field': "content"});
+    iw.add_document({'field': "content"});
     iw.close();
 
-    ir = new IndexReader(fs_dir);
-    assert(ir.latest);
+    var ir = new IndexReader(fs_dir);
+    expect(ir.latest, isTrue);
 
     iw = new IndexWriter(dir: fs_dir, analyzer: new WhiteSpaceAnalyzer());
-    iw.add({'field': "content2"});
+    iw.add_document({'field': "content2"});
     iw.close();
 
-    assert(!ir.latest);
+    expect(ir.latest, isFalse);
 
     ir.close();
     ir = new IndexReader(fs_dir);
-    assert(ir.latest);
+    expect(ir.latest, isTrue);
     ir.close();
   }
 }

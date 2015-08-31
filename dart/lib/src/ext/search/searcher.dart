@@ -98,7 +98,8 @@ class Searcher {
   /// a [double] between 0 and 1.0 to be used as a factor to scale the score
   /// of the object. This can be used, for example, to weight the score
   /// of a matched document by it's age.
-  search(query, {offset: 0, limit: 10, sort, Filter filter, filter_proc}) =>
+  TopDocs search(query,
+          {offset: 0, limit: 10, sort, Filter filter, filter_proc}) =>
       frb_sea_search;
 
   /// Run a query through the [Searcher] on the index. A [TopDocs] object is
@@ -184,8 +185,9 @@ class Searcher {
   /// [ellipsis] is the string that is appended at the beginning and end of
   /// excerpts (unless the excerpt hits the start or end of the field. You'll
   /// probably want to change this so a Unicode ellipsis character.
-  highlight(query, doc_id, field, {excerpt_length: 150, num_excerpts: 2,
-      pre_tag: "<b>", post_tag: "</b>", ellipsis: "..."}) => frb_sea_highlight;
+  List<String> highlight(query, doc_id, field, {excerpt_length: 150,
+      num_excerpts: 2, pre_tag: "<b>", post_tag: "</b>",
+      ellipsis: "..."}) => frb_sea_highlight;
 }
 
 /// See [Searcher] for the methods that you can use on this object. A

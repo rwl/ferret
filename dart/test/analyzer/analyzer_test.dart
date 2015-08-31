@@ -26,7 +26,7 @@ test_analyzer() {
   expect(new Token("mail", 27, 31), equals(t2.next()));
   expect(new Token("address", 39, 46), equals(t2.next()));
   expect(t2.next(), isNull);
-  a = new Analyzer(false);
+  a = new Analyzer(lower: false);
   t = a.token_stream("fieldname", input);
   expect(new Token("DBalmain", 0, 8), equals(t.next()));
   expect(new Token("gmail", 9, 14), equals(t.next()));
@@ -62,7 +62,7 @@ test_ascii_letter_analyzer() {
   expect(new Token("mail", 27, 31), equals(t2.next()));
   expect(new Token("address", 39, 46), equals(t2.next()));
   expect(t2.next(), isNull);
-  a = new AsciiLetterAnalyzer(false);
+  a = new AsciiLetterAnalyzer(lower: false);
   t = a.token_stream("fieldname", input);
   expect(new Token("DBalmain", 0, 8), equals(t.next()));
   expect(new Token("gmail", 9, 14), equals(t.next()));
@@ -79,7 +79,7 @@ test_letter_analyzer() {
   //Ferret.locale = ""
   var input =
       r'DBalmän@gmail.com is My e-mail 52   #$ address. 23#!$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ';
-  var a = new LetterAnalyzer(false);
+  var a = new LetterAnalyzer(lower: false);
   var t = a.token_stream("fieldname", input);
   var t2 = a.token_stream("fieldname", input);
   expect(new Token("DBalmän", 0, 8), equals(t.next()));
@@ -148,7 +148,7 @@ test_ascii_white_space_analyzer() {
   expect(new Token('ADDRESS.', 40, 48), equals(t2.next()));
   expect(new Token(r'23#!$', 49, 54), equals(t2.next()));
   expect(t2.next(), isNull);
-  a = new AsciiWhiteSpaceAnalyzer(true);
+  a = new AsciiWhiteSpaceAnalyzer(lower: true);
   t = a.token_stream("fieldname", input);
   expect(new Token('dbalmain@gmail.com', 0, 18), equals(t.next()));
   expect(new Token('is', 19, 21), equals(t.next()));
@@ -187,7 +187,7 @@ test_white_space_analyzer() {
   expect(new Token(r'23#!$', 49, 54), equals(t2.next()));
   expect(new Token('ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ', 55, 86), equals(t2.next()));
   expect(t2.next(), isNull);
-  a = new WhiteSpaceAnalyzer(true);
+  a = new WhiteSpaceAnalyzer(lower: true);
   t = a.token_stream("fieldname", input);
   expect(new Token('dbalmän@gmail.com', 0, 18), equals(t.next()));
   expect(new Token('is', 19, 21), equals(t.next()));
@@ -229,7 +229,7 @@ test_ascii_standard_analyzer() {
   expect(new Token('tnt', 86, 91), equals(t2.next()));
   expect(new Token('123-1235-asd-1234', 93, 110), equals(t2.next()));
   expect(t2.next(), isNull);
-  a = new AsciiStandardAnalyzer(ENGLISH_STOP_WORDS, false);
+  a = new AsciiStandardAnalyzer(stop_words: ENGLISH_STOP_WORDS, lower: false);
   t = a.token_stream("fieldname", input);
   t2 = a.token_stream("fieldname", input);
   expect(new Token('DBalmain@gmail.com', 0, 18), equals(t.next()));
@@ -282,7 +282,7 @@ test_standard_analyzer() {
   expect(new Token('úøã', 134, 140), equals(t2.next()));
   expect(new Token('öîí', 142, 148), equals(t2.next()));
   expect(t2.next(), isNull);
-  a = new StandardAnalyzer(nil, false);
+  a = new StandardAnalyzer(stop_words: null, lower: false);
   t = a.token_stream("fieldname", input);
   expect(new Token('DBalmán@gmail.com', 0, 18), equals(t.next()));
   expect(new Token('My', 22, 24), equals(t.next()));
@@ -300,7 +300,7 @@ test_standard_analyzer() {
   expect(new Token('ÚØÃ', 134, 140), equals(t.next()));
   expect(new Token('ÖÎÍ', 142, 148), equals(t.next()));
   expect(t.next(), isNull);
-  a = new StandardAnalyzer(["e-mail", "23", "tnt"]);
+  a = new StandardAnalyzer(stop_words: ["e-mail", "23", "tnt"]);
   t = a.token_stream("fieldname", input);
   t2 = a.token_stream("fieldname", input);
   expect(new Token('dbalmán@gmail.com', 0, 18), equals(t.next()));
@@ -334,11 +334,11 @@ test_standard_analyzer() {
 test_per_field_analyzer() {
   var input = r'DBalmain@gmail.com is My e-mail 52   #$ address. 23#!$';
   var pfa = new PerFieldAnalyzer(new StandardAnalyzer());
-  pfa['white'] = new WhiteSpaceAnalyzer(false);
-  pfa['white_l'] = new WhiteSpaceAnalyzer(true);
-  pfa['letter'] = new LetterAnalyzer(false);
-  pfa.add_field('letter', new LetterAnalyzer(true));
-  pfa.add_field('letter_u', new LetterAnalyzer(false));
+  pfa['white'] = new WhiteSpaceAnalyzer(lower: false);
+  pfa['white_l'] = new WhiteSpaceAnalyzer(lower: true);
+  pfa['letter'] = new LetterAnalyzer(lower: false);
+  pfa.add_field('letter', new LetterAnalyzer(lower: true));
+  pfa.add_field('letter_u', new LetterAnalyzer(lower: false));
   var t = pfa.token_stream('white', input);
   expect(new Token('DBalmain@gmail.com', 0, 18), equals(t.next()));
   expect(new Token('is', 19, 21), equals(t.next()));
@@ -414,7 +414,7 @@ test_reg_exp_analyzer() {
   expect(new Token("one_two", 0, 7), t.next());
   expect(new Token("three", 8, 13), t.next());
   expect(t.next(), isNull);
-  a = new RegExpAnalyzer(r"\w{2,}", false);
+  a = new RegExpAnalyzer(new RegExp(r"\w{2,}"), lower: false);
   t = a.token_stream('XXX', input);
   t2 = a.token_stream('XXX', "one Two three");
   expect(new Token('DBalmain', 0, 8), equals(t.next()));
@@ -509,8 +509,8 @@ test_custom_filter() {
   expect(new Token("debat", 32, 39), equals(t.next()));
   expect(t.next(), isNull);
   input = "Dêbate dêbates DÊBATED DÊBATing dêbater";
-  t = new StemFilter(
-      new LowerCaseFilter(new LetterTokenizer(input)), 'english');
+  t = new StemFilter(new LowerCaseFilter(new LetterTokenizer(input)),
+      algorithm: 'english');
   expect(new Token("dêbate", 0, 7), equals(t.next()));
   expect(new Token("dêbate", 8, 16), equals(t.next()));
   expect(new Token("dêbate", 17, 25), equals(t.next()));

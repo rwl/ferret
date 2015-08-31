@@ -1,6 +1,7 @@
 library ferret;
 
 export 'src/index.dart';
+export 'src/document.dart';
 
 export 'src/ext/analysis/analysis.dart';
 export 'src/ext/search/search.dart';

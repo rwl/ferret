@@ -1,8 +1,10 @@
 library ferret.test.index.document;
 
+import 'package:ferret/ferret.dart';
+
 class IndexTestHelper {
   static make_binary(size) {
-    tmp = new List(size);
+    var tmp = new List(size);
     size.times((i) => tmp[i] = i % 256);
     return tmp.pack("c*");
   }
@@ -11,7 +13,7 @@ class IndexTestHelper {
   static final COMPRESSED_BINARY_DATA = IndexTestHelper.make_binary(56);
 
   static prepare_document(dir) {
-    fis = new FieldInfos();
+    var fis = new FieldInfos();
     fis.add_field('text_field1', term_vector: 'no');
     fis.add_field('text_field2');
     fis.add_field('key_field', index: 'untokenized');
@@ -22,7 +24,7 @@ class IndexTestHelper {
     fis.add_field('binary_field', index: 'no', term_vector: 'no');
     fis.add_field('compressed_binary_field',
         store: 'compressed', index: 'no', term_vector: 'no');
-    doc = {
+    var doc = {
       'text_field1': "field one text",
       'text_field2': "field field field two text",
       'key_field': "keyword",
@@ -37,7 +39,7 @@ class IndexTestHelper {
   }
 
   static prepare_documents() {
-    [
+    return [
       ["apple", "green"],
       ["apple", "red"],
       ["orange", "orange"],
@@ -50,7 +52,7 @@ class IndexTestHelper {
   }
 
   static prepare_book_list() {
-    books = [
+    return [
       {
         "author": "P.H. Newby",
         "title": "Something To Answer For",
@@ -152,7 +154,7 @@ class IndexTestHelper {
   }
 
   static prepare_ir_test_fis() {
-    fis = new FieldInfos();
+    var fis = new FieldInfos();
     fis.add_field('body');
     fis.add_field('changing_field', term_vector: 'no');
     fis.add_field('title', index: 'untokenized', term_vector: 'with_offsets');
@@ -164,7 +166,7 @@ class IndexTestHelper {
   static const INDEX_TEST_DOC_COUNT = 64;
 
   static prepare_ir_test_docs() {
-    docs = [];
+    var docs = new List(22);
     docs[0] = {
       'body': "Where is Wally",
       'changing_field':
@@ -223,11 +225,11 @@ class IndexTestHelper {
           "word3 word4 word1 word2 word1 word3 word4 word1 " + "word3 word3"
     };
 
-    buf = "";
+    var buf = new StringBuffer();
     21.times(() => buf.write("skip "));
     22.upto(INDEX_TEST_DOC_COUNT - 1).each((i) {
       buf.write("skip ");
-      docs[i] = {'text': buf.clone};
+      docs[i] = {'text': buf.toString()};
     });
     return docs;
   }
@@ -236,7 +238,7 @@ class IndexTestHelper {
   static final INDEX_TEST_FIS = prepare_ir_test_fis();
 
   static prepare_search_docs() {
-    i = 1;
+    var i = 1;
     [
       ["20050930", "cat1/", 0.123, "word1"],
       ["20051001", "cat1/sub1", 0.954, "word1 word2 the quick brown fox"],
@@ -266,13 +268,13 @@ class IndexTestHelper {
         "word1 the quick fox is brown and hairy and a little red"
       ],
       ["20051017", "cat1/", "-1.0", "word1 the brown fox is quick and red"]
-    ].map((date, category, number, field) {
-      doc = new Document(i);
+    ].map((row) {
+      var doc = new Document(i);
       i += 1;
-      doc['date'] = date;
-      doc['category'] = category;
-      doc['field'] = field;
-      doc['number'] = number;
+      doc['date'] = row[0];
+      doc['category'] = row[1];
+      doc['field'] = row[2];
+      doc['number'] = row[3];
       return doc;
     });
   }

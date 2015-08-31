@@ -6,18 +6,28 @@ import 'ext/analysis/analysis.dart' as analysis;
 import 'ext/search/search.dart';
 import 'ext/query_parser.dart';
 
-part 'field_infos.dart';
+import 'field_infos_utils.dart';
 
 class Index {
-  var key;
+  var _key;
   FieldInfos _field_infos;
-  bool close_dir;
-  String path;
-  bool auto_flush;
+  bool _close_dir;
+  String _path;
+  bool _auto_flush;
 
   IndexReader _reader;
   IndexWriter _writer;
   Searcher _searcher;
+  analysis.Analyzer _analyzer;
+
+  Directory _dir;
+
+  String _id_field;
+  String _default_field;
+  String _default_input_field;
+
+  bool _open;
+  QueryParser _qp;
 
   /// If you create an [Index] without any options, it'll simply create an
   /// index in memory. But this class is highly configurable and every option
@@ -71,11 +81,17 @@ class Index {
   ///     new Index.func((index) {
   ///       /// Do stuff with index. Most of your actions will be cached.
   ///     });
-  Index({String default_input_field: 'id', String id_field: 'id', this.key,
-      this.auto_flush: false, num lock_retry_time: 2, this.close_dir: false,
-      bool use_typed_range_query: true, field_infos}) {
+  Index({dir, String default_input_field: 'id', String id_field: 'id',
+      String default_field, key, auto_flush: false, num lock_retry_time: 2,
+      close_dir: false, bool use_typed_range_query: true, field_infos,
+      bool create: false, bool create_if_missing: true,
+      analysis.Analyzer analyzer})
+      : _auto_flush = auto_flush,
+        _close_dir = close_dir {
     if (key is Iterable) {
-      key = key.map((k) => k.toString());
+      _key = key.map((k) => k.toString());
+    } else {
+      _key = key;
     }
 
     if (field_infos is String) {
@@ -85,21 +101,21 @@ class Index {
     }
 
     if (dir is String) {
-      path = dir;
+      _path = dir;
     }
-    if (path != null) {
-      close_dir = true;
+    if (_path != null) {
+      _close_dir = true;
       try {
-        dir = new FSDirectory(path, create);
+        _dir = FSDirectory.create(_path, create: create);
       } on IOError catch (io) {
-        dir = new FSDirectory(path, create_if_missing != false);
+        _dir = FSDirectory.create(_path, create: create_if_missing);
       }
     } else if (dir != null) {
-      this._dir = dir;
+      _dir = dir;
     } else {
       create = true; // this should always be true for a new RAMDir
-      close_dir = true;
-      dir = new RAMDirectory();
+      _close_dir = true;
+      _dir = new RAMDirectory();
     }
 
     //@dir.extend(MonitorMixin) unless @dir.kind_of? MonitorMixin
@@ -109,7 +125,9 @@ class Index {
       new IndexWriter(options).close();
     }
     if (analyzer == null) {
-      analyzer = new analysis.StandardAnalyzer();
+      _analyzer = new analysis.StandardAnalyzer();
+    } else {
+      _analyzer = analyzer;
     }
 
     _searcher = null;
@@ -117,33 +135,33 @@ class Index {
     _reader = null;
 
     create = false; // only create the first time if at all
-    if (id_field == null && key is Symbol) {
+    if (id_field == null && key is String) {
       _id_field = key;
     } else if (id_field != null) {
       _id_field = id_field;
     } else {
-      id_field = id;
+      _id_field = "id";
     }
     if (default_field != null) {
       _default_field = default_field;
     } else {
-      default_field = '*';
+      _default_field = '*';
     }
     if (default_input_field != null) {
       _default_input_field = default_input_field;
     } else {
-      default_input_field = id_field;
+      _default_input_field = id_field;
     }
 
-    if (default_input_field.respond_to(intern)) {
+    /*if (default_input_field.respond_to(intern)) {
       _default_input_field = _default_input_field.intern;
-    }
+    }*/
     _open = true;
     _qp = null;
-    if (block) {
-      //yield self;
-      //self.close
-    }
+    /*if (block) {
+      yield self;
+      self.close
+    }*/
   }
 
   /// Returns an array of strings with the matches highlighted. The [query] can
@@ -172,7 +190,12 @@ class Index {
     if (field == null) {
       field = _default_field;
     }
-    _searcher.highlight(_do_process_query(query), doc_id, field, options);
+    return _searcher.highlight(_do_process_query(query), doc_id, field,
+        excerpt_length: excerpt_length,
+        num_excerpts: num_excerpts,
+        pre_tag: pre_tag,
+        post_tag: post_tag,
+        ellipsis: ellipsis);
   }
 
   /// Closes this index by closing its associated reader and writer objects.
@@ -191,7 +214,7 @@ class Index {
       _writer.close();
     }
     if (_close_dir) {
-      dir.close();
+      _dir.close();
     }
 
     _open = false;
@@ -199,21 +222,21 @@ class Index {
 
   /// Get the reader for this index.
   /// NOTE: This will close the writer from this index.
-  get reader {
+  IndexReader get reader {
     _ensure_reader_open();
     return _reader;
   }
 
   /// Get the searcher for this index.
   /// NOTE: This will close the writer from this index.
-  get searcher {
+  Searcher get searcher {
     _ensure_searcher_open();
     return _searcher;
   }
 
   /// Get the writer for this index.
   /// NOTE: This will close the reader from this index.
-  get writer {
+  IndexWriter get writer {
     _ensure_writer_open();
     return _writer;
   }
@@ -254,15 +277,15 @@ class Index {
     // delete existing documents with the same key
     if (_key != null) {
       if (_key is List) {
-        var query = _key.inject(new BooleanQuery.func((bq, field) {
-          bq.add_query(new TermQuery(field, doc[field].to_s), must);
-          bq;
-        }));
-        query_delete(query);
+        _key.forEach((field) {
+          var query = new BooleanQuery()
+            ..add_query(new TermQuery(field, doc[field].to_s), occur: 'must');
+          query_delete(query);
+        });
       } else {
-        var id = doc[_key].toString();
+        var id = doc[_key];
         if (id != null) {
-          _writer.delete(_key, id);
+          _writer.delete(_key, term: id.toString());
         }
       }
     }
@@ -281,7 +304,12 @@ class Index {
       flush();
     }
   }
-  //alias :<< :add_document
+
+  /// Alias for [add_document].
+  Index operator <<(doc) {
+    add_document(doc);
+    return this;
+  }
 
   /// Run a query through the [Searcher] on the index. A [TopDocs] object is
   /// returned with the relevant results. The [query] is a built in [Query]
@@ -310,7 +338,12 @@ class Index {
   TopDocs search(Query query, {int offset: 0, int limit: 10, sort,
       Filter filter, Function filter_proc}) {
     //@dir.synchronize do
-    return _do_search(query, options);
+    return _do_search(query,
+        offset: offset,
+        limit: limit,
+        sort: sort,
+        filter: filter,
+        filter_proc: filter_proc);
   }
 
   /// Run a query through the [Searcher] on the index. A [TopDocs] object is
@@ -349,14 +382,20 @@ class Index {
   ///     index.search_each(query) do |doc, score|
   ///       print("hit document number #{doc} with a score of #{score}");
   ///     }
-  TopDocs search_each(query,
-      {int offset: 0, int limit: 10, sort, Filter filter, Proc filter_proc}) {
+  TopDocs search_each(query, {int offset: 0, int limit: 10, sort, Filter filter,
+      Function filter_proc}) {
     //# :yield: doc, score
     //@dir.synchronize do
     _ensure_searcher_open();
     query = _do_process_query(query);
 
-    _searcher.search_each(query, options, (doc, score) {
+    _searcher.search_each(query,
+        offset: offset,
+        limit: limit,
+        sort: sort,
+        filter: filter,
+        filter_proc: filter_proc,
+        fn: (doc, score) {
       //yield doc, score
     });
   }
@@ -396,7 +435,7 @@ class Index {
     _ensure_searcher_open();
     query = _do_process_query(query);
 
-    _searcher.scan(query, options);
+    return _searcher.scan(query, start_doc: start_doc, limit: limit);
   }
 
   /// Retrieves a document/documents from the index. The method for retrieval
@@ -411,27 +450,27 @@ class Index {
   /// If [arg] is a [String] then search for the first document with [arg] in
   /// the [id] field. The [id] field is either `id` or whatever you set
   /// `id_field` parameter to when you create the Index object.
-  doc(arg) {
+  LazyDoc doc(arg) {
     //@dir.synchronize do
     var id = arg;
-    if (id is String || id is Symbol) {
+    if (id is String) {
       _ensure_reader_open();
-      term_doc_enum = _reader.term_docs_for(_id_field, id.to_s);
-      return term_doc_enum.next != null ? _reader[term_doc_enum.doc] : null;
+      var term_doc_enum = _reader.term_docs_for(_id_field, id);
+      return term_doc_enum.next() ? _reader[term_doc_enum.doc()] : null;
     } else {
       _ensure_reader_open(false);
       return _reader[arg];
     }
   }
 
-  operator [](arg) => doc(arg);
+  LazyDoc operator [](arg) => doc(arg);
 
   /// Retrieves the `term_vector` for a document. The document can be
   /// referenced by either a string [id] to match the id field or an integer
   /// corresponding to Ferret's document number.
   ///
   /// See: [IndexReader.term_vector]
-  def term_vector(id, field) {
+  TermVector term_vector(id, field) {
     //@dir.synchronize do
     _ensure_reader_open();
     if (id is String || id is Symbol) {
@@ -448,12 +487,13 @@ class Index {
   /// Iterate through all documents in the index. This method preloads the
   /// documents so you don't need to call [load] on the document to load all
   /// the fields.
-  each() {
+  void each(fn(doc)) {
     //@dir.synchronize do
     _ensure_reader_open();
-    for (int i = 0; i < _reader.max_doc; i++) {
+    for (int i = 0; i < _reader.max_doc(); i++) {
       if (!_reader.deleted(i)) {
         //yield _reader[i].load
+        fn(_reader[i].load());
       }
     }
   }
@@ -477,14 +517,14 @@ class Index {
   /// If the `id` is a [String] or a [Symbol] then the `id` will be considered
   /// a term and the documents that contain that term in the `id_field` will
   /// be deleted.
-  delete(arg) {
+  void delete(arg) {
     //@dir.synchronize do
-    if (arg is String || arg is Symbol) {
+    if (arg is String) {
       _ensure_writer_open();
-      _writer.delete(_id_field, arg.to_s);
+      _writer.delete(_id_field, term: arg);
     } else if (arg is int) {
       _ensure_reader_open();
-      cnt = _reader.delete(arg);
+      var cnt = _reader.delete(arg);
     } else if (arg is Map || arg is List) {
       _batch_delete(arg);
     } else {
@@ -499,7 +539,7 @@ class Index {
   ///
   /// The [query] can either be a [String] (in which case it is parsed by the
   /// standard query parser) or an actual query object.
-  query_delete(query) {
+  void query_delete(query) {
     //@dir.synchronize do
     _ensure_writer_open();
     _ensure_searcher_open();
@@ -528,7 +568,7 @@ class Index {
   /// [id] is the number of the document to update. Can also be a string
   /// representing the value in the `id` field. Also consider using the
   /// `key` attribute.
-  update(id, Map new_doc) {
+  void update(id, Map new_doc) {
     //@dir.synchronize do
     _ensure_writer_open();
     delete(id);
@@ -537,7 +577,7 @@ class Index {
     } else {
       _ensure_writer_open();
     }
-    _writer.add(new_doc);
+    _writer.add_document(new_doc);
     if (_auto_flush) {
       flush();
     }
@@ -578,12 +618,13 @@ class Index {
   ///       {'id': '133', 'content': 'yada yada yada'},
   ///       {'id': '253', 'content': 'bla bla bal'}
   ///     ]);
-  batch_update(docs) {
+  void batch_update(docs) {
     //@dir.synchronize do
     var ids = null;
-    var values = null;
+//    var values = null;
     if (docs is List) {
-      ids = docs.collect((doc) => doc[_id_field].to_s);
+      to_s(v) => v == null ? v : v.toString();
+      var ids = docs.map((doc) => to_s(doc[_id_field])).toList();
       if (ids.contains(null)) {
         throw new ArgumentError("all documents must have an ${_id_field} "
             "field when doing a batch update");
@@ -596,7 +637,7 @@ class Index {
     }
     _batch_delete(ids);
     _ensure_writer_open();
-    docs.forEach((new_doc) => _writer.add(new_doc));
+    docs.forEach((new_doc) => _writer.add_document(new_doc));
     flush();
   }
 
@@ -637,7 +678,7 @@ class Index {
       _reader.delete(id);
     });
     _ensure_writer_open();
-    docs_to_add.each((doc) => _writer.add(doc));
+    docs_to_add.forEach((doc) => _writer.add_document(doc));
     if (_auto_flush) {
       flush();
     }
@@ -671,6 +712,7 @@ class Index {
     }
   }
 
+  /// Alias for [flush].
   commit() => flush();
 
   /// Optimizes the index. This should only be called when the index will no
@@ -701,19 +743,22 @@ class Index {
   /// merging sub-collection indexes with this method.
   ///
   /// After this completes, the index is optimized.
-  add_indexes(indexes) {
+  void add_indexes(List indexes) {
     //@dir.synchronize do
     _ensure_writer_open();
-    indexes = [indexes].flatten(); // make sure we have an array
-    if (indexes.length == 0) return; // nothing to do
+    flatten(input) => input.expand((x) => x is Iterable ? flatten(x) : [x]);
+    indexes = flatten(indexes); // make sure we have an array
+    if (indexes.length == 0) {
+      return; // nothing to do
+    }
     if (indexes[0] is Index) {
-      indexes.delete(self); // don't merge with self
-      indexes = indexes.map((index) => index.reader);
+      indexes.remove(this); // don't merge with self
+      indexes = indexes.map((index) => index.reader).toList();
     } else if (indexes[0] is Directory) {
-      indexes.delete(_dir); // don't merge with self
-      indexes = indexes.map((dir) => new IndexReader(dir));
+      indexes.remove(_dir); // don't merge with self
+      indexes = indexes.map((dir) => new IndexReader(dir)).toList();
     } else if (indexes[0] is IndexReader) {
-      indexes.delete(_reader); // don't merge with self
+      indexes.remove(_reader); // don't merge with self
     } else {
       throw new ArgumentError(
           "Unknown index type when trying to merge indexes");
@@ -735,22 +780,22 @@ class Index {
   /// Set [create] true if you'd like to create the directory if it doesn't
   /// exist or copy over an existing directory. False if you'd like to merge
   /// with the existing directory.
-  persist(directory, [create = true]) {
+  void persist(directory, [create = true]) {
     //synchronize do
     _close_all();
-    old_dir = _dir;
+    var old_dir = _dir;
     if (directory is String) {
-      _dir = new FSDirectory(directory, create);
+      _dir = FSDirectory.create(directory, create: create);
     } else if (directory is Directory) {
       _dir = directory;
     }
     //_dir.extend(MonitorMixin) unless @dir.kind_of? MonitorMixin
-    _options['dir'] = _dir;
-    _options['create_if_missing'] = true;
+    //_dir = _dir;
+    _create_if_missing = true;
     add_indexes([old_dir]);
   }
 
-  toString() {
+  String toString() {
     var buf = new StringBuffer();
     for (int i = 0; i < size(); i++) {
       if (!deleted(i)) {
@@ -760,24 +805,24 @@ class Index {
     return buf.toString();
   }
 
-  /// Returns an [Explanation] that describes how [doc] scored against
+  /// Returns an [Explanation] that describes how [doc_id] scored against
   /// [query].
   ///
   /// This is intended to be used in developing [Similarity] implementations,
   /// and, for good performance, should not be displayed with every hit.
   /// Computing an explanation is as expensive as executing the query over the
   /// entire index.
-  explain(query, doc) {
+  Explanation explain(query, doc_id) {
     //@dir.synchronize do
     _ensure_searcher_open();
     query = _do_process_query(query);
 
-    return _searcher.explain(query, doc);
+    return _searcher.explain(query, doc_id);
   }
 
   /// Turn a [query] string into a [Query] object with the [Index]'s
   /// [QueryParser].
-  process_query(query) {
+  Query process_query(query) {
     //@dir.synchronize do
     _ensure_searcher_open();
     return _do_process_query(query);
@@ -785,13 +830,13 @@ class Index {
 
   /// Returns the [field_infos] object so that you can add new fields to the
   /// index.
-  field_infos() {
+  FieldInfos field_infos() {
     //@dir.synchronize do
     _ensure_writer_open();
     return _writer.field_infos;
   }
 
-  _ensure_writer_open() {
+  void _ensure_writer_open() {
     if (!_open) {
       throw "tried to use a closed index";
     }
@@ -810,7 +855,7 @@ class Index {
   }
 
   /// Returns the new reader if one is opened.
-  _ensure_reader_open([get_latest = true]) {
+  IndexReader _ensure_reader_open([get_latest = true]) {
     if (!_open) {
       throw "tried to use a closed index";
     }
@@ -848,12 +893,14 @@ class Index {
     if (!_open) {
       throw "tried to use a closed index";
     }
-    if (ensure_reader_open() || _searcher == null) {
+    if (_ensure_reader_open() != null || _searcher == null) {
       _searcher = new Searcher(_reader);
     }
   }
 
-  _do_process_query(query) {
+  List _fields, _tokenized_fields, _all_fields;
+
+  Query _do_process_query(query) {
     if (query is String) {
       if (_qp == null) {
         _qp = new QueryParser(_options);
@@ -862,22 +909,28 @@ class Index {
       if (_all_fields == false && _fields == null) {
         _qp.fields = _reader.fields;
       }
-      if (tokenized_fields == null) {
-        _qp.tokenized_fields = _reader.tokenized_fields;
+      if (_tokenized_fields == null) {
+        _qp.tokenized_fields = _reader.tokenized_fields();
       }
       query = _qp.parse(query);
     }
     return query;
   }
 
-  _do_search(query, options) {
+  TopDocs _do_search(query,
+      {offset: 0, limit: 10, sort, Filter filter, filter_proc}) {
     _ensure_searcher_open();
     query = _do_process_query(query);
 
-    return _searcher.search(query, options);
+    return _searcher.search(query,
+        offset: offset,
+        limit: limit,
+        sort: sort,
+        filter: filter,
+        filter_proc: filter_proc);
   }
 
-  _close_all() {
+  void _close_all() {
     //@dir.synchronize do
     if (_searcher != null) {
       _searcher.close();
@@ -910,11 +963,11 @@ class Index {
     }
     var ids = [];
     var terms = [];
-    docs.each((doc) {
+    docs.forEach((doc) {
       if (doc is String) {
         terms.add(doc);
-      } else if (doc is Symbol) {
-        terms.add(doc.to_s);
+//      } else if (doc is Symbol) {
+//        terms.add(doc.to_s);
       } else if (doc is int) {
         ids.add(doc);
       } else {
@@ -923,11 +976,11 @@ class Index {
     });
     if (ids.length > 0) {
       _ensure_reader_open();
-      ids.each((id) => _reader.delete(id));
+      ids.forEach((id) => _reader.delete(id));
     }
     if (terms.length > 0) {
       _ensure_writer_open();
-      _writer.delete(_id_field, terms);
+      _writer.delete(_id_field, terms: terms);
     }
   }
 }

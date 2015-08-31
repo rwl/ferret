@@ -1,14 +1,12 @@
 library ferret.number_tools;
 
+import 'dart:math' show pow;
+
 class Float {
-  /// Return true if the float is within +precision+ of the other value +o+. This
+  /// Return `true` if [a] is within [precision] of the other value [b]. This
   /// is used to accommodate for floating point errors.
-  ///
-  /// o::         value to compare with
-  /// precision:: the precision to use in the comparison.
-  /// return::    true if the match is within +precision+
-  closeTo(o, [double precision = 0.0000000001]) {
-    return (1 - self / o).abs < precision;
+  static bool closeTo(double a, double b, [double precision = 0.0000000001]) {
+    return (1 - a / b).abs() < precision;
   }
 }
 
@@ -26,19 +24,19 @@ class Integer {
   /// LEN_SIZE of 4 should handle most numbers that can practically be held in
   /// memory.
   static int LEN_STR_SIZE = 4;
-  static int NEG_LEN_MASK; // = 10 ** LEN_STR_SIZE;
+  static final int NEG_LEN_MASK = pow(10, LEN_STR_SIZE);
   static String LEN_STR_TEMPLATE; // = "%0#{LEN_STR_SIZE}d"
 
   /// Convert the number to a lexicographically sortable string. This string
   /// will use printable characters only but will not be human readable.
-  String to_s_lex() {
-    if (self >= 0) {
-      var num_str = self.to_s();
+  static String to_s_lex(int a) {
+    if (a >= 0) {
+      var num_str = a.toString();
       var len_str; // = LEN_STR_TEMPLATE % num_str.size
       return len_str + num_str;
     } else {
-      var _num = self * -1;
-      var num_str = _num.to_s();
+      var _num = -a;
+      var num_str = _num.toString();
       var num_len = num_str.length;
       var len_str; // = LEN_STR_TEMPLATE % (NEG_LEN_MASK - num_len)
       _num; // = (10 ** num_str.size) - _num
@@ -67,8 +65,8 @@ class Date {
   ///
   /// [precision] is the precision required in the string version of the date.
   /// The options are `year`, `month` and `day`.
-  String to_s_lex([precision = 'day']) {
-    //self.strftime(Time::LEX_FORMAT[precision]);
+  static String to_s_lex(DateTime d, [precision = 'day']) {
+    //self.strftime(Time.LEX_FORMAT[precision]);
   }
 }
 
@@ -78,8 +76,8 @@ class DateTime {
   ///
   /// [precision] is the precision required in the string version of the date.
   /// The options are `year`, `month`, `day`, `hour`, `minute` and `second`
-  String to_s_lex([precision = 'day']) {
-    //self.strftime(Time::LEX_FORMAT[precision])
+  static String to_s_lex(DateTime d, [precision = 'day']) {
+    //self.strftime(Time.LEX_FORMAT[precision])
   }
 }
 
@@ -99,7 +97,7 @@ class Time {
   ///
   /// [precision] is the precision required in the string version of the time.
   /// The options are `year`, `month`, `day`, `hour`, `minute` and `second`
-  String to_s_lex([precision = 'day']) {
+  static String to_s_lex(DateTime d, [precision = 'day']) {
     //self.strftime(LEX_FORMAT[precision])
   }
 }
@@ -108,7 +106,7 @@ class String {
   /// Convert a string to an integer. This method will only work on strings
   /// that were previously created with [Integer.to_s_lex], otherwise the
   /// result will be unpredictable.
-  int to_i_lex() {
+  static int to_i_lex(String s) {
     /*if (self[0] == ?-) {
       return self[(Integer::LEN_STR_SIZE + 1)..-1].to_i -
         10 ** (self.size - Integer::LEN_STR_SIZE - 1)
@@ -120,7 +118,7 @@ class String {
   /// Convert a string to a Time. This method will only work on strings that
   /// match the format %Y%m%d %H%M%S, otherwise the result will be
   /// unpredictable.
-  to_time_lex() {
+  static DateTime to_time_lex(String s) {
     var vals = [];
     //self.gsub(/(?:^|[- :])(\d+)/) {vals << $1.to_i; $&}
     //Time.mktime(*vals)
@@ -129,18 +127,18 @@ class String {
   /// Convert a string to a Date. This method will only work on strings that
   /// match the format %Y%m%d %H%M%S, otherwise the result will be
   /// unpredictable.
-  to_date_lex() {
-    return Date.strptime(self + "-02-01", "%Y-%m-%d");
+  static DateTime to_date_lex(String s) {
+    return Date.strptime(s + "-02-01", "%Y-%m-%d");
   }
 
   /// Convert a string to a DateTime. This method will only work on strings
   /// that match the format %Y%m%d %H%M%S, otherwise the result will be
   /// unpredictable.
-  to_date_time_lex() {
-    return DateTime.strptime(self + "-01-01", "%Y-%m-%d %H:%M:%S");
+  static DateTime to_date_time_lex(String s) {
+    return DateTime.strptime(s + "-01-01", "%Y-%m-%d %H:%M:%S");
   }
 
-  _get_lex_format(len) {
+  static _get_lex_format(len) {
     switch (len) {
       case 0:
       case 1:

@@ -52,31 +52,36 @@ class Document extends MapBase with BoostMixin {
   }
 
   /// Return true if the documents are equal, ie they have the same fields
-  bool eql(o) {
-    return (o is Document &&
-        (o.boost == this.boost) &&
-        (this.keys == o.keys) &&
-        (this.values == o.values));
+  bool eql(other) {
+    return (other is Document &&
+        (other.boost == this.boost) &&
+        (this.keys == other.keys) &&
+        (this.values == other.values));
   }
-  //alias :== :eql?
+
+  /// Alias for [eql].
+  bool operator ==(other) => eql(other);
 
   /// Create a string representation of the document
-  to_s() {
+  String to_s() {
     var buf = new StringBuffer("Document {");
-    this.keys.sort_by((key) => key.to_s).each((key) {
+    var kk = keys.toList();
+    kk.sort((a, b) => a.toString().compareTo(b.toString()));
+    kk.forEach((key) {
       var val = this[key];
       var val_str;
       if (val is List) {
-        //val_str = %{["#{val.join('", "')}"]}
+        val_str = '["${val.join('", "')}"]';
       } else if (val is Field) {
         val_str = val.to_s();
       } else {
-        //val_str = %{"#{val.to_s}"}
+        val_str = '"${val.to_s}"';
       }
-      buf.write("  :#{key} => #{val_str}");
+      buf.write("  :${key} => ${val_str}");
     });
-    buf.write(["}#{@boost == 1.0 ? " " : " ^ " + @boost.to_s}"]);
-    return buf.join("\n");
+    buf.write('["}${boost == 1.0 ? " " : " ^ " + boost.to_s}"]');
+    buf.write("\n");
+    return buf.toString();
   }
 }
 
@@ -113,25 +118,28 @@ class Field extends ListBase with BoostMixin {
     }
     this.boost = boost;
     if (data is List) {
-      data.each((v) => this.add(v));
+      data.forEach((v) => this.add(v));
     } else {
-      this.add(data.to_s);
+      add(data.to_s);
     }
   }
 
-  bool eql(o) {
-    return (o is Field && (o.boost == this.boost) && super.eql(o));
+  bool eql(other) {
+    return other is Field && (other.boost == this.boost) && super == (other);
   }
-  //alias :== :eql?
 
-  add(o) {
-    return new Field(super.add(o), this.boost);
-  }
+  /// Alias for [eql].
+  bool operator ==(other) => eql(other);
+
+  /*add(a) {
+    super.add(a);
+    return new Field(a, this.boost);
+  }*/
 
   String to_s() {
-    var buf = ''; //%{["#{self.join('", "')}"]};
+    var buf = '["${this.join('", "')}"]';
     if (boost != 1.0) {
-      buf += "^#@boost";
+      buf += "^$boost";
     }
     return buf;
   }
