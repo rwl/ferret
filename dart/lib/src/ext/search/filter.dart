@@ -1,4 +1,4 @@
-library ferret.ext.search.filter;
+part of ferret.ext.search;
 
 /// A [Filter] is used to filter query results. It is usually passed to one of
 /// [Searcher]'s search methods however it can also be used inside a

@@ -1,4 +1,4 @@
-library ferret.ext.search.query;
+part of ferret.ext.search;
 
 /// Abstract class representing a query to the index. There are a number of
 /// concrete [Query] implementations:
@@ -37,11 +37,11 @@ class Query {
 
   /// Returns the queries boost value. See the [Query] description for more
   /// information on [Query] boosts.
-  get boost() => frb_q_get_boost;
+  get boost => frb_q_get_boost;
 
   /// Set the boost for a query. See the [Query] description for more
   /// information on [Query] boosts.
-  set boost() => frb_q_set_boost;
+  set boost(b) => frb_q_set_boost;
 
   /// Return true if query equals [other_query]. Theoretically, two queries
   /// are equal if the always return the same results, no matter what the
@@ -53,7 +53,7 @@ class Query {
   bool eql(other_query) => frb_q_eql;
 
   /// Alias for [eql].
-  operator ==() => frb_q_eql;
+  operator ==(other_query) => frb_q_eql;
 
   /// Return a hash value for the query. This is used for caching query results
   /// in a hash object.
@@ -104,7 +104,7 @@ class TermQuery extends Query {
 ///       ..add("Rails")
 ///       ..add("Search");
 class MultiTermQuery extends Query {
-  static int default_max_terms = 512;
+  static int _default_max_terms = 512;
 
   int _max_terms, _min_score;
 
@@ -127,18 +127,18 @@ class MultiTermQuery extends Query {
 
   /// Get the default value for [max_terms] in a [MultiTermQuery]. This value
   /// is also used by [PrefixQuery], [FuzzyQuery] and [WildcardQuery].
-  static double get default_max_terms() => frb_mtq_get_dmt;
+  static double get default_max_terms => frb_mtq_get_dmt;
 
   /// Set the default value for [max_terms] in a [MultiTermQuery]. This value
   /// is also used by [PrefixQuery], [FuzzyQuery] and [WildcardQuery].
-  static set default_max_terms() => frb_mtq_set_dmt;
+  static set default_max_terms(max_terms) => frb_mtq_set_dmt;
 
   /// Add a term to the [MultiTermQuery] with the score 1.0 unless specified
   /// otherwise.
   add_term(term, [score = 1.0]) => frb_mtq_add_term;
 
   /// Alias for [add_term].
-  operator <<() => frb_mtq_add_term;
+  operator <<(term) => frb_mtq_add_term;
 }
 
 /// A [BooleanClause] holes a single query within a [BooleanQuery] specifying
@@ -158,12 +158,12 @@ class BooleanClause {
   var must_not;
 
   ///
-  BooleanClause(query, occur: 'should') {
+  BooleanClause(query, {occur: 'should'}) {
     frb_bc_init;
   }
 
   /// Return the query object wrapped by this [BooleanClause].
-  Query get query() => frb_bc_get_query;
+  Query get query => frb_bc_get_query;
 
   /// Set the [query] wrapped by this [BooleanClause].
   set query(Query query) => frb_bc_set_query;
@@ -227,8 +227,8 @@ class BooleanQuery extends Query {
   /// case.
   BooleanClause add_query(query, {occur: 'should'}) => frb_bq_add_query;
 
-  /// Alias for [add_term].
-  operator <<() => frb_bq_add_query;
+  /// Alias for [add_query].
+  operator <<(query) => frb_bq_add_query;
 }
 
 /// [RangeQuery] is used to find documents with terms in a range.
@@ -280,7 +280,8 @@ class RangeQuery extends Query {
   ///     var q = new RangeQuery('date', lower: "200501", upper: 200502);
   ///     // is equivalent to
   ///     var q = new RangeQuery('date', geq: "200501", leq: 200502);
-  RangeQuery(field, {lower, upper, bool include_lower, bool include_upper, le, leq, ge, geq}) {
+  RangeQuery(field, {lower, upper, bool include_lower, bool include_upper, le,
+      leq, ge, geq}) {
     frb_rq_init;
   }
 }
@@ -323,7 +324,8 @@ class TypedRangeQuery extends Query {
   ///      var q = new TypedRangeQuery('date', lower: "-12.32", upper: 0.21);
   ///      // is equivalent to
   ///      var q = new TypedRangeQuery('date', geq: "-12.32", leq: 0.21);
-  TypedRangeQuery(field, {lower, upper, bool include_lower, bool include_upper, le, leq, ge, geq}) {
+  TypedRangeQuery(field, {lower, upper, bool include_lower, bool include_upper,
+      le, leq, ge, geq}) {
     frb_trq_init;
   }
 }
@@ -389,7 +391,7 @@ class TypedRangeQuery extends Query {
 class PhraseQuery extends Query {
   /// Create a new [PhraseQuery] on the field [field]. You need to add terms
   /// to the query it will do anything of value. See [add_term].
-  PhraseQuery(field, {slop = 0}) {
+  PhraseQuery(field, {slop: 0}) {
     frb_phq_init;
   }
 
@@ -406,7 +408,7 @@ class PhraseQuery extends Query {
   add_term(term, [int position_increment = 1]) => frb_phq_add;
 
   /// Alias for [add_term].
-  operator <<() frb_phq_add;
+  operator <<(term) => frb_phq_add;
 
   /// Return the slop set for this phrase query. See the [PhraseQuery]
   /// description for more information on slop.
@@ -453,7 +455,7 @@ class PrefixQuery extends Query {
   /// [max_terms] which limits the number of terms that get added to the
   /// query. By default it is set to 512.
   PrefixQuery(field, prefix, {max_terms: 512}) {
-    frb_prq_init
+    frb_prq_init;
   }
 }
 
@@ -490,7 +492,7 @@ class WildcardQuery extends Query {
   /// can set [max_terms] which limits the number of terms that get added to
   /// the query. By default it is set to 512.
   WildcardQuery(field, pattern, {max_terms: 512}) {
-    frb_wcq_init
+    frb_wcq_init;
   }
 }
 
@@ -554,7 +556,8 @@ class FuzzyQuery extends Query {
   /// [max_terms] limits the number of terms that can be added to the query
   /// when it is expanded as a [MultiTermQuery]. This is not usually a problem
   /// with FuzzyQueries unless you set [min_similarity] to a very low value.
-  FuzzyQuery(field, term, {min_similarity: 0.5, prefix_length: 0, max_terms: 512}) {
+  FuzzyQuery(field, term,
+      {min_similarity: 0.5, prefix_length: 0, max_terms: 512}) {
     frb_fq_init;
   }
 

@@ -191,9 +191,9 @@ library ferret.ext.query_parser;
 /// will iterate over.
 class QueryParser {
   var wild_card_downcase;
-  var fields;
+  var _fields;
   var all_fields;
-  var tokenized_fields;
+  var _tokenized_fields;
   var default_field;
   var validate_fields;
   var or_default;

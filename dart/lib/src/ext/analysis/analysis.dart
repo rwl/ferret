@@ -27,6 +27,10 @@
 /// [Token.text] might be "begin" (after stemming).
 library ferret.ext.analysis;
 
+part 'analyzer.dart';
+part 'filter.dart';
+part 'tokenizer.dart';
+
 /// A [Token] is an occurrence of a term from the text of a field.  It
 /// consists of a term's text and the start and end offset of the term in the
 /// text of the field.
@@ -86,25 +90,25 @@ class Token implements Comparable {
   compareTo(Token other_token) => frb_token_cmp;
 
   /// Returns the text that this token represents.
-  get text() => frb_token_get_text;
+  get text => frb_token_get_text;
 
   /// Set the text for this token.
-  set text() => frb_token_set_text;
+  set text(val) => frb_token_set_text;
 
   /// Start byte-position of this token.
-  get start() => frb_token_get_start_offset;
+  get start => frb_token_get_start_offset;
 
   /// Set start byte-position of this token.
-  set start() => frb_token_set_start_offset;
+  set start(val) => frb_token_set_start_offset;
 
   /// End byte-position of this token.
-  get end() => frb_token_get_end_offset;
+  get end => frb_token_get_end_offset;
 
   /// Set end byte-position of this token.
-  set end() => frb_token_set_end_offset;
+  set end(val) => frb_token_set_end_offset;
 
   /// Position Increment for this token.
-  get pos_inc() => frb_token_get_pos_inc;
+  get pos_inc => frb_token_get_pos_inc;
 
   /// Set the position increment. This determines the position of this token
   /// relative to the previous Token in a TokenStream, used in phrase
@@ -127,7 +131,7 @@ class Token implements Comparable {
   ///   words and also sets the increment to the number of stop words removed
   ///   before each non-stop word.  Then exact phrase queries will only match
   ///   when the terms occur with no intervening stop words.
-  set pos_inc() => frb_token_set_pos_inc;
+  set pos_inc(val) => frb_token_set_pos_inc;
 
   /// Return a string representation of the token.
   to_s() => frb_token_to_s;
@@ -149,8 +153,8 @@ abstract class TokenStream {
   /// tokenized. For example, you may do this:
   ///
   ///     token_stream.text = File.read(file_name);
-  set text() => frb_ts_set_text;
+  set text(val) => frb_ts_set_text;
 
   /// Return the text that the TokenStream is tokenizing.
-  get text() => frb_ts_get_text;
+  get text => frb_ts_get_text;
 }

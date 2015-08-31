@@ -63,7 +63,7 @@ class BitVector {
   get(i) => frb_bv_get;
 
   /// Alias for [get].
-  operator [] => frb_bv_get;
+  operator [](i) => frb_bv_get;
 
   /// Count the number of bits set in the bit vector. If the bit vector has
   /// been negated using [not] then count the number of unset bits instead.
@@ -78,7 +78,7 @@ class BitVector {
   bool eql() => frb_bv_eql;
 
   /// Alias for [eql].
-  bool operator == => frb_bv_eql;
+  bool operator ==(other) => frb_bv_eql;
 
   /// Used to store bit vectors in Hashes. Especially useful if you want to
   /// cache them.
@@ -91,16 +91,16 @@ class BitVector {
   BitVector and(bv2) => frb_bv_and;
 
   /// Alias for [and].
-  BitVector operator &() => frb_bv_and;
+  BitVector operator &(bv2) => frb_bv_and;
 
   /// Perform an inplace boolean _or_ operation.
   void orx() => frb_bv_or_x;
 
   /// Perform a boolean _or_ operation.
-  BitVector or() => frb_bv_or;
+  BitVector or(bv2) => frb_bv_or;
 
   /// Alias for [or].
-  BitVector operator |() => frb_bv_or;
+  BitVector operator |(bv2) => frb_bv_or;
 
   /// Perform an inplace boolean _xor_ operation.
   void xorx() => frb_bv_xor_x;
@@ -109,7 +109,7 @@ class BitVector {
   BitVector xor(bv2) => frb_bv_xor;
 
   /// Alias for [xor].
-  operator ^() => frb_bv_xor;
+  operator ^(bv2) => frb_bv_xor;
 
   /// Perform an inplace boolean _not_ operation.
   void notx() => frb_bv_not_x;
@@ -245,7 +245,10 @@ class PriorityQueue {
   /// Once the capacity is filled, the lowest valued elements will be
   /// automatically popped off the top of the queue as more elements are
   /// inserted into the queue.
-  PriorityQueue({capacity: 32, less_than_proc: (a, b) => a < b}) {
+  PriorityQueue({capacity: 32, less_than_proc}) {
+    if (less_than_proc == null) {
+      less_than_proc = (a, b) => a < b;
+    }
     frb_pq_init;
   }
 
@@ -262,7 +265,7 @@ class PriorityQueue {
   insert(elem) => frb_pq_insert;
 
   /// Alias for [insert].
-  operator <<() => frb_pq_insert;
+  operator <<(elem) => frb_pq_insert;
 
   /// Returns the top element in the queue but does not remove it from the
   /// queue.

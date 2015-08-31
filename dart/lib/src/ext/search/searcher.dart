@@ -1,4 +1,4 @@
-library ferret.ext.search.searcher;
+part of ferret.ext.search;
 
 /// The [Searcher] class basically performs the task that Ferret was built
 /// for. It searches the index. To search the index the [Searcher] class wraps
@@ -197,7 +197,7 @@ class Searcher {
 class MultiSearcher extends Searcher {
   /// Create a new [MultiSearcher] by passing a list of subsearchers to the
   /// constructor.
-  MultiSearcher(searchers) {
+  MultiSearcher(searchers) : super(null) {
     frb_ms_init;
   }
 }

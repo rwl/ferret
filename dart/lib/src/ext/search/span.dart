@@ -3,7 +3,7 @@
 /// matches so they can be used to limit queries to a certain position in the
 /// field. They are often used in combination to perform special types of
 /// [PhraseQuery].
-library ferret.ext.search.span;
+part of ferret.ext.search;
 
 /// A [SpanTermQuery] is the Spans version of [TermQuery], the only difference
 /// being that it returns the start and end offset of all of its matches for
@@ -23,7 +23,7 @@ class SpanMultiTermQuery extends Query {
   /// Create a new [SpanMultiTermQuery] which matches all documents with the
   /// terms [terms] in the field [field].
   SpanMultiTermQuery(field, List<String> terms) {
-    frb_spanmtq_init
+    frb_spanmtq_init;
   }
 }
 
@@ -33,7 +33,7 @@ class SpanMultiTermQuery extends Query {
 class SpanPrefixQuery extends Query {
   /// Create a new [SpanPrefixQuery] which matches all documents with the
   /// prefix [prefix] in the field [field].
-  SpanPrefixQuery(field, prefix, {max_terms = 256}) {
+  SpanPrefixQuery(field, prefix, {max_terms: 256}) {
     frb_spanprq_init;
   }
 }
@@ -114,7 +114,7 @@ class SpanNearQuery extends Query {
   add(span_query) => frb_spannq_add;
 
   /// Alias for [add].
-  operator <<() => frb_spannq_add;
+  operator <<(span_query) => frb_spannq_add;
 }
 
 /// [SpanOrQuery] is just like a [BooleanQuery] with all `should` clauses.
@@ -158,7 +158,7 @@ class SpanOrQuery extends Query {
   add(span_query) => frb_spanoq_add;
 
   /// Alias for [add].
-  operator <<() => frb_spanoq_add;
+  operator <<(span_query) => frb_spanoq_add;
 }
 
 /// [SpanNotQuery] is like a [BooleanQuery] with a `must_not` clause. The

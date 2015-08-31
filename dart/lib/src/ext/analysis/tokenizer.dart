@@ -1,4 +1,4 @@
-library ferret.ext.analysis.tokenizer;
+part of ferret.ext.analysis;
 
 /// A [LetterTokenizer] is a tokenizer that divides text at non-ASCII letters.
 /// That is to say, it defines tokens as maximal strings of adjacent letters,
@@ -73,7 +73,7 @@ class StandardTokenizer extends TokenStream {
   /// Create a new StandardTokenizer which optionally downcases tokens.
   /// Downcasing is done according the current locale.
   StandardTokenizer({bool lower: true}) {
-    frb_standard_tokenizer_init
+    frb_standard_tokenizer_init;
   }
 }
 
@@ -97,8 +97,8 @@ class RegExpTokenizer extends TokenStream {
 
   /// Set the text to be tokenized by the tokenizer. The tokenizer gets reset
   /// to tokenize the text from the beginning.
-  set text() => frb_rets_set_text;
+  set text(val) => frb_rets_set_text;
 
   /// Get the text being tokenized by the tokenizer.
-  get text() => frb_rets_get_text;
+  get text => frb_rets_get_text;
 }

@@ -1,5 +1,11 @@
 library ferret.index;
 
+import 'ext/store.dart';
+import 'ext/index.dart';
+import 'ext/analysis/analysis.dart' as analysis;
+import 'ext/search/search.dart';
+import 'ext/query_parser.dart';
+
 part 'field_infos.dart';
 
 class Index {
@@ -8,6 +14,10 @@ class Index {
   bool close_dir;
   String path;
   bool auto_flush;
+
+  IndexReader _reader;
+  IndexWriter _writer;
+  Searcher _searcher;
 
   /// If you create an [Index] without any options, it'll simply create an
   /// index in memory. But this class is highly configurable and every option
@@ -63,12 +73,16 @@ class Index {
   ///     });
   Index({String default_input_field: 'id', String id_field: 'id', this.key,
       this.auto_flush: false, num lock_retry_time: 2, this.close_dir: false,
-      bool use_typed_range_query: true}) {
+      bool use_typed_range_query: true, field_infos}) {
     if (key is Iterable) {
       key = key.map((k) => k.toString());
     }
 
-    field_infos = new FieldInfos.load(fi);
+    if (field_infos is String) {
+      _field_infos = FieldInfosUtils.load(field_infos);
+    } else {
+      _field_infos = field_infos;
+    }
 
     if (dir is String) {
       path = dir;
@@ -98,9 +112,9 @@ class Index {
       analyzer = new analysis.StandardAnalyzer();
     }
 
-    searcher = null;
-    writer = null;
-    reader = null;
+    _searcher = null;
+    _writer = null;
+    _reader = null;
 
     create = false; // only create the first time if at all
     if (id_field == null && key is Symbol) {
@@ -158,7 +172,7 @@ class Index {
     if (field == null) {
       field = _default_field;
     }
-    _searcher.highlight(do_process_query(query), doc_id, field, options);
+    _searcher.highlight(_do_process_query(query), doc_id, field, options);
   }
 
   /// Closes this index by closing its associated reader and writer objects.
@@ -230,7 +244,7 @@ class Index {
   ///     index.addDocument({"id": row.id, "title": row.title, "date": row.date});
   ///
   /// See [FieldInfos] for more information on how to set field properties.
-  void add_document(doc, [Analyzer analyzer]) {
+  void add_document(doc, [analysis.Analyzer analyzer]) {
     //@dir.synchronize do
     _ensure_writer_open();
     if (doc is String || doc is List) {
@@ -293,10 +307,10 @@ class Index {
   /// [filter_proc] is a [Proc] which takes the `doc_id`, the `score` and the
   /// [Searcher] object as its parameters and returns a [bool] value
   /// specifying whether the result should be included in the result set.
-  TopDocs search(Query query,
-      {int offset: 0, int limit: 10, sort, Filter filter, Proc filter_proc}) {
+  TopDocs search(Query query, {int offset: 0, int limit: 10, sort,
+      Filter filter, Function filter_proc}) {
     //@dir.synchronize do
-    return do_search(query, options);
+    return _do_search(query, options);
   }
 
   /// Run a query through the [Searcher] on the index. A [TopDocs] object is
@@ -340,7 +354,7 @@ class Index {
     //# :yield: doc, score
     //@dir.synchronize do
     _ensure_searcher_open();
-    query = do_process_query(query);
+    query = _do_process_query(query);
 
     _searcher.search_each(query, options, (doc, score) {
       //yield doc, score
@@ -380,7 +394,7 @@ class Index {
   List<int> scan(query, {int start_doc: 0, int limit: 50}) {
     //@dir.synchronize do
     _ensure_searcher_open();
-    query = do_process_query(query);
+    query = _do_process_query(query);
 
     _searcher.scan(query, options);
   }
@@ -401,11 +415,11 @@ class Index {
     //@dir.synchronize do
     var id = arg;
     if (id is String || id is Symbol) {
-      ensure_reader_open();
+      _ensure_reader_open();
       term_doc_enum = _reader.term_docs_for(_id_field, id.to_s);
       return term_doc_enum.next != null ? _reader[term_doc_enum.doc] : null;
     } else {
-      ensure_reader_open(false);
+      _ensure_reader_open(false);
       return _reader[arg];
     }
   }
@@ -419,7 +433,7 @@ class Index {
   /// See: [IndexReader.term_vector]
   def term_vector(id, field) {
     //@dir.synchronize do
-    ensure_reader_open();
+    _ensure_reader_open();
     if (id is String || id is Symbol) {
       var term_doc_enum = _reader.term_docs_for(_id_field, id.to_s);
       if (term_doc_enum.next != null) {
@@ -472,7 +486,7 @@ class Index {
       _ensure_reader_open();
       cnt = _reader.delete(arg);
     } else if (arg is Map || arg is List) {
-      batch_delete(arg);
+      _batch_delete(arg);
     } else {
       throw new ArgumentError("Cannot delete for arg of type #{arg.class}");
     }
@@ -489,7 +503,7 @@ class Index {
     //@dir.synchronize do
     _ensure_writer_open();
     _ensure_searcher_open();
-    query = do_process_query(query);
+    query = _do_process_query(query);
     _searcher.search_each(query, limit: "all").forEach((doc, score) {
       _reader.delete(doc);
     });
@@ -580,7 +594,7 @@ class Index {
     } else {
       throw new ArgumentError("must pass Map or Array");
     }
-    batch_delete(ids);
+    _batch_delete(ids);
     _ensure_writer_open();
     docs.forEach((new_doc) => _writer.add(new_doc));
     flush();
@@ -611,7 +625,7 @@ class Index {
     _ensure_writer_open();
     _ensure_searcher_open();
     var docs_to_add = [];
-    query = do_process_query(query);
+    query = _do_process_query(query);
     _searcher.search_each(query, limit: 'all').forEach((id, score) {
       var document = _searcher[id].load;
       if (new_val is Map) {
@@ -723,7 +737,7 @@ class Index {
   /// with the existing directory.
   persist(directory, [create = true]) {
     //synchronize do
-    close_all();
+    _close_all();
     old_dir = _dir;
     if (directory is String) {
       _dir = new FSDirectory(directory, create);
@@ -756,7 +770,7 @@ class Index {
   explain(query, doc) {
     //@dir.synchronize do
     _ensure_searcher_open();
-    query = do_process_query(query);
+    query = _do_process_query(query);
 
     return _searcher.explain(query, doc);
   }
@@ -766,7 +780,7 @@ class Index {
   process_query(query) {
     //@dir.synchronize do
     _ensure_searcher_open();
-    return do_process_query(query);
+    return _do_process_query(query);
   }
 
   /// Returns the [field_infos] object so that you can add new fields to the
@@ -774,7 +788,7 @@ class Index {
   field_infos() {
     //@dir.synchronize do
     _ensure_writer_open();
-    return _writer.field_infos();
+    return _writer.field_infos;
   }
 
   _ensure_writer_open() {
@@ -858,7 +872,7 @@ class Index {
 
   _do_search(query, options) {
     _ensure_searcher_open();
-    query = do_process_query(query);
+    query = _do_process_query(query);
 
     return _searcher.search(query, options);
   }

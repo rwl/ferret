@@ -13,13 +13,14 @@
 library ferret.ext.index;
 
 import 'dart:js';
+import 'dart:collection' show MapBase;
 
 /// The IndexWriter is the class used to add documents to an index. You can
 /// also delete documents from the index using this class. The indexing
 /// process is highly customizable.
 class IndexWriter {
 
-  static const WRITE_LOCK_TIMEOUT = 1;
+  /*static const WRITE_LOCK_TIMEOUT = 1;
   static const COMMIT_LOCK_TIMEOUT = 10;
   static const WRITE_LOCK_NAME = WRITE_LOCK_NAME;
   static const COMMIT_LOCK_NAME = COMMIT_LOCK_NAME;
@@ -31,7 +32,7 @@ class IndexWriter {
   static const DEFAULT_MAX_BUFFERED_DOCS = default_config.max_buffered_docs;
   static const DEFAULT_MAX_MERGE_DOCS = default_config.max_merge_docs;
   static const DEFAULT_MAX_FIELD_LENGTH = default_config.max_field_length;
-  static const DEFAULT_USE_COMPOUND_FILE = default_config.use_compound_file ? Qtrue : Qfalse;
+  static const DEFAULT_USE_COMPOUND_FILE = default_config.use_compound_file ? Qtrue : Qfalse;*/
 
   var _boost;
 
@@ -136,11 +137,11 @@ class IndexWriter {
   ///
   ///     index_writer.delete('id', "/path/to/indexed/file");
   IndexWriter({Directory dir, String path, bool create_if_missing: true,
-     bool create:false, FieldInfo field_infos, Analyzer analyzer,
-     int chunk_size: 0x100000, int max_buffer_memory: 0x1000000,
-     int term_index_interval: 128, int doc_skip_interval: 16, int merge_factor: 10,
-     int max_buffered_docs: 10000, max_merge_docs, int max_field_length: 10000,
-     bool use_compound_file: true});
+      bool create: false, FieldInfo field_infos, Analyzer analyzer,
+      int chunk_size: 0x100000, int max_buffer_memory: 0x1000000,
+      int term_index_interval: 128, int doc_skip_interval: 16,
+      int merge_factor: 10, int max_buffered_docs: 10000, max_merge_docs,
+      int max_field_length: 10000, bool use_compound_file: true});
 
   /// Returns the number of documents in the [Index]. Note that deletions
   /// won't be taken into account until the [IndexWriter] has been committed.
@@ -162,7 +163,7 @@ class IndexWriter {
   }
 
   /// Alias for [add_document].
-  operator <<() => frb_iw_add_doc;
+  operator <<(doc) => frb_iw_add_doc;
 
   /// Optimize the index for searching. This commits any unwritten data to the
   /// index and optimizes the index into a single segment to improve search
@@ -226,75 +227,75 @@ class IndexWriter {
     frb_iw_version();
   }
 
-  get chunk_size() {
+  get chunk_size {
     frb_iw_get_chunk_size;
   }
 
-  set chunk_size() {
+  set chunk_size(val) {
     frb_iw_set_chunk_size;
   }
 
-  get max_buffer_memory() {
+  get max_buffer_memory {
     frb_iw_get_max_buffer_memory;
   }
 
-  set max_buffer_memory() {
+  set max_buffer_memory(val) {
     frb_iw_set_max_buffer_memory;
   }
 
-  get term_index_interval() {
+  get term_index_interval {
     frb_iw_get_index_interval;
   }
 
-  set term_index_interval() {
+  set term_index_interval(val) {
     frb_iw_set_index_interval;
   }
 
-  get doc_skip_interval() {
+  get doc_skip_interval {
     frb_iw_get_skip_interval;
   }
 
-  set doc_skip_interval() {
+  set doc_skip_interval(val) {
     frb_iw_set_skip_interval;
   }
 
-  get merge_factor() {
+  get merge_factor {
     frb_iw_get_merge_factor;
   }
 
-  set merge_factor() {
+  set merge_factor(val) {
     frb_iw_set_merge_factor;
   }
 
-  get max_buffered_docs() {
+  get max_buffered_docs {
     frb_iw_get_max_buffered_docs;
   }
 
-  set max_buffered_docs() {
+  set max_buffered_docs(val) {
     frb_iw_set_max_buffered_docs;
   }
 
-  get max_merge_docs() {
+  get max_merge_docs {
     frb_iw_get_max_merge_docs;
   }
 
-  set max_merge_docs() {
+  set max_merge_docs(val) {
     frb_iw_set_max_merge_docs;
   }
 
-  get max_field_length() {
+  get max_field_length {
     frb_iw_get_max_field_length;
   }
 
-  set max_field_length() {
+  set max_field_length(val) {
     frb_iw_set_max_field_length;
   }
 
-  get use_compound_file() {
+  get use_compound_file {
     frb_iw_get_use_compound_file;
   }
 
-  set use_compound_file() {
+  set use_compound_file(val) {
     frb_iw_set_use_compound_file;
   }
 }
@@ -611,7 +612,7 @@ class FieldInfos {
   }
 
   /// Alias for [add].
-  operator <<() => frb_fis_add;
+  operator <<(fi) => frb_fis_add;
 
   /// Add a new [field] to the [FieldInfos] object. See [FieldInfo] for a
   /// description of the available [properties].
@@ -907,8 +908,7 @@ class LazyDoc extends MapBase {
   }
 }
 
-class LazyDocData {
-}
+class LazyDocData {}
 
 /// [IndexReader] is used for reading data from the index. This class is
 /// usually used directly for more advanced tasks like iterating through
@@ -950,7 +950,8 @@ class IndexReader {
   String norms() => frb_ir_norms;
 
   /// Expert: Get the norm values into a string [buffer] starting at [offset].
-  StringBuffer get_norms_into(field, StringBuffer buffer, int offset) => frb_ir_get_norms_into;
+  StringBuffer get_norms_into(field, StringBuffer buffer, int offset) =>
+      frb_ir_get_norms_into;
 
   /// Commit any deletes made by this particular [IndexReader] to the index. This
   /// will use open a Commit lock.
@@ -1003,7 +1004,7 @@ class IndexReader {
   LazyDoc get_document() => frb_ir_get_doc;
 
   /// Alias for [get_document].
-  operator []() => frb_ir_get_doc;
+  operator [](id) => frb_ir_get_doc;
 
   /// Return the [TermVector] for the field [field] in the document at
   /// [doc_id] in the index. Return `null` if no such term_vector exists.
@@ -1055,7 +1056,7 @@ class IndexReader {
   List<String> field_names() => frb_ir_fields;
 
   /// Get the [FieldInfos] object for this [IndexReader].
-  FieldInfos get field_infos() => frb_ir_field_infos;
+  FieldInfos get field_infos => frb_ir_field_infos;
 
   /// Returns an array of field names of all of the tokenized fields in the
   /// index. This can be used to pass to the QueryParser so that the

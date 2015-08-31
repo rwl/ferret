@@ -1,6 +1,6 @@
 part of ferret.index;
 
-class FieldInfos {
+class FieldInfosUtils {
   /// Load FieldInfos from a YAML file. The YAML file should look something
   /// like this:
   ///     default:

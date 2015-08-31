@@ -1,4 +1,4 @@
-library ferret.ext.search.sorting;
+part of ferret.ext.search;
 
 /// A [SortField] is used to sort the result-set of a search be the contents
 /// of a field. The following types of [sort_field] are available:
@@ -73,10 +73,10 @@ class SortField {
   /// Return a human readable string describing this sort_field.
   to_s() => frb_sf_to_s;
 
-  static final ScoreField SCORE;
-  static final ScoreField SCORE_REV;
-  static final ScoreField DOC_ID;
-  static final ScoreField DOC_ID_REV;
+  static const ScoreField SCORE = null;
+  static const ScoreField SCORE_REV = null;
+  static const ScoreField DOC_ID = null;
+  static const ScoreField DOC_ID_REV = null;
 }
 
 /// A [Sort] object is used to combine and apply a list of [SortField]s. The
@@ -95,7 +95,10 @@ class Sort {
   /// Create a new Sort object. If [reverse] is true, all sort_fields will be
   /// reversed so if any of them are already reversed the  will be turned back
   /// to their natural order again.
-  Sort({sort_fields: const [SortField::SCORE, SortField::DOC_ID], reverse: false}) {
+  Sort({sort_fields: const [
+    SortField.SCORE,
+    SortField.DOC_ID
+  ], reverse: false}) {
     frb_sort_init;
   }
 

@@ -1,4 +1,4 @@
-library ferret.ext.analysis.analyzer;
+part of ferret.ext.analysis;
 
 /// An [Analyzer] builds [TokenStream]s, which analyze text. It thus
 /// represents a policy for extracting index terms from text.
@@ -173,7 +173,8 @@ class AsciiStandardAnalyzer extends Analyzer {
   /// but can optionally leave case as is. Lowercasing will be done based on
   /// the current locale. You can also set the list of stop-words to be used
   /// by the [StopFilter].
-  AsciiStandardAnalyzer({lower: true, stop_words: FULL_ENGLISH_STOP_WORDS}) {
+  AsciiStandardAnalyzer(
+      {lower: true, stop_words /*: FULL_ENGLISH_STOP_WORDS*/}) {
     frb_a_standard_analyzer_init;
   }
 }
@@ -203,7 +204,7 @@ class StandardAnalyzer extends Analyzer {
   /// can optionally leave case as is. Lowercasing will be done based on the
   /// current locale. You can also set the list of stop-words to be used by
   /// the [StopFilter].
-  StandardAnalyzer({lower: true, stop_words: FULL_ENGLISH_STOP_WORDS}) {
+  StandardAnalyzer({lower: true, stop_words /*: FULL_ENGLISH_STOP_WORDS*/}) {
     frb_standard_analyzer_init;
   }
 }

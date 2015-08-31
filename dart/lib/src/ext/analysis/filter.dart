@@ -1,4 +1,4 @@
-library ferret.ext.analysis.filter;
+part of ferret.ext.analysis;
 
 /// [AsciiLowerCaseFilter] normalizes a token's text to lowercase but only for
 /// ASCII characters. For other characters use [LowerCaseFilter].

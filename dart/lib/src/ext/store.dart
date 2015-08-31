@@ -21,7 +21,7 @@ library ferret.ext.store;
 /// called `open_input`. If there is a risk of simultaneous modifications of
 /// the files then locks should be used. See [Lock] to find out how.
 abstract class Directory {
-  static const LOCK_PREFIX;
+  static const LOCK_PREFIX = '';
 
   /// It is a good idea to close a directory when you have finished using it.
   /// Although the garbage collector will currently handle this for you, this
@@ -85,14 +85,14 @@ class Lock {
   ///
   /// Returns `true` if lock was successfully obtained. Raises a [LockError]
   /// otherwise.
-  bool obtain({timeout = 1}) => frb_lock_obtain;
+  bool obtain({timeout: 1}) => frb_lock_obtain;
 
   /// Run the code in a block while a lock is obtained, automatically
   /// releasing the lock when the block returns.
   ///
   /// Returns `true` if lock was successfully obtained. Raises a [LockError]
   /// otherwise.
-  bool while_locked({timeout = 1, fn}) => frb_lock_while_locked;
+  bool while_locked({timeout: 1, fn}) => frb_lock_while_locked;
 
   /// Release the lock. This should only be called by the process which
   /// obtains the lock.

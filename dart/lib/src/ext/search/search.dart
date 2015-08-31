@@ -1,5 +1,11 @@
 library ferret.ext.search;
 
+part 'filter.dart';
+part 'query.dart';
+part 'searcher.dart';
+part 'sorting.dart';
+part 'span.dart';
+
 /// A hit represents a single document match for a search. It holds the
 /// document id of the document that matches along with the score for the
 /// match. The score is a positive Float value. The score contained in a hit
