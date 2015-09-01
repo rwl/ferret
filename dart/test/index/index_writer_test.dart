@@ -1,13 +1,18 @@
 library ferret.test.index.writer;
 
+import 'dart:math' show Random;
+import 'package:test/test.dart';
+import 'package:ferret/ferret.dart';
+
 class IndexWriterTest {
   //< Test::Unit::TestCase
 //  include Ferret::Index
 //  include Ferret::Analysis
+  Directory _dir;
 
   setup() {
     _dir = new RAMDirectory();
-    fis = newFieldInfos();
+    var fis = new FieldInfos();
     fis.create_index(_dir);
   }
 
@@ -16,50 +21,51 @@ class IndexWriterTest {
   }
 
   test_initialize() {
-    wlock = _dir.make_lock(IndexWriter.WRITE_LOCK_NAME);
-    clock = _dir.make_lock(IndexWriter.COMMIT_LOCK_NAME);
-    assert(!wlock.locked);
-    assert(!clock.locked);
-    iw = new IndexWriter(dir: _dir, create: true);
-    assert(_dir.exists("segments"));
-    assert(wlock.locked);
+    var wlock = _dir.make_lock(IndexWriter.WRITE_LOCK_NAME);
+    var clock = _dir.make_lock(IndexWriter.COMMIT_LOCK_NAME);
+    expect(wlock.locked, isFalse);
+    expect(clock.locked, isFalse);
+    var iw = new IndexWriter(dir: _dir, create: true);
+    expect(_dir.exists("segments"), isTrue);
+    expect(wlock.locked, isTrue);
     iw.close();
-    assert(_dir.exists("segments"));
-    assert(!wlock.locked);
-    assert(!clock.locked);
+    expect(_dir.exists("segments"), isTrue);
+    expect(wlock.locked, isFalse);
+    expect(clock.locked, isFalse);
   }
 
   test_add_document() {
-    iw = new IndexWriter(
+    var iw = new IndexWriter(
         dir: _dir, analyzer: new StandardAnalyzer(), create: true);
-    iw.add({'title': "first doc", 'content': ["contents of", "first doc"]});
-    assert_equal(1, iw.doc_count);
-    iw.add(["contents of", "second doc"]);
-    assert_equal(2, iw.doc_count);
-    iw.add("contents of third doc");
-    assert_equal(3, iw.doc_count);
+    iw.add_document(
+        {'title': "first doc", 'content': ["contents of", "first doc"]});
+    expect(1, equals(iw.doc_count));
+    iw.add_document(["contents of", "second doc"]);
+    expect(2, equals(iw.doc_count));
+    iw.add_document("contents of third doc");
+    expect(3, equals(iw.doc_count));
     iw.close();
   }
 
   test_add_documents_fuzzy() {
-    iw = new IndexWriter(dir: _dir, analyzer: new StandardAnalyzer());
+    var iw = new IndexWriter(dir: _dir, analyzer: new StandardAnalyzer());
     iw.merge_factor = 3;
     iw.max_buffered_docs = 3;
 
     // add 100 documents
     repeat(100).each(() {
-      doc = random_doc();
+      var doc = random_doc();
       iw.add_document(doc);
     });
-    assert_equal(100, iw.doc_count);
+    expect(100, equals(iw.doc_count));
     iw.close();
   }
 
   test_adding_long_url() {
-    iw = new IndexWriter(dir: _dir, default_field: 'content');
-    iw.add({content: "http://" + 'x' * 255});
+    var iw = new IndexWriter(dir: _dir, default_field: 'content');
+    iw.add_document({'content': "http://" + 'x' * 255});
     // The following line will cause a segfault prior to 0.11.6
-    iw.add({'content': "http://" + 'x' * 1000000});
+    iw.add_document({'content': "http://" + 'x' * 1000000});
   }
 
   static const _WORDS = const [
@@ -1997,21 +2003,25 @@ class IndexWriterTest {
 
   static final _WORDS_SIZE = _WORDS.length;
 
-  _random_word() {
-    return _WORDS[rand(_WORDS_SIZE)];
+  static final Random _r = new Random();
+
+  String _random_word() {
+    return _WORDS[_r.nextInt(_WORDS_SIZE)];
   }
 
-  random_sentence(max_len) {
-    sentence = "";
-    (1 + rand(max_len)).times(() => sentence += " " + random_word);
-    return sentence;
+  String random_sentence(max_len) {
+    var sentence = new StringBuffer();
+    (1 + _r.nextInt(max_len)).times(() {
+      sentence.write(" " + _random_word());
+    });
+    return sentence.toString();
   }
 
   random_doc([max_fields = 10, max_elements = 10, max_len = 100]) {
-    doc = {};
-    (1 + rand(max_fields)).times(() {
-      field = random_word.intern;
-      elem_count = rand(max_elements) + 1;
+    var doc = {};
+    (1 + _r.nextInt(max_fields)).times(() {
+      var field = _random_word();
+      var elem_count = _r.nextInt(max_elements) + 1;
       if (elem_count == 1) {
         doc[field] = random_sentence(max_len);
       } else {

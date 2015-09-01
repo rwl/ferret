@@ -335,8 +335,8 @@ class Index {
   /// [filter_proc] is a [Proc] which takes the `doc_id`, the `score` and the
   /// [Searcher] object as its parameters and returns a [bool] value
   /// specifying whether the result should be included in the result set.
-  TopDocs search(Query query, {int offset: 0, int limit: 10, sort,
-      Filter filter, Function filter_proc}) {
+  TopDocs search(query, {int offset: 0, int limit: 10, sort, Filter filter,
+      Function filter_proc}) {
     //@dir.synchronize do
     return _do_search(query,
         offset: offset,
