@@ -1,27 +1,30 @@
 library ferret.test.search.sort;
 
+import 'package:test/test.dart';
+import 'package:ferret/ferret.dart';
+
 class SortFieldTest {
   //< Test::Unit::TestCase
 
   test_field_score() {
-    fs = SortField.SCORE;
-    assert_equal('score', fs.type);
-    assert_nil(fs.name);
-    expect(fs.reverse, isFalse, "SCORE_ID should not be reverse");
-    assert_nil(fs.comparator);
+    var fs = SortField.SCORE;
+    expect('score', fs.type);
+    expect(fs.name, isNull);
+    expect(fs.reverse, isFalse, reason: "SCORE_ID should not be reverse");
+    expect(fs.comparator, isNull);
   }
 
   test_field_doc() {
-    fs = SortField.DOC_ID;
-    assert_equal('doc_id', fs.type);
-    assert_nil(fs.name);
-    expect(fs.reverse, isFalse, "DOC_ID should be reverse");
-    assert_nil(fs.comparator);
+    var fs = SortField.DOC_ID;
+    expect('doc_id', fs.type);
+    expect(fs.name, isNull);
+    expect(fs.reverse, isFalse, reason: "DOC_ID should be reverse");
+    expect(fs.comparator, isNull);
   }
 
   test_error_raised() {
-    assert_raise(() {
-      fs = new SortField(null, type: 'integer');
+    expect(() {
+      new SortField(null, type: 'integer');
     }, ArgumentError);
   }
 }

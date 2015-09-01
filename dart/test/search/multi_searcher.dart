@@ -1,8 +1,12 @@
 library ferret.test.search.multi_searcher;
 
+import 'package:test/test.dart';
+import 'package:ferret/ferret.dart';
+
 // make sure a MultiSearcher searching only one index
 // passes all the Searcher tests
 class SimpleMultiSearcherTest {
+  Searcher _searcher;
   //extends SearcherTest {
   //alias :old_setup :setup
   setup() {
@@ -17,7 +21,7 @@ class SimpleMultiSearcherTest {
 class MultiSearcherTest {
   //< Test::Unit::TestCase
 
-  static final DOCUMENTS1 = [
+  static final List DOCUMENTS1 = [
     {"date": "20050930", 'field': "word1", "cat": "cat1/"},
     {
       "date": "20051001",
@@ -37,7 +41,7 @@ class MultiSearcherTest {
     }
   ];
 
-  static final DOCUMENTS2 = [
+  static final List DOCUMENTS2 = [
     {"date": "20051009", 'field': "word1", "cat": "cat3/sub1"},
     {"date": "20051010", 'field': "word1", "cat": "cat3/sub1"},
     {
@@ -65,27 +69,29 @@ class MultiSearcherTest {
     }
   ];
 
+  Searcher _searcher, _single;
+
   setup() {
     // create MultiSearcher from two seperate searchers
-    dir1 = new RAMDirectory();
-    iw1 = new IndexWriter(
+    var dir1 = new RAMDirectory();
+    var iw1 = new IndexWriter(
         dir: dir1, analyzer: new WhiteSpaceAnalyzer(), create: true);
-    DOCUMENTS1.each((doc) => iw1.add(doc));
+    DOCUMENTS1.forEach((doc) => iw1.add_document(doc));
     iw1.close();
 
-    dir2 = new RAMDirectory();
-    iw2 = new IndexWriter(
+    var dir2 = new RAMDirectory();
+    var iw2 = new IndexWriter(
         dir: dir2, analyzer: new WhiteSpaceAnalyzer(), create: true);
-    DOCUMENTS2.each((doc) => iw2.add(doc));
+    DOCUMENTS2.forEach((doc) => iw2.add_document(doc));
     iw2.close();
     _searcher = new MultiSearcher([new Searcher(dir1), new Searcher(dir2)]);
 
     // create single searcher
-    dir = new RAMDirectory();
-    iw = new IndexWriter(
+    var dir = new RAMDirectory();
+    var iw = new IndexWriter(
         dir: dir, analyzer: new WhiteSpaceAnalyzer(), create: true);
-    DOCUMENTS1.each((doc) => iw.add(doc));
-    DOCUMENTS2.each((doc) => iw.add(doc));
+    DOCUMENTS1.forEach((doc) => iw.add_document(doc));
+    DOCUMENTS2.forEach((doc) => iw.add_document(doc));
     iw.close();
     _single = new Searcher(dir);
 
@@ -98,26 +104,28 @@ class MultiSearcherTest {
   }
 
   check_hits(query, ignore1, [ignore2 = null, ignore3 = null]) {
-    multi_docs = _searcher.search(query);
-    single_docs = _single.search(query);
-    assert_equal(single_docs.hits.size, multi_docs.hits.size, 'hit count');
-    assert_equal(single_docs.total_hits, multi_docs.total_hits, 'hit count');
+    var multi_docs = _searcher.search(query);
+    var single_docs = _single.search(query);
+    expect(single_docs.hits.size, equals(multi_docs.hits.size),
+        reason: 'hit count');
+    expect(single_docs.total_hits, equals(multi_docs.total_hits),
+        reason: 'hit count');
 
     multi_docs.hits.each_with_index((sd, id) {
-      assert_equal(single_docs.hits[id].doc, sd.doc);
+      expect(single_docs.hits[id].doc, equals(sd.doc));
       expect(single_docs.hits[id].score.approx_eql(sd.score), isTrue,
-          "#{single_docs.hits[id]} != #{sd.score}");
+          reason: "${single_docs.hits[id]} != ${sd.score}");
     });
   }
 
   test_get_doc() {
-    assert_equal(18, _searcher.max_doc);
-    assert_equal("20050930", _searcher.get_document(0)['date']);
-    assert_equal("cat1/sub2/subsub2", _searcher[4]['cat']);
-    assert_equal("20051012", _searcher.get_document(12)['date']);
-    assert_equal(18, _single.max_doc);
-    assert_equal("20050930", _single.get_document(0)['date']);
-    assert_equal("cat1/sub2/subsub2", _single[4]['cat']);
-    assert_equal("20051012", _single.get_document(12)['date']);
+    expect(18, equals(_searcher.max_doc));
+    expect("20050930", equals(_searcher.get_document(0)['date']));
+    expect("cat1/sub2/subsub2", equals(_searcher[4]['cat']));
+    expect("20051012", equals(_searcher.get_document(12)['date']));
+    expect(18, equals(_single.max_doc));
+    expect("20050930", equals(_single.get_document(0)['date']));
+    expect("cat1/sub2/subsub2", equals(_single[4]['cat']));
+    expect("20051012", equals(_single.get_document(12)['date']));
   }
 }

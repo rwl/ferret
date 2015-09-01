@@ -1,15 +1,18 @@
 library ferret.test.query_parser;
 
+import 'package:test/test.dart';
+import 'package:ferret/ferret.dart';
+
 class QueryParserTest {
   //< Test::Unit::TestCase
   //include Ferret::Analysis
 
   test_strings() {
-    parser = new QueryParser(
+    var parser = new QueryParser(
         default_field: "xxx",
         fields: ["xxx", "field", "f1", "f2"],
         tokenized_fields: ["xxx", "f1", "f2"]);
-    pairs = [
+    var pairs = [
       ['', ''],
       ['*:word', 'word field:word f1:word f2:word'],
       ['word', 'word'],
@@ -118,64 +121,68 @@ class QueryParserTest {
       ["who'd", "who'd"]
     ];
 
-    pairs.each((query_str, expected) {
-      assert_equal(expected, parser.parse(query_str).to_s("xxx"));
+    pairs.forEach((row) {
+      var query_str = row[0],
+          expected = row[1];
+      expect(expected, equals(parser.parse(query_str).to_s("xxx")));
     });
   }
 
   test_qp_with_standard_analyzer() {
-    parser = new QueryParser(
+    var parser = new QueryParser(
         default_field: "xxx",
         fields: ["xxx", "key"],
         analyzer: new StandardAnalyzer());
-    pairs = [
+    var pairs = [
       ['key:1234', 'key:1234'],
       ['key:(1234 and Dave)', 'key:1234 key:dave'],
       ['key:(1234)', 'key:1234'],
       ['and the but they with', '']
     ];
 
-    pairs.each((query_str, expected) {
-      assert_equal(expected, parser.parse(query_str).to_s("xxx"));
+    pairs.forEach((row) {
+      var query_str = row[0],
+          expected = row[1];
+      expect(expected, equals(parser.parse(query_str).to_s("xxx")));
     });
   }
 
   test_qp_changing_fields() {
-    parser = new QueryParser(
+    var parser = new QueryParser(
         default_field: "xxx",
         fields: ["xxx", "key"],
         analyzer: new WhiteSpaceAnalyzer());
-    assert_equal('word key:word', parser.parse("*:word").to_s("xxx"));
+    expect('word key:word', equals(parser.parse("*:word").to_s("xxx")));
 
     parser.fields = ["xxx", "one", "two", "three"];
-    assert_equal('word one:word two:word three:word',
-        parser.parse("*:word").to_s("xxx"));
-    assert_equal('three:word four:word',
-        parser.parse("three:word four:word").to_s("xxx"));
+    expect('word one:word two:word three:word',
+        equals(parser.parse("*:word").to_s("xxx")));
+    expect('three:word four:word',
+        equals(parser.parse("three:word four:word").to_s("xxx")));
   }
 
   test_qp_allow_any_field() {
-    parser = new QueryParser(
+    var parser = new QueryParser(
         default_field: "xxx",
         fields: ["xxx", "key"],
         analyzer: new WhiteSpaceAnalyzer(),
         validate_fields: true);
 
-    assert_equal('key:word', parser.parse("key:word song:word").to_s("xxx"));
-    assert_equal('word key:word', parser.parse("*:word").to_s("xxx"));
+    expect('key:word', equals(parser.parse("key:word song:word").to_s("xxx")));
+    expect('word key:word', equals(parser.parse("*:word").to_s("xxx")));
 
     parser = new QueryParser(
         default_field: "xxx",
         fields: ["xxx", "key"],
         analyzer: new WhiteSpaceAnalyzer());
 
-    assert_equal(
-        'key:word song:word', parser.parse("key:word song:word").to_s("xxx"));
-    assert_equal('word key:word', parser.parse("*:word").to_s("xxx"));
+    expect('key:word song:word',
+        equals(parser.parse("key:word song:word").to_s("xxx")));
+    expect('word key:word', equals(parser.parse("*:word").to_s("xxx")));
   }
 
   do_test_query_parse_exception_raised(str) {
-    parser = new QueryParser(
+    var parser = new QueryParser(
         default_field: "xxx",
         fields: ["f1", "f2", "f3"],
         handle_parse_errors: false);
@@ -184,36 +191,38 @@ class QueryParserTest {
   }
 
   test_or_default() {
-    parser = new QueryParser(
+    var parser = new QueryParser(
         default_field: '*',
         fields: ['x', 'y'],
         or_default: false,
         analyzer: new StandardAnalyzer());
-    pairs = [
+    var pairs = [
       ['word', 'x:word y:word'],
       ['word1 word2', '+(x:word1 y:word1) +(x:word2 y:word2)']
     ];
 
-    pairs.each((query_str, expected) {
-      assert_equal(expected, parser.parse(query_str).to_s(""));
+    pairs.forEach((row) {
+      var query_str = row[0],
+          expected = row[1];
+      expect(expected, equals(parser.parse(query_str).to_s("")));
     });
   }
 
   test_prefix_query() {
-    parser = new QueryParser(
+    var parser = new QueryParser(
         default_field: "xxx",
         fields: ["xxx"],
         analyzer: new StandardAnalyzer());
-    assert_equal(parser.parse("asdg*") is PrefixQuery, isTrue);
-    assert_equal(parser.parse("a?dg*") is WildcardQuery, isTrue);
-    assert_equal(parser.parse("a*dg*") is WildcardQuery, isTrue);
-    assert_equal(parser.parse("adg*c") is WildcardQuery, isTrue);
+    expect(parser.parse("asdg*") is PrefixQuery, isTrue);
+    expect(parser.parse("a?dg*") is WildcardQuery, isTrue);
+    expect(parser.parse("a*dg*") is WildcardQuery, isTrue);
+    expect(parser.parse("adg*c") is WildcardQuery, isTrue);
   }
 
   test_bad_queries() {
-    parser = new QueryParser(default_field: "xxx", fields: ["f1", "f2"]);
+    var parser = new QueryParser(default_field: "xxx", fields: ["f1", "f2"]);
 
-    pairs = [
+    var pairs = [
       ['::*word', 'word'],
       ['::*&)(*^&*(', ''],
       ['::*&one)(*two(*&"', '"one two"~1'],
@@ -231,21 +240,23 @@ class QueryParserTest {
       ['<script>', 'script']
     ];
 
-    pairs.each((query_str, expected) {
+    pairs.forEach((row) {
+      var query_str = row[0],
+          expected = row[1];
       do_test_query_parse_exception_raised(query_str);
-      assert_equal(expected, parser.parse(query_str).to_s("xxx"));
+      expect(expected, parser.parse(query_str).to_s("xxx"));
     });
   }
 
   test_use_keywords_switch() {
-    analyzer = new LetterAnalyzer();
-    parser = new QueryParser(analyzer: analyzer, default_field: "xxx");
-    assert_equal("+www (+xxx +yyy) -zzz",
-        parser.parse("REQ www (xxx AND yyy) OR NOT zzz").to_s("xxx"));
+    var analyzer = new LetterAnalyzer();
+    var parser = new QueryParser(analyzer: analyzer, default_field: "xxx");
+    expect("+www (+xxx +yyy) -zzz",
+        equals(parser.parse("REQ www (xxx AND yyy) OR NOT zzz").to_s("xxx")));
 
     parser = new QueryParser(
         analyzer: analyzer, default_field: "xxx", use_keywords: false);
-    assert_equal("req www (xxx and yyy) or not zzz",
-        parser.parse("REQ www (xxx AND yyy) OR NOT zzz").to_s("xxx"));
+    expect("req www (xxx and yyy) or not zzz",
+        equals(parser.parse("REQ www (xxx AND yyy) OR NOT zzz").to_s("xxx")));
   }
 }

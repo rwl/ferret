@@ -1,7 +1,11 @@
 library ferret.test.search.fuzzy_query;
 
+import 'package:test/test.dart';
+import 'package:ferret/ferret.dart';
+
 class FuzzyQueryTest {
   //< Test::Unit::TestCase
+  Directory _dir;
 
   add_doc(text, writer) {
     writer.add({'field': text});
@@ -16,24 +20,24 @@ class FuzzyQueryTest {
   }
 
   do_test_top_docs(_is, query, expected) {
-    top_docs = _is.search(query);
-    assert_equal(expected.length, top_docs.total_hits,
-        "expected ${expected.length} hits but got ${top_docs.total_hits}");
-    assert_equal(expected.length, top_docs.hits.size);
+    var top_docs = _is.search(query);
+    expect(expected.length, equals(top_docs.total_hits),
+        reason: "expected ${expected.length} hits but got ${top_docs.total_hits}");
+    expect(expected.length, equals(top_docs.hits.size));
     top_docs.total_hits.times((i) {
-      assert_equal(expected[i], top_docs.hits[i].doc);
+      expect(expected[i], equals(top_docs.hits[i].doc));
     });
   }
 
   do_prefix_test(_is, text, prefix, expected) {
-    fq = new FuzzyQuery('field', text, prefix_length: prefix);
+    var fq = new FuzzyQuery('field', text, prefix_length: prefix);
     //puts is.explain(fq, 0);
     //puts is.explain(fq, 1);
     do_test_top_docs(_is, fq, expected);
   }
 
   test_fuzziness() {
-    iw = new IndexWriter(
+    var iw = new IndexWriter(
         dir: _dir, analyzer: new WhiteSpaceAnalyzer(), create: true);
     add_doc("aaaaa", iw);
     add_doc("aaaab", iw);
@@ -47,9 +51,9 @@ class FuzzyQueryTest {
     //iw.optimize();
     iw.close();
 
-    _is = new Searcher(_dir);
+    var _is = new Searcher(_dir);
 
-    fq = new FuzzyQuery('field', "aaaaa", prefix_length: 5);
+    var fq = new FuzzyQuery('field', "aaaaa", prefix_length: 5);
 
     do_prefix_test(_is, "aaaaaaaaaaaaaaaaaaaaaa", 1, [8]);
     do_prefix_test(_is, "aaaaa", 0, [0, 1, 2]);
@@ -79,20 +83,20 @@ class FuzzyQueryTest {
     do_prefix_test(_is, "ddddX", 5, []);
 
     fq = new FuzzyQuery('anotherfield', "ddddX", prefix_length: 0);
-    top_docs = _is.search(fq);
-    assert_equal(0, top_docs.total_hits);
+    var top_docs = _is.search(fq);
+    expect(0, equals(top_docs.total_hits));
 
     _is.close();
   }
 
   test_fuzziness_long() {
-    iw = new IndexWriter(
+    var iw = new IndexWriter(
         dir: _dir, analyzer: new WhiteSpaceAnalyzer(), create: true);
     add_doc("aaaaaaa", iw);
     add_doc("segment", iw);
     iw.optimize();
     iw.close();
-    _is = new Searcher(_dir);
+    var _is = new Searcher(_dir);
 
     // not similar enough:
     do_prefix_test(_is, "xxxxx", 0, []);
@@ -121,16 +125,16 @@ class FuzzyQueryTest {
     do_prefix_test(_is, "stellent", 2, []);
 
     // "student" doesn't match anymore thanks to increased minimum similarity:
-    fq = new FuzzyQuery('field', "student",
+    var fq = new FuzzyQuery('field', "student",
         min_similarity: 0.6, prefix_length: 0);
 
-    top_docs = _is.search(fq);
-    assert_equal(0, top_docs.total_hits);
+    var top_docs = _is.search(fq);
+    expect(0, equals(top_docs.total_hits));
 
-    assert_raise(() {
+    expect(() {
       fq = new FuzzyQuery('f', "s", min_similarity: 1.1);
     }, ArgumentError);
-    assert_raise(() {
+    expect(() {
       fq = new FuzzyQuery('f', "s", min_similarity: -0.1);
     }, ArgumentError);
 

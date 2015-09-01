@@ -1,48 +1,51 @@
 library ferret.test.search.sort;
 
+import 'package:test/test.dart';
+import 'package:ferret/ferret.dart';
+
 class SortTest {
   //< Test.Unit.TestCase
 
   test_basic() {
-    s = Sort.RELEVANCE;
-    assert_equal(2, s.fields.size);
-    assert_equal(SortField.SCORE, s.fields[0]);
-    assert_equal(SortField.DOC_ID, s.fields[1]);
+    var s = Sort.RELEVANCE;
+    expect(2, equals(s.fields.length));
+    expect(SortField.SCORE, equals(s.fields[0]));
+    expect(SortField.DOC_ID, equals(s.fields[1]));
 
     s = Sort.INDEX_ORDER;
-    assert_equal(1, s.fields.size);
-    assert_equal(SortField.DOC_ID, s.fields[0]);
+    expect(1, equals(s.fields.length));
+    expect(SortField.DOC_ID, equals(s.fields[0]));
   }
 
   test_string_init() {
-    s = new Sort('field');
-    assert_equal(2, s.fields.size);
-    assert_equal('auto', s.fields[0].type);
-    assert_equal('field', s.fields[0].name);
-    assert_equal(SortField.DOC_ID, s.fields[1]);
+    var s = new Sort(sort_fields: 'field');
+    expect(2, equals(s.fields.length));
+    expect('auto', equals(s.fields[0].type));
+    expect('field', equals(s.fields[0].name));
+    expect(SortField.DOC_ID, equals(s.fields[1]));
 
-    s = new Sort(['field1', 'field2', 'field3']);
-    assert_equal(4, s.fields.size);
-    assert_equal('auto', s.fields[0].type);
-    assert_equal('field1', s.fields[0].name);
-    assert_equal('auto', s.fields[1].type);
-    assert_equal('field2', s.fields[1].name);
-    assert_equal('auto', s.fields[2].type);
-    assert_equal('field3', s.fields[2].name);
-    assert_equal(SortField.DOC_ID, s.fields[3]);
+    s = new Sort(sort_fields: ['field1', 'field2', 'field3']);
+    expect(4, equals(s.fields.length));
+    expect('auto', equals(s.fields[0].type));
+    expect('field1', equals(s.fields[0].name));
+    expect('auto', equals(s.fields[1].type));
+    expect('field2', equals(s.fields[1].name));
+    expect('auto', equals(s.fields[2].type));
+    expect('field3', equals(s.fields[2].name));
+    expect(SortField.DOC_ID, equals(s.fields[3]));
   }
 
   test_multi_fields() {
-    sf1 = new SortField('field', {'type': 'integer', 'reverse': true});
-    sf2 = SortField.SCORE;
-    sf3 = SortField.DOC_ID;
-    s = new Sort([sf1, sf2, sf3]);
+    var sf1 = new SortField('field', type: 'integer', reverse: true);
+    var sf2 = SortField.SCORE;
+    var sf3 = SortField.DOC_ID;
+    var s = new Sort(sort_fields: [sf1, sf2, sf3]);
 
-    assert_equal(3, s.fields.size);
-    assert_equal('integer', s.fields[0].type);
-    assert_equal('field', s.fields[0].name);
-    assert(s.fields[0].reverse);
-    assert_equal(SortField.SCORE, s.fields[1]);
-    assert_equal(SortField.DOC_ID, s.fields[2]);
+    expect(3, equals(s.fields.length));
+    expect('integer', equals(s.fields[0].type));
+    expect('field', equals(s.fields[0].name));
+    expect(s.fields[0].reverse, isTrue);
+    expect(SortField.SCORE, equals(s.fields[1]));
+    expect(SortField.DOC_ID, equals(s.fields[2]));
   }
 }

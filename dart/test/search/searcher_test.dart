@@ -1,10 +1,16 @@
 library ferret.test.search.searcher;
 
-class SearcherTests {
+import 'package:test/test.dart';
+import 'package:ferret/ferret.dart';
+
+abstract class SearcherTests {
 //  include Ferret::Search
+  Searcher _searcher;
+
+  check_hits(query, expected, [b]);
 
   test_term_query() {
-    tq = new TermQuery('field', "word2");
+    var tq = new TermQuery('field', "word2");
     tq.boost = 100;
     check_hits(tq, [1, 4, 8]);
     //puts _searcher.explain(tq, 1);
@@ -18,126 +24,129 @@ class SearcherTests {
     check_hits(tq, []);
 
     tq = new TermQuery('field', "word1");
-    top_docs = _searcher.search(tq);
-    assert_equal(_searcher.max_doc, top_docs.total_hits);
-    assert_equal(10, top_docs.hits.size);
-    top_docs = _searcher.search(tq, {'limit': 20});
-    assert_equal(_searcher.max_doc, top_docs.hits.size);
+    var top_docs = _searcher.search(tq);
+    expect(_searcher.max_doc, equals(top_docs.total_hits));
+    expect(10, equals(top_docs.hits.size));
+    top_docs = _searcher.search(tq, limit: 20);
+    expect(_searcher.max_doc, equals(top_docs.hits.size));
 
-    assert_equal([new Term('field', "word1")], tq.terms(_searcher));
+    expect([new Term('field', "word1")], equals(tq.terms(_searcher)));
   }
 
   check_docs(query, options, [expected = const []]) {
-    top_docs = _searcher.search(query, options);
-    docs = top_docs.hits;
-    assert_equal(expected.length, docs.length);
+    var top_docs = _searcher.search(query, options);
+    var docs = top_docs.hits;
+    expect(expected.length, equals(docs.length));
     docs.length.times((i) {
-      assert_equal(expected[i], docs[i].doc);
+      expect(expected[i], equals(docs[i].doc));
     });
     if (options['limit'] == 'all' && options['offset'] == null) {
-      assert_equal(expected.sort, _searcher.scan(query));
+      expect(expected.sort, equals(_searcher.scan(query)));
     }
   }
 
   test_offset() {
-    tq = new TermQuery('field', "word1");
+    var tq = new TermQuery('field', "word1");
     tq.boost = 100;
-    top_docs = _searcher.search(tq, {'limit': 100});
-    expected = [];
+    var top_docs = _searcher.search(tq, limit: 100);
+    var expected = [];
     top_docs.hits.each((sd) {
       expected.add(sd.doc);
     });
 
-    assert_raise(() => _searcher.search(tq, {'offset': -1}), ArgumentError);
-    assert_raise(() => _searcher.search(tq, {'limit': 0}), ArgumentError);
-    assert_raise(() => _searcher.search(tq, {'limit': -1}), ArgumentError);
+    expect(() => _searcher.search(tq, offset: -1), ArgumentError);
+    expect(() => _searcher.search(tq, limit: 0), ArgumentError);
+    expect(() => _searcher.search(tq, limit: -1), ArgumentError);
 
-//    check_docs(tq, {'limit': 8, 'offset': 0}, expected[0,8]);
-//    check_docs(tq, {'limit': 3, 'offset': 1}, expected[1,3]);
-//    check_docs(tq, {'limit': 6, 'offset': 2}, expected[2,6]);
-//    check_docs(tq, {'limit': 2, 'offset': expected.length}, []);
-//    check_docs(tq, {'limit': 2, 'offset': expected.length + 100}, []);
-//    check_docs(tq, {'limit': 'all'}, expected);
-//    check_docs(tq, {'limit': 'all', 'offset': 2}, expected[2..-1]);
+//    check_docs(tq, limit: 8, offset: 0, expected[0,8]);
+//    check_docs(tq, limit: 3, offset: 1, expected[1,3]);
+//    check_docs(tq, limit: 6, offset: 2, expected[2,6]);
+//    check_docs(tq, limit: 2, offset: expected.length, []);
+//    check_docs(tq, limit: 2, offset: expected.length + 100, []);
+//    check_docs(tq, limit: 'all', expected);
+//    check_docs(tq, limit: 'all', offset: 2, expected[2..-1]);
   }
 
   test_multi_term_query() {
-    mtq = new MultiTermQuery('field', max_terms: 4, min_score: 0.5);
+    var mtq = new MultiTermQuery('field', max_terms: 4, min_score: 0.5);
     check_hits(mtq, []);
-    assert_equal('""', mtq.to_s('field'));
-    assert_equal('field:""', mtq.to_s);
+    expect('""', equals(mtq.to_s('field')));
+    expect('field:""', equals(mtq.to_s));
 
     [
       ["brown", 1.0, '"brown"'],
       ["fox", 0.1, '"brown"'],
       ["fox", 0.6, '"fox^0.6|brown"'],
       ["fast", 50.0, '"fox^0.6|brown|fast^50.0"']
-    ].each((term, boost, str) {
+    ].forEach((row) {
+      var term = row[0],
+          boost = row[1],
+          str = row[2];
       mtq.add_term(term, boost);
-      assert_equal(str, mtq.to_s('field'));
-      assert_equal("field:#{str}", mtq.to_s());
+      expect(str, equals(mtq.to_s('field')));
+      expect("field:#{str}", equals(mtq.to_s()));
     });
 
     mtq.boost = 80.1;
-    assert_equal('field:"fox^0.6|brown|fast^50.0"^80.1', mtq.to_s());
-    mtq.add("word1");
-    assert_equal('field:"fox^0.6|brown|word1|fast^50.0"^80.1', mtq.to_s());
-    mtq.add("word2");
-    assert_equal('field:"brown|word1|word2|fast^50.0"^80.1', mtq.to_s());
-    mtq.add("word3");
-    assert_equal('field:"brown|word1|word2|fast^50.0"^80.1', mtq.to_s());
+    expect('field:"fox^0.6|brown|fast^50.0"^80.1', equals(mtq.to_s()));
+    mtq.add_term("word1");
+    expect('field:"fox^0.6|brown|word1|fast^50.0"^80.1', equals(mtq.to_s()));
+    mtq.add_term("word2");
+    expect('field:"brown|word1|word2|fast^50.0"^80.1', equals(mtq.to_s()));
+    mtq.add_term("word3");
+    expect('field:"brown|word1|word2|fast^50.0"^80.1', equals(mtq.to_s()));
 
-    terms = mtq.terms(_searcher);
-    assert(terms.index(new Term('field', "brown")));
-    assert(terms.index(new Term('field', "word1")));
-    assert(terms.index(new Term('field', "word2")));
-    assert(terms.index(new Term('field', "fast")));
+    var terms = mtq.terms(_searcher);
+    expect(terms.index(new Term('field', "brown")), isTrue);
+    expect(terms.index(new Term('field', "word1")), isTrue);
+    expect(terms.index(new Term('field', "word2")), isTrue);
+    expect(terms.index(new Term('field', "fast")), isTrue);
   }
 
   test_boolean_query() {
-    bq = new BooleanQuery();
-    tq1 = new TermQuery('field', "word1");
-    tq2 = new TermQuery('field', "word3");
-    bq.add_query(tq1, 'must');
-    bq.add_query(tq2, 'must');
+    var bq = new BooleanQuery();
+    var tq1 = new TermQuery('field', "word1");
+    var tq2 = new TermQuery('field', "word3");
+    bq.add_query(tq1, occur: 'must');
+    bq.add_query(tq2, occur: 'must');
     check_hits(bq, [2, 3, 6, 8, 11, 14], 14);
 
-    tq3 = new TermQuery('field', "word2");
-    bq.add_query(tq3, 'should');
+    var tq3 = new TermQuery('field', "word2");
+    bq.add_query(tq3, occur: 'should');
     check_hits(bq, [2, 3, 6, 8, 11, 14], 8);
 
     bq = new BooleanQuery();
-    bq.add_query(tq2, 'must');
-    bq.add_query(tq3, 'must_not');
+    bq.add_query(tq2, occur: 'must');
+    bq.add_query(tq3, occur: 'must_not');
     check_hits(bq, [2, 3, 6, 11, 14]);
 
     bq = new BooleanQuery();
-    bq.add_query(tq2, 'must_not');
+    bq.add_query(tq2, occur: 'must_not');
     check_hits(bq, [0, 1, 4, 5, 7, 9, 10, 12, 13, 15, 16, 17]);
 
     bq = new BooleanQuery();
-    bq.add_query(tq2, 'should');
-    bq.add_query(tq3, 'should');
+    bq.add_query(tq2, occur: 'should');
+    bq.add_query(tq3, occur: 'should');
     check_hits(bq, [1, 2, 3, 4, 6, 8, 11, 14]);
 
     bq = new BooleanQuery();
-    bc1 = new BooleanClause(tq2, 'should');
-    bc2 = new BooleanClause(tq3, 'should');
-    bq.add(bc1);
-    bq.add(bc2);
+    var bc1 = new BooleanClause(tq2, occur: 'should');
+    var bc2 = new BooleanClause(tq3, occur: 'should');
+    bq.add_query(bc1);
+    bq.add_query(bc2);
     check_hits(bq, [1, 2, 3, 4, 6, 8, 11, 14]);
   }
 
   test_phrase_query() {
-    pq = new PhraseQuery('field');
-    assert_equal("\"\"", pq.to_s('field'));
-    assert_equal("field:\"\"", pq.to_s);
+    var pq = new PhraseQuery('field');
+    expect("\"\"", equals(pq.to_s('field')));
+    expect("field:\"\"", equals(pq.to_s));
 
-    pq..add("quick")..add("brown")..add("fox");
+    pq..add_term("quick")..add_term("brown")..add_term("fox");
     check_hits(pq, [1]);
 
-    pq = new PhraseQuery('field', 1);
-    pq..add("quick");
+    pq = new PhraseQuery('field', slop: 1);
+    pq..add_term("quick");
     pq.add_term("fox", 2);
     check_hits(pq, [1, 11, 14, 16]);
 
@@ -152,7 +161,7 @@ class SearcherTests {
   }
 
   test_range_query() {
-    rq = new RangeQuery('date', lower: "20051006", upper: "20051010");
+    var rq = new RangeQuery('date', lower: "20051006", upper: "20051010");
     check_hits(rq, [6, 7, 8, 9, 10]);
 
     rq = new RangeQuery('date', geq: "20051006", leq: "20051010");
@@ -208,7 +217,7 @@ class SearcherTests {
   }
 
   test_typed_range_query() {
-    rq = new TypedRangeQuery('number', geq: "-1.0", leq: 1.0);
+    var rq = new TypedRangeQuery('number', geq: "-1.0", leq: 1.0);
     check_hits(rq, [0, 1, 4, 10, 15, 17]);
 
     rq = new TypedRangeQuery('number', ge: "-1.0", le: 1.0);
@@ -238,7 +247,7 @@ class SearcherTests {
   }
 
   test_prefix_query() {
-    pq = new PrefixQuery('category', "cat1");
+    var pq = new PrefixQuery('category', "cat1");
     check_hits(pq, [0, 1, 2, 3, 4, 13, 14, 15, 16, 17]);
 
     pq = new PrefixQuery('category', "cat1/sub2");
@@ -246,7 +255,7 @@ class SearcherTests {
   }
 
   test_wildcard_query() {
-    wq = new WildcardQuery('category', "cat1*");
+    var wq = new WildcardQuery('category', "cat1*");
     check_hits(wq, [0, 1, 2, 3, 4, 13, 14, 15, 16, 17]);
 
     wq = new WildcardQuery('category', "cat1*/su??ub2");
@@ -257,10 +266,10 @@ class SearcherTests {
   }
 
   test_multi_phrase_query() {
-    mpq = new PhraseQuery('field');
-    mpq.add(["quick", "fast"]);
-    mpq.add(["brown", "red", "hairy"]);
-    mpq.add("fox");
+    var mpq = new PhraseQuery('field');
+    mpq.add_term(["quick", "fast"]);
+    mpq.add_term(["brown", "red", "hairy"]);
+    mpq.add_term("fox");
     check_hits(mpq, [1, 8, 11, 14]);
 
     mpq.slop = 4;
@@ -268,9 +277,9 @@ class SearcherTests {
   }
 
   test_highlighter() {
-    dir = new RAMDirectory();
-    iw = new IndexWriter(dir: dir, analyzer: new WhiteSpaceAnalyzer());
-    long_text = "big " + "between " * 2000 + 'house';
+    var dir = new RAMDirectory();
+    var iw = new IndexWriter(dir: dir, analyzer: new WhiteSpaceAnalyzer());
+    var long_text = "big " + "between " * 2000 + 'house';
     [
       {
         'field': "the words we are searching for are one and two also " +
@@ -279,109 +288,113 @@ class SearcherTests {
       },
       {'long': 'before ' * 1000 + long_text + ' after' * 1000},
       {'dates': '20070505 20071230 20060920 20081111'},
-    ].each((doc) => iw.add(doc));
+    ].forEach((doc) => iw.add_document(doc));
     iw.close();
 
-    searcher = new Searcher(dir);
+    var searcher = new Searcher(dir);
 
-    q = new TermQuery('field', "one");
-    highlights =
+    var q = new TermQuery('field', "one");
+    var highlights =
         searcher.highlight(q, 0, 'field', excerpt_length: 10, num_excerpts: 1);
-    assert_equal(1, highlights.size);
-    assert_equal("...are <b>one</b>...", highlights[0]);
+    expect(1, equals(highlights.length));
+    expect("...are <b>one</b>...", equals(highlights[0]));
 
     highlights =
         searcher.highlight(q, 0, 'field', excerpt_length: 10, num_excerpts: 2);
-    assert_equal(2, highlights.size);
-    assert_equal("...are <b>one</b>...", highlights[0]);
-    assert_equal("...this; <b>one</b>...", highlights[1]);
+    expect(2, equals(highlights.length));
+    expect("...are <b>one</b>...", equals(highlights[0]));
+    expect("...this; <b>one</b>...", equals(highlights[1]));
 
     highlights =
         searcher.highlight(q, 0, 'field', excerpt_length: 10, num_excerpts: 3);
-    assert_equal(3, highlights.size);
-    assert_equal("the words...", highlights[0]);
-    assert_equal("...are <b>one</b>...", highlights[1]);
-    assert_equal("...this; <b>one</b>...", highlights[2]);
+    expect(3, equals(highlights.length));
+    expect("the words...", equals(highlights[0]));
+    expect("...are <b>one</b>...", equals(highlights[1]));
+    expect("...this; <b>one</b>...", equals(highlights[2]));
 
     highlights =
         searcher.highlight(q, 0, 'field', excerpt_length: 10, num_excerpts: 4);
-    assert_equal(3, highlights.size);
-    assert_equal("the words we are...", highlights[0]);
-    assert_equal("...are <b>one</b>...", highlights[1]);
-    assert_equal("...this; <b>one</b>...", highlights[2]);
+    expect(3, equals(highlights.length));
+    expect("the words we are...", equals(highlights[0]));
+    expect("...are <b>one</b>...", equals(highlights[1]));
+    expect("...this; <b>one</b>...", equals(highlights[2]));
 
     highlights =
         searcher.highlight(q, 0, 'field', excerpt_length: 10, num_excerpts: 5);
-    assert_equal(2, highlights.size);
-    assert_equal(
-        "the words we are searching for are <b>one</b>...", highlights[0]);
-    assert_equal("...this; <b>one</b>...", highlights[1]);
+    expect(2, equals(highlights.length));
+    expect("the words we are searching for are <b>one</b>...",
+        equals(highlights[0]));
+    expect("...this; <b>one</b>...", equals(highlights[1]));
 
     highlights =
         searcher.highlight(q, 0, 'field', excerpt_length: 10, num_excerpts: 20);
-    assert_equal(1, highlights.size);
-    assert_equal("the words we are searching for are <b>one</b> and two also " +
+    expect(1, equals(highlights.length));
+    expect("the words we are searching for are <b>one</b> and two also " +
         "sometimes looking for them as a phrase like this; <b>one</b> " +
-        "two lets see how it goes", highlights[0]);
+        "two lets see how it goes", equals(highlights[0]));
 
     highlights = searcher.highlight(q, 0, 'field',
         excerpt_length: 1000, num_excerpts: 1);
-    assert_equal(1, highlights.size);
-    assert_equal("the words we are searching for are <b>one</b> and two also " +
+    expect(1, equals(highlights.length));
+    expect("the words we are searching for are <b>one</b> and two also " +
         "sometimes looking for them as a phrase like this; <b>one</b> " +
-        "two lets see how it goes", highlights[0]);
+        "two lets see how it goes", equals(highlights[0]));
 
-    q = new BooleanQuery(false);
-    q << new TermQuery('field', "one");
-    q << new TermQuery('field', "two");
-
-    highlights =
-        searcher.highlight(q, 0, 'field', excerpt_length: 15, num_excerpts: 2);
-    assert_equal(2, highlights.size);
-    assert_equal("...<b>one</b> and <b>two</b>...", highlights[0]);
-    assert_equal("...this; <b>one</b> <b>two</b>...", highlights[1]);
-
-    q << (new PhraseQuery('field') << "one" << "two");
+    q = new BooleanQuery(coord_disable: false);
+    q.add_query(new TermQuery('field', "one"));
+    q.add_query(new TermQuery('field', "two"));
 
     highlights =
         searcher.highlight(q, 0, 'field', excerpt_length: 15, num_excerpts: 2);
-    assert_equal(2, highlights.size);
-    assert_equal("...<b>one</b> and <b>two</b>...", highlights[0]);
-    assert_equal("...this; <b>one two</b>...", highlights[1]);
+    expect(2, equals(highlights.length));
+    expect("...<b>one</b> and <b>two</b>...", equals(highlights[0]));
+    expect("...this; <b>one</b> <b>two</b>...", equals(highlights[1]));
+
+    q.add_query(new PhraseQuery('field')..add_term("one")..add_term("two"));
+
+    highlights =
+        searcher.highlight(q, 0, 'field', excerpt_length: 15, num_excerpts: 2);
+    expect(2, equals(highlights.length));
+    expect("...<b>one</b> and <b>two</b>...", equals(highlights[0]));
+    expect("...this; <b>one two</b>...", equals(highlights[1]));
 
     highlights =
         searcher.highlight(q, 0, 'field', excerpt_length: 15, num_excerpts: 1);
-    assert_equal(1, highlights.size);
+    expect(1, equals(highlights.length));
     // should have a higher priority since it the merger of three matches
-    assert_equal("...this; <b>one two</b>...", highlights[0]);
+    expect("...this; <b>one two</b>...", equals(highlights[0]));
 
     highlights = searcher.highlight(q, 0, 'not_a_field',
         excerpt_length: 15, num_excerpts: 1);
-    assert_nil(highlights);
+    expect(highlights, isNull);
 
     q = new TermQuery('wrong_field', "one");
     highlights = searcher.highlight(q, 0, 'wrong_field',
         excerpt_length: 15, num_excerpts: 1);
-    assert_nil(highlights);
+    expect(highlights, isNull);
 
-    q = new BooleanQuery(false);
-    q.add(new PhraseQuery('field') << "the" << "words");
-    q.add(
-        new PhraseQuery('field') << "for" << "are" << "one" << "and" << "two");
-    q.add(new TermQuery('field', "words"));
-    q.add(new TermQuery('field', "one"));
-    q.add(new TermQuery('field', "two"));
+    q = new BooleanQuery(coord_disable: false);
+    q.add_query(new PhraseQuery('field')..add_term("the")..add_term("words"));
+    q.add_query(new PhraseQuery('field')
+      ..add_term("for")
+      ..add_term("are")
+      ..add_term("one")
+      ..add_term("and")
+      ..add_term("two"));
+    q.add_query(new TermQuery('field', "words"));
+    q.add_query(new TermQuery('field', "one"));
+    q.add_query(new TermQuery('field', "two"));
 
     highlights =
         searcher.highlight(q, 0, 'field', excerpt_length: 10, num_excerpts: 1);
-    assert_equal(1, highlights.size);
-    assert_equal("<b>the words</b>...", highlights[0]);
+    expect(1, equals(highlights.length));
+    expect("<b>the words</b>...", equals(highlights[0]));
 
     highlights =
         searcher.highlight(q, 0, 'field', excerpt_length: 10, num_excerpts: 2);
-    assert_equal(2, highlights.size);
-    assert_equal("<b>the words</b>...", highlights[0]);
-    assert_equal("...<b>one</b> <b>two</b>...", highlights[1]);
+    expect(2, equals(highlights.length));
+    expect("<b>the words</b>...", equals(highlights[0]));
+    expect("...<b>one</b> <b>two</b>...", equals(highlights[1]));
 
     [
       [
@@ -396,8 +409,10 @@ class SearcherTests {
         new PrefixQuery('dates', '2007'),
         '<b>20070505</b> <b>20071230</b> 20060920 20081111'
       ],
-    ].each((query, expected) {
-      assert_equal([expected], searcher.highlight(query, 2, 'dates'));
+    ].forEach((row) {
+      var query = row[0],
+          expected = row[1];
+      expect([expected], equals(searcher.highlight(query, 2, 'dates')));
     });
 
     //q = new PhraseQuery('long')..add('big')..add('house');
@@ -405,27 +420,26 @@ class SearcherTests {
     //highlights = searcher.highlight(q, 1, :long,
     //                                excerpt_length: 400,
     //                                num_excerpts: 2);
-    //assert_equal(1, highlights.size);
+    //expect(1, highlights.size);
     //print(highlights[0]);
-    //assert_equal("<b>the words</b>...", highlights[0]);
-    //assert_equal("...<b>one</b> <b>two</b>...", highlights[1]);
+    //expect("<b>the words</b>...", equals(highlights[0]));
+    //expect("...<b>one</b> <b>two</b>...", equals(highlights[1]));
   }
 
   test_highlighter_with_standard_analyzer() {
-    dir = new RAMDirectory();
-    iw = new IndexWriter(dir: dir, analyzer: new StandardAnalyzer());
+    var dir = new RAMDirectory();
+    var iw = new IndexWriter(dir: dir, analyzer: new StandardAnalyzer());
     [{'field': "field has a url http://ferret.davebalmain.com/trac/ end"},]
-        .each((doc) => iw.add(doc));
+        .forEach((doc) => iw.add_document(doc));
     iw.close();
 
-    searcher = new Searcher(dir);
+    var searcher = new Searcher(dir);
 
-    q = new TermQuery('field', "ferret.davebalmain.com/trac");
-    highlights = searcher.highlight(q, 0, 'field',
+    var q = new TermQuery('field', "ferret.davebalmain.com/trac");
+    var highlights = searcher.highlight(q, 0, 'field',
         excerpt_length: 1000, num_excerpts: 1);
-    assert_equal(1, highlights.size);
-    assert_equal(
-        "field has a url <b>http://ferret.davebalmain.com/trac/</b> end",
-        highlights[0]);
+    expect(1, equals(highlights.length));
+    expect("field has a url <b>http://ferret.davebalmain.com/trac/</b> end",
+        equals(highlights[0]));
   }
 }

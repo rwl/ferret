@@ -1,15 +1,23 @@
 library ferret.test.search.index_searcher;
 
+import 'package:test/test.dart';
+import 'package:ferret/ferret.dart';
+
+import '../index/index_test_helper.dart';
+
 class SearcherTest {
   //< Test::Unit::TestCase
   //include SearcherTests
+  Directory _dir;
+  Searcher _searcher;
+  List _documents;
 
   setup() {
     _dir = new RAMDirectory();
-    iw = new IndexWriter(
+    var iw = new IndexWriter(
         dir: _dir, analyzer: new WhiteSpaceAnalyzer(), create: true);
     _documents = IndexTestHelper.SEARCH_TEST_DOCS;
-    _documents.each((doc) => iw.add(doc));
+    _documents.forEach((doc) => iw.add_document(doc));
     iw.close();
     _searcher = new Searcher(_dir);
   }
@@ -19,49 +27,49 @@ class SearcherTest {
     _dir.close();
   }
 
-  get_docs(hits) {
-    docs = [];
-    hits.each((hit) {
+  get_docs(List<Hit> hits) {
+    var docs = [];
+    hits.forEach((hit) {
       docs.add(hit.doc);
     });
     return docs;
   }
 
   check_hits(query, expected, [top = null, total_hits = null]) {
-    options = {};
+    var limit = 10;
     if (expected.size > 10) {
-      options['limit'] = expected.size + 1;
+      limit = expected.size + 1;
     }
-    top_docs = _searcher.search(query, options);
-    assert_equal(expected.length, top_docs.hits.size);
+    var top_docs = _searcher.search(query, limit: limit);
+    expect(expected.length, equals(top_docs.hits.size));
     if (top != null) {
-      assert_equal(top, top_docs.hits[0].doc);
+      expect(top, equals(top_docs.hits[0].doc));
     }
     if (total_hits != null) {
-      assert_equal(total_hits, top_docs.total_hits);
+      expect(total_hits, equals(top_docs.total_hits));
     } else {
-      assert_equal(expected.length, top_docs.total_hits);
+      expect(expected.length, equals(top_docs.total_hits));
     }
-    top_docs.hits.each((score_doc) {
-      expect(expected.include(score_doc.doc), isTrue,
-          "${score_doc.doc} was found unexpectedly");
+    top_docs.hits.forEach((score_doc) {
+      expect(expected.contains(score_doc.doc), isTrue,
+          reason: "${score_doc.doc} was found unexpectedly");
       expect(score_doc.score
               .approx_eql(_searcher.explain(query, score_doc.doc).score),
           isTrue,
-          "Scores(${score_doc.score} != ${_searcher.explain(query, score_doc.doc).score})");
+          reason: "Scores(${score_doc.score} != ${_searcher.explain(query, score_doc.doc).score})");
     });
 
-    assert_equal(expected.sort, _searcher.scan(query));
+    expect(expected.sort, equals(_searcher.scan(query)));
     if (expected.size > 5) {
-      //assert_equal(expected[0...5], _searcher.scan(query, limit: 5));
-      //assert_equal(expected[5..-1], _searcher.scan(query, start_doc: expected[5]));
+      //expect(expected[0...5], _searcher.scan(query, limit: 5));
+      //expect(expected[5..-1], _searcher.scan(query, start_doc: expected[5]));
     }
   }
 
   test_get_doc() {
-    assert_equal(18, _searcher.max_doc);
-    assert_equal("20050930", _searcher.get_document(0)['date']);
-    assert_equal("cat1/sub2/subsub2", _searcher.get_document(4)['category']);
-    assert_equal("20051012", _searcher.get_document(12)['date']);
+    expect(18, equals(_searcher.max_doc));
+    expect("20050930", equals(_searcher.get_document(0)['date']));
+    expect("cat1/sub2/subsub2", equals(_searcher.get_document(4)['category']));
+    expect("20051012", equals(_searcher.get_document(12)['date']));
   }
 }

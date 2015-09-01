@@ -104,7 +104,7 @@ class SpanNearQuery extends Query {
   /// [in_order] specifies whether or not the matches have to occur in the
   /// order they were added to the query. When slop is set to 0, this
   /// parameter will make no difference.
-  SpanNearQuery({slop: 0, in_order: false}) {
+  SpanNearQuery({List clauses, slop: 0, in_order: false}) {
     frb_spannq_init;
   }
 
@@ -149,7 +149,7 @@ class SpanOrQuery extends Query {
   /// Create a new [SpanOrQuery]. This is just like a [BooleanQuery] with all
   /// clauses with the occur value of `should`. The difference is that it can
   /// be passed to other SpanQuerys like [SpanNearQuery].
-  SpanOrQuery() {
+  SpanOrQuery([clauses]) {
     frb_spanoq_init;
   }
 
