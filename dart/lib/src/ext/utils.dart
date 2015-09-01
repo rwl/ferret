@@ -94,7 +94,7 @@ class BitVector {
   BitVector operator &(bv2) => frb_bv_and;
 
   /// Perform an inplace boolean _or_ operation.
-  void orx() => frb_bv_or_x;
+  void orx(bv2) => frb_bv_or_x;
 
   /// Perform a boolean _or_ operation.
   BitVector or(bv2) => frb_bv_or;
@@ -103,7 +103,7 @@ class BitVector {
   BitVector operator |(bv2) => frb_bv_or;
 
   /// Perform an inplace boolean _xor_ operation.
-  void xorx() => frb_bv_xor_x;
+  void xorx(bv2) => frb_bv_xor_x;
 
   /// Perform a boolean _or_ operation.
   BitVector xor(bv2) => frb_bv_xor;

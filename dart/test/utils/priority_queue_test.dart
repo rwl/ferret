@@ -1,106 +1,117 @@
 library ferret.test.utils.priority_queue;
 
+import 'dart:math' show Random;
+
+import 'package:test/test.dart';
+import 'package:ferret/ferret.dart';
+
 class PriorityQueueTest {
   //< Test::Unit::TestCase
+
+  static final Random _r = new Random();
+
+  static int rand(max) => _r.nextInt(max);
 
   static const PQ_STRESS_SIZE = 1000;
 
   test_pq() {
-    pq = new PriorityQueue(4);
-    assert_equal(0, pq.size);
-    assert_equal(4, pq.capacity);
+    var pq = new PriorityQueue(capacity: 4);
+    expect(0, equals(pq.size));
+    expect(4, equals(pq.capacity));
     pq.insert("bword");
-    assert_equal(1, pq.size);
-    assert_equal("bword", pq.top);
+    expect(1, equals(pq.size));
+    expect("bword", equals(pq.top));
 
     pq.insert("cword");
-    assert_equal(2, pq.size);
-    assert_equal("bword", pq.top);
+    expect(2, equals(pq.size));
+    expect("bword", equals(pq.top));
 
     pq.add("dword");
-    assert_equal(3, pq.size);
-    assert_equal("bword", pq.top);
+    expect(3, equals(pq.size));
+    expect("bword", equals(pq.top));
 
     pq.add("eword");
-    assert_equal(4, pq.size);
-    assert_equal("bword", pq.top);
+    expect(4, equals(pq.size));
+    expect("bword", equals(pq.top));
 
     pq.add("aword");
-    assert_equal(4, pq.size);
-    assert_equal("bword", pq.top, "aword < all other elements so ignore");
+    expect(4, equals(pq.size));
+    expect("bword", equals(pq.top),
+        reason: "aword < all other elements so ignore");
 
     pq.add("fword");
-    assert_equal(4, pq.size);
-    assert_equal(
-        "cword", pq.top, "bword got pushed off the bottom of the queue");
+    expect(4, equals(pq.size));
+    expect("cword", equals(pq.top),
+        reason: "bword got pushed off the bottom of the queue");
 
-    assert_equal("cword", pq.pop());
-    assert_equal(3, pq.size);
-    assert_equal("dword", pq.pop());
-    assert_equal(2, pq.size);
-    assert_equal("eword", pq.pop());
-    assert_equal(1, pq.size);
-    assert_equal("fword", pq.pop());
-    assert_equal(0, pq.size);
-    assert_nil(pq.top);
-    assert_nil(pq.pop);
+    expect("cword", equals(pq.pop()));
+    expect(3, equals(pq.size));
+    expect("dword", equals(pq.pop()));
+    expect(2, equals(pq.size));
+    expect("eword", equals(pq.pop()));
+    expect(1, equals(pq.size));
+    expect("fword", equals(pq.pop()));
+    expect(0, equals(pq.size));
+    expect(pq.top, isNull);
+    expect(pq.pop, isNull);
   }
 
   test_pq_clear() {
-    pq = new PriorityQueue(3);
+    var pq = new PriorityQueue(capacity: 3);
     pq.add("word1");
     pq.add("word2");
     pq.add("word3");
-    assert_equal(3, pq.size);
+    expect(3, equals(pq.size));
     pq.clear();
-    assert_equal(0, pq.size);
-    assert_nil(pq.top);
-    assert_nil(pq.pop);
+    expect(0, equals(pq.size));
+    expect(pq.top, isNull);
+    expect(pq.pop, isNull);
   }
 
   //#define PQ_STRESS_SIZE 1000
   test_stress_pq() {
-    pq = new PriorityQueue(PQ_STRESS_SIZE);
+    var pq = new PriorityQueue(capacity: PQ_STRESS_SIZE);
     PQ_STRESS_SIZE.times(() {
-      pq.insert("<#{rand(PQ_STRESS_SIZE)}>");
+      pq.insert("<${rand(PQ_STRESS_SIZE)}>");
     });
 
-    prev = pq.pop();
+    var prev = pq.pop();
     (PQ_STRESS_SIZE - 1).times(() {
-      curr = pq.pop();
-      expect(prev <= curr, "${prev} should be less than #{curr}");
+      var curr = pq.pop();
+      expect(prev <= curr, "${prev} should be less than ${curr}");
       prev = curr;
     });
     pq.clear();
   }
 
   test_pq_block() {
-    pq = new PriorityQueue(21, (a, b) => a > b);
+    var pq = new PriorityQueue(capacity: 21, less_than_proc: (a, b) => a > b);
     100.times(() {
-      pq.insert("<#{rand(50)}>");
+      pq.insert("<${rand(50)}>");
     });
 
-    prev = pq.pop();
+    var prev = pq.pop();
     20.times(() {
-      curr = pq.pop();
+      var curr = pq.pop();
       expect(prev >= curr, "${prev} should be greater than ${curr}");
       prev = curr;
     });
-    assert_equal(0, pq.size);
+    expect(0, equals(pq.size));
   }
 
   test_pq_proc() {
-    pq = new PriorityQueue(less_than: (a, b) => a.size > b.size, capacity: 21);
+    var pq = new PriorityQueue(
+        less_than_proc: (a, b) => a.size > b.size, capacity: 21);
     100.times(() {
       pq.insert("x" * rand(50));
     });
 
-    prev = pq.pop();
+    var prev = pq.pop();
     20.times(() {
-      curr = pq.pop();
+      var curr = pq.pop();
       expect(prev.size >= curr.size, "${prev} should be greater than ${curr}");
       prev = curr;
     });
-    assert_equal(0, pq.size);
+    expect(0, equals(pq.size));
   }
 }

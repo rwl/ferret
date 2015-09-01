@@ -1,6 +1,10 @@
 library ferret.test.store.store_lock;
 
+import 'package:test/test.dart';
+import 'package:ferret/ferret.dart';
+
 class Switch {
+  static var __counter;
   static get counter {
     return __counter;
   }
@@ -10,36 +14,38 @@ class Switch {
 }
 
 class StoreLockTest {
+  Directory _dir;
+
   test_locking() {
-    lock_time_out = 0.001; // we want this test to run quickly
-    lock1 = _dir.make_lock("l.lck");
-    lock2 = _dir.make_lock("l.lck");
+    var lock_time_out = 0.001; // we want this test to run quickly
+    var lock1 = _dir.make_lock("l.lck");
+    var lock2 = _dir.make_lock("l.lck");
 
-    assert(!lock2.locked);
-    assert(lock1.obtain(lock_time_out));
-    assert(lock2.locked);
+    expect(lock2.locked(), isFalse);
+    expect(lock1.obtain(timeout: lock_time_out), isTrue);
+    expect(lock2.locked(), isTrue);
 
-    assert(!can_obtain_lock(lock2, lock_time_out));
+    expect(can_obtain_lock(lock2, lock_time_out), isFalse);
 
-    exception_thrown = false;
+    var exception_thrown = false;
     try {
-      lock2.while_locked(lock_time_out, () {
+      lock2.while_locked(timeout: lock_time_out, fn: () {
         expect(false, "lock should not have been obtained");
       });
     } catch (_) {
       exception_thrown = true;
     } finally {
-      assert(exception_thrown);
+      expect(exception_thrown, isTrue);
     }
 
     lock1.release();
-    assert(lock2.obtain(lock_time_out));
+    expect(lock2.obtain(timeout: lock_time_out), isTrue);
     lock2.release();
 
     Switch.counter = 0;
 
-    t = new Thread(() {
-      lock1.while_locked(lock_time_out, () {
+    var t = new Thread(() {
+      lock1.while_locked(timeout: lock_time_out, fn: () {
         Switch.counter = 1;
         // make sure lock2 obtain test was run
         while (Switch.counter < 2) {}
@@ -51,13 +57,13 @@ class StoreLockTest {
     // make sure thread has started and lock been obtained
     while (Switch.counter < 1) {}
 
-    expect(!can_obtain_lock(lock2, lock_time_out),
-        "lock 2 should not be obtainable");
+    expect(can_obtain_lock(lock2, lock_time_out), isFalse,
+        reason: "lock 2 should not be obtainable");
 
     Switch.counter = 2;
     while (Switch.counter < 3) {}
 
-    assert(lock2.obtain(lock_time_out));
+    expect(lock2.obtain(timeout: lock_time_out), isTrue);
     lock2.release();
   }
 
@@ -65,7 +71,7 @@ class StoreLockTest {
     try {
       lock.obtain(lock_time_out);
       return true;
-    } on Exception catch (e) {}
+    } on Exception catch (_) {}
     return false;
   }
 }
