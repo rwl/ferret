@@ -121,7 +121,7 @@ class Index {
     //@dir.extend(MonitorMixin) unless @dir.kind_of? MonitorMixin
     //options[:dir] = @dir
     //@options = options
-    if (!dir.exists("segments") || create) {
+    if (!_dir.exists("segments") || create) {
       new IndexWriter(options).close();
     }
     if (analyzer == null) {

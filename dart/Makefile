@@ -2,49 +2,51 @@ default: all
 
 include ../c/make.emscripten
 
-FERRETLIB = ../c/libferret.a
-
+DEP_DIR  = .deps
+FERRET_DIR = ../c
+FERRET_INC = $(FERRET_DIR)/include
+FERRETLIB = $(FERRET_DIR)/libferret.a
 LIBS = $(FERRETLIB)
+CINCS = -I$(FERRET_INC)
+CFLAGS += -std=c99 -pedantic -Wall -Wextra $(CINCS) -g -fno-common
 
 EXP_NAME = -s "EXPORT_NAME='Ferret'"
 
 EXP_FUNC = -s EXPORTED_FUNCTIONS="['_malloc',\
-'_frt_whitespace_analyzer_new',\
-'_frt_fis_new',\
-'_frt_index_create',\
-'_frt_iw_open',\
-'_frt_doc_new',\
-'_frt_doc_add_field',\
-'_frt_iw_add_doc',\
-'_frt_doc_destroy',\
-'_frt_open_fs_store',\
-'_frt_sort_new',\
-'_frt_tq_new',\
-'_frt_isea_new',\
-'_frt_sort_add_sort_field',\
-'_frt_td_destroy',\
-'_frt_q_deref',\
-'_frt_sort_destroy',\
-'_frt_rq_new',\
-'_frt_store_deref',\
-'_frt_qp_new',\
-'_frt_qp_add_field',\
-'_frt_qp_destroy',\
-'_frt_qp_parse']"
+'_frjs_ramdir_init',\
+'_frjs_dir_exists']"
 
 EM_FLAGS = $(EXP_NAME) $(EXP_FUNC) --pre-js pre.js
+
+JS_DIR = ./lib/src/ext
+JS_OBJS = $(JS_DIR)/js_store.o
 
 all: module
 
 module: ./lib/ferret.js
 
-./lib/ferret.js: $(LIBS) Makefile pre.js
+./lib/ferret.js: $(JS_OBJS) $(LIBS) Makefile pre.js
 	@echo Generating module: $@ ...
-	@$(CC) $(CFLAGS) $(LIBS) $(EM_FLAGS) -o $@
+	@$(CC) $(CFLAGS) $(JS_OBJS) $(LIBS) $(EM_FLAGS) -o $@
 
 $(FERRETLIB):
 	@( cd ../c ; $(MAKE) clean all )
 
 clean:
+	@rm -f $(JS_OBJS)
+	@rm -rf $(DEP_DIR)
 	@( cd lib ; $(RM) *ferret*.js* )
 
+###
+# Dependency build
+# Ref: http://make.paulandlesley.org/autodep.html
+###
+
+%.o : %.c
+	@mkdir -p `dirname $(DEP_DIR)/$*.P`
+	@echo Compiling: $< ...
+	@$(COMPILE.c) -MD -o $@ $<
+	@cp $*.d $(DEP_DIR)/$*.P; \
+            sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
+                -e '/^$$/ d' -e 's/$$/ :/' < $*.d >> $(DEP_DIR)/$*.P; \
+            rm -f $*.d

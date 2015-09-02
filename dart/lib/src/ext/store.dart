@@ -6,6 +6,8 @@
 /// [Directory] for instance, you will need to implement it in C.
 library ferret.ext.store;
 
+import 'dart:js' as js;
+
 /// A Directory is an object which is used to access the index storage.
 /// Dart's IO API is not used so that we can use different storage
 /// mechanisms to store the index. Some examples are:
@@ -23,13 +25,26 @@ library ferret.ext.store;
 abstract class Directory {
   static const LOCK_PREFIX = '';
 
+  num _handle;
+  js.JsObject _module;
+
+  Directory() {
+    _module = js.context['Ferret'];
+    if (_module == null) {
+      throw new Error();
+    }
+  }
+
   /// It is a good idea to close a directory when you have finished using it.
   /// Although the garbage collector will currently handle this for you, this
   /// behaviour may change in future.
   close() => frb_dir_close;
 
   /// Return true if a file with the name [file_name] exists in the directory.
-  bool exists(String file_name) => frb_dir_exists;
+  bool exists(String file_name) {
+    var retval = _module.callMethod('_frjs_dir_exists', [_handle, file_name]);
+    return retval != 0;
+  }
 
   /// Create an empty file in the directory with the name [file_name].
   touch(String file_name) => frb_dir_touch;
@@ -116,7 +131,7 @@ class RAMDirectory extends Directory {
   /// into memory. This may be useful to speed up search performance but
   /// usually the speedup won't be worth the trouble. Be sure to benchmark.
   RAMDirectory({dir: null}) {
-    frb_ramdir_init;
+    _handle = _module.callMethod('_frjs_ramdir_init');
   }
 }
 
