@@ -1,4 +1,5 @@
 name: ferret
 dependencies:
+  browser: any
   test: any
   yaml: any
