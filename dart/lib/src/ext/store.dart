@@ -8,6 +8,8 @@ library ferret.ext.store;
 
 import 'dart:js' as js;
 
+import '../proxy.dart';
+
 /// A Directory is an object which is used to access the index storage.
 /// Dart's IO API is not used so that we can use different storage
 /// mechanisms to store the index. Some examples are:
@@ -22,18 +24,10 @@ import 'dart:js' as js;
 /// called `create_output`, while the method to open a file for reading is
 /// called `open_input`. If there is a risk of simultaneous modifications of
 /// the files then locks should be used. See [Lock] to find out how.
-abstract class Directory {
+abstract class Directory extends JsProxy {
   static const LOCK_PREFIX = '';
 
-  num _handle;
-  js.JsObject _module;
-
-  Directory() {
-    _module = js.context['Ferret'];
-    if (_module == null) {
-      throw new Error();
-    }
-  }
+  Directory() : super();
 
   /// It is a good idea to close a directory when you have finished using it.
   /// Although the garbage collector will currently handle this for you, this
@@ -42,8 +36,25 @@ abstract class Directory {
 
   /// Return true if a file with the name [file_name] exists in the directory.
   bool exists(String file_name) {
-    var retval = _module.callMethod('_frjs_dir_exists', [_handle, file_name]);
-    return retval != 0;
+    /*var retval = module.callMethod('ccall', [
+      'frjs_dir_exists',
+      'number',
+      ['number', 'string'],
+      [handle, file_name]
+    ]);*/
+
+    //var retval = module.callMethod('_frjs_dir_exists', [handle, file_name]);
+
+    /*var buffer = module.callMethod('_malloc', [file_name.length + 1]);
+    module.callMethod('writeStringToMemory', [file_name, buffer]);
+    var retval = module.callMethod('_frjs_dir_exists', [handle, buffer]);
+    module.callMethod('_free', [buffer]);*/
+
+    var p_fname = allocString(file_name);
+    var retval = module.callMethod('_frjs_dir_exists', [handle, p_fname]);
+    free(p_fname);
+
+    return 0 != retval;
   }
 
   /// Create an empty file in the directory with the name [file_name].
@@ -130,8 +141,8 @@ class RAMDirectory extends Directory {
   /// You can optionally load another [Directory] (usually a [FSDirectory])
   /// into memory. This may be useful to speed up search performance but
   /// usually the speedup won't be worth the trouble. Be sure to benchmark.
-  RAMDirectory({dir: null}) {
-    _handle = _module.callMethod('_frjs_ramdir_init');
+  RAMDirectory({dir: null}) : super() {
+    handle = module.callMethod('_frjs_ramdir_init');
   }
 }
 

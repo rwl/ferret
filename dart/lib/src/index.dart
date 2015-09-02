@@ -29,6 +29,8 @@ class Index {
   bool _open;
   QueryParser _qp;
 
+  bool _create, _create_if_missing;
+
   /// If you create an [Index] without any options, it'll simply create an
   /// index in memory. But this class is highly configurable and every option
   /// that you can supply to [IndexWriter] and [QueryParser], you can also set
@@ -100,20 +102,23 @@ class Index {
       _field_infos = field_infos;
     }
 
+    _create = create;
+    _create_if_missing = create_if_missing;
+
     if (dir is String) {
       _path = dir;
     }
     if (_path != null) {
       _close_dir = true;
       try {
-        _dir = FSDirectory.create(_path, create: create);
+        _dir = FSDirectory.create(_path, create: _create);
       } on IOError catch (io) {
-        _dir = FSDirectory.create(_path, create: create_if_missing);
+        _dir = FSDirectory.create(_path, create: _create_if_missing);
       }
     } else if (dir != null) {
       _dir = dir;
     } else {
-      create = true; // this should always be true for a new RAMDir
+      _create = true; // this should always be true for a new RAMDir
       _close_dir = true;
       _dir = new RAMDirectory();
     }
@@ -121,8 +126,13 @@ class Index {
     //@dir.extend(MonitorMixin) unless @dir.kind_of? MonitorMixin
     //options[:dir] = @dir
     //@options = options
-    if (!_dir.exists("segments") || create) {
-      new IndexWriter(options).close();
+    if (!_dir.exists("segments") || _create) {
+      new IndexWriter(
+          dir: _dir,
+          path: _path,
+          create_if_missing: _create_if_missing,
+          create: _create,
+          field_infos: _field_infos).close();
     }
     if (analyzer == null) {
       _analyzer = new analysis.StandardAnalyzer();
@@ -134,7 +144,7 @@ class Index {
     _writer = null;
     _reader = null;
 
-    create = false; // only create the first time if at all
+    _create = false; // only create the first time if at all
     if (id_field == null && key is String) {
       _id_field = key;
     } else if (id_field != null) {
@@ -851,7 +861,14 @@ class Index {
       _reader = null;
       _searcher = null;
     }
-    _writer = new IndexWriter(_options);
+    var w = new IndexWriter(
+        dir: _dir,
+        path: _path,
+        create_if_missing: _create_if_missing,
+        create: _create,
+        field_infos: _field_infos,
+        analyzer: _analyzer);
+    _writer = w;
   }
 
   /// Returns the new reader if one is opened.

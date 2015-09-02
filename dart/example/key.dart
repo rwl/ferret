@@ -1,6 +1,8 @@
 import 'package:ferret/ferret.dart';
 
 main() {
+  initFerret();
+
   var index = new Index(key: 'id');
 
   [
@@ -10,7 +12,7 @@ main() {
     {'id': '1', 'text': 'One'}
   ].forEach((doc) => index.add_document(doc));
 
-  print(index.size); // => 3
+  print(index.size()); // => 3
   print(index['1'].load()); // => {'text': "One", 'id': "1"}
   print(index.search('id:1').to_s('text'));
   // => TopDocs: total_hits = 1, max_score = 1.287682 [

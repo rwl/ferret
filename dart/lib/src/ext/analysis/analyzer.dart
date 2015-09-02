@@ -22,12 +22,12 @@ part of ferret.ext.analysis;
 ///         return new StemFilter(new LowerCaseFilter(new StandardTokenizer(str)));
 ///       }
 ///     }
-class Analyzer {
+abstract class Analyzer extends JsProxy {
   /// Create a new [LetterAnalyzer] which downcases tokens by default but can
   /// optionally leave case as is. Lowercasing will be done based on the current
   /// locale.
-  Analyzer({bool lower: true}) {
-    frb_letter_analyzer_init;
+  Analyzer(/*{bool lower: true}*/) : super() {
+//    frb_letter_analyzer_init;
   }
 
   /// Create a new [TokenStream] to tokenize [input]. The [TokenStream]
@@ -204,8 +204,11 @@ class StandardAnalyzer extends Analyzer {
   /// can optionally leave case as is. Lowercasing will be done based on the
   /// current locale. You can also set the list of stop-words to be used by
   /// the [StopFilter].
-  StandardAnalyzer({lower: true, stop_words /*: FULL_ENGLISH_STOP_WORDS*/}) {
-    frb_standard_analyzer_init;
+  StandardAnalyzer({lower: true /*, stop_words : FULL_ENGLISH_STOP_WORDS*/}) {
+    int _lower = lower ? 1 : 0;
+    int p_stop_words = 0; // FIXME
+    handle = module.callMethod(
+        '_frjs_standard_analyzer_init', [_lower, p_stop_words]);
   }
 }
 

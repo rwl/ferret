@@ -13,13 +13,30 @@ CFLAGS += -std=c99 -pedantic -Wall -Wextra $(CINCS) -g -fno-common
 EXP_NAME = -s "EXPORT_NAME='Ferret'"
 
 EXP_FUNC = -s EXPORTED_FUNCTIONS="['_malloc',\
+'_frjs_init',\
 '_frjs_ramdir_init',\
-'_frjs_dir_exists']"
+'_frjs_dir_exists',\
+'_frjs_iw_init',\
+'_frjs_standard_analyzer_init',\
+'_frt_iw_close',\
+'_frt_intern',\
+'_frjs_iw_delete_term',\
+'_frt_iw_add_doc',\
+'_frt_doc_new',\
+'_frt_doc_get_field',\
+'_frt_doc_add_field',\
+'_frt_doc_destroy',\
+'_frt_df_new',\
+'_frt_df_add_data_len',\
+'_frjs_doc_set_boost',\
+'_frjs_df_set_boost',\
+'_frjs_df_set_destroy_data']"
 
 EM_FLAGS = $(EXP_NAME) $(EXP_FUNC) --pre-js pre.js
 
 JS_DIR = ./lib/src/ext
-JS_OBJS = $(JS_DIR)/js_store.o
+JS_OBJS = $(JS_DIR)/js_store.o $(JS_DIR)/js_index.o $(JS_DIR)/js_analysis.o \
+$(JS_DIR)/js_document.o
 
 all: module
 

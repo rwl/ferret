@@ -12,16 +12,26 @@
 /// etc. They are also useful for index browsers.
 library ferret.ext.index;
 
-import 'dart:js';
+import 'dart:js' as js;
 import 'dart:collection' show MapBase;
 
 import 'store.dart' show Directory;
 import 'analysis/analysis.dart' as analysis;
 
+import '../proxy.dart';
+
+void initFerret({String moduleName: 'Ferret', js.JsObject context}) {
+  js.JsObject module = (context == null ? js.context : context)[moduleName];
+  if (module == null) {
+    throw new ArgumentError.notNull('Ferret module');
+  }
+  module.callMethod('_frjs_init');
+}
+
 /// The IndexWriter is the class used to add documents to an index. You can
 /// also delete documents from the index using this class. The indexing
 /// process is highly customizable.
-class IndexWriter {
+class IndexWriter extends JsProxy {
 
   /*static const WRITE_LOCK_TIMEOUT = 1;
   static const COMMIT_LOCK_TIMEOUT = 10;
@@ -140,11 +150,24 @@ class IndexWriter {
   ///
   ///     index_writer.delete('id', "/path/to/indexed/file");
   IndexWriter({Directory dir, String path, bool create_if_missing: true,
-      bool create: false, FieldInfo field_infos, analysis.Analyzer analyzer,
+      bool create: false, FieldInfos field_infos, analysis.Analyzer analyzer,
       int chunk_size: 0x100000, int max_buffer_memory: 0x1000000,
       int term_index_interval: 128, int doc_skip_interval: 16,
       int merge_factor: 10, int max_buffered_docs: 10000, max_merge_docs,
-      int max_field_length: 10000, bool use_compound_file: true});
+      int max_field_length: 10000, bool use_compound_file: true})
+      : super() {
+    var p_store = dir != null ? dir.handle : 0;
+    var p_analyzer = analyzer != null ? analyzer.handle : 0;
+    var p_fis = field_infos != null ? field_infos.handle : 0;
+    // TODO: remaining args
+    handle = module.callMethod('_frjs_iw_init', [
+      create ? 1 : 0,
+      create_if_missing ? 1 : 0,
+      p_store,
+      p_analyzer,
+      p_fis
+    ]);
+  }
 
   /// Returns the number of documents in the [Index]. Note that deletions
   /// won't be taken into account until the [IndexWriter] has been committed.
@@ -156,17 +179,111 @@ class IndexWriter {
   /// exclusively by the index writer. The garbage collector will do this
   /// automatically if not called explicitly.
   void close() {
-    frb_iw_close;
+    module.callMethod('_frt_iw_close', [handle]);
   }
 
   /// Add a document to the index. See [Document]. A document can also be a
   /// simple map object.
   void add_document(doc) {
-    frb_iw_add_doc;
+    int p_doc = module.callMethod('_frt_doc_new');
+
+    if (doc is Map) {
+      if (doc.containsKey('boost') && doc['boost'] is num) {
+        module.callMethod(
+            '_frjs_doc_set_boost', [p_doc, doc['boost'].toDouble()]);
+      }
+
+      doc.forEach((k, v) {
+        if (k == null) {
+          return;
+        }
+
+        int p_key = allocString(k);
+        int symbol = module.callMethod('_frt_intern', [p_key]);
+        free(p_key);
+
+        int p_df = module.callMethod('_frt_doc_get_field', [p_doc, symbol]);
+        if (p_df == 0) {
+          p_df = module.callMethod('_frt_df_new', [symbol]);
+        }
+
+        if (v is Map && v.containsKey('boost') && v['boost'] is num) {
+          module.callMethod(
+              '_frjs_df_set_boost', [p_df, v['boost'].toDouble()]);
+        }
+
+        if (v is List) {
+          module.callMethod('_frjs_df_set_destroy_data', [p_df, 1]);
+          v.forEach((a) {
+            var a_str = a.toString();
+            int p_a = allocString(a_str);
+            module.callMethod(
+                '_frt_df_add_data_len', [p_df, p_a, a_str.length]);
+            free(p_a);
+          });
+        } else if (v is String) {
+          int p_v = allocString(v);
+          module.callMethod('_frt_df_add_data_len', [p_df, p_v, v.length]);
+          free(p_v);
+        } else {
+          module.callMethod('_frjs_df_set_destroy_data', [p_df, 1]);
+
+          var v_str = v.toString();
+          int p_v = allocString(v_str);
+          module.callMethod('_frt_df_add_data_len', [p_df, p_v, v_str.length]);
+          free(p_v);
+        }
+        module.callMethod('_frt_doc_add_field', [p_doc, p_df]);
+      });
+    } else if (doc is List) {
+      int p_content = allocString('content');
+      int fsym_content = module.callMethod('_frt_intern', [p_content]);
+      free(p_content);
+
+      int p_df = module.callMethod('_frt_df_new', [fsym_content]);
+
+      module.callMethod('_frjs_df_set_destroy_data', [p_df, 1]);
+
+      doc.forEach((a) {
+        var a_str = a.toString();
+        int p_a = allocString(a_str);
+        module.callMethod('_frt_df_add_data_len', [p_df, p_a, a_str.length]);
+        free(p_a);
+      });
+      module.callMethod('_frt_doc_add_field', [p_doc, p_df]);
+    } else if (doc is String) {
+      int p_content = allocString('content');
+      int fsym_content = module.callMethod('_frt_intern', [p_content]);
+      free(p_content);
+
+      int p_df = module.callMethod('_frt_df_new', [fsym_content]);
+
+      int p_v = allocString(doc);
+      module.callMethod('_frt_df_add_data_len', [p_df, p_v, doc.length]);
+      free(p_v);
+
+      module.callMethod('_frt_doc_add_field', [p_doc, p_df]);
+    } else {
+      int p_content = allocString('content');
+      int fsym_content = module.callMethod('_frt_intern', [p_content]);
+      free(p_content);
+
+      int p_df = module.callMethod('_frt_df_new', [fsym_content]);
+
+      var s = doc.toString();
+      int p_v = allocString(s);
+      module.callMethod('_frt_df_add_data_len', [p_df, p_v, s.length]);
+      free(p_v);
+
+      module.callMethod('_frt_doc_add_field', [p_doc, p_df]);
+    }
+
+    module.callMethod('_frt_iw_add_doc', [handle, p_doc]);
+    module.callMethod('_frt_doc_destroy', [p_doc]);
   }
 
   /// Alias for [add_document].
-  operator <<(doc) => frb_iw_add_doc;
+  operator <<(doc) => add_document(doc);
 
   /// Optimize the index for searching. This commits any unwritten data to the
   /// index and optimizes the index into a single segment to improve search
@@ -201,8 +318,21 @@ class IndexWriter {
   /// word "the" in them. There are of course exceptions to this rule. For
   /// example, you may want to delete all documents with the term "viagra"
   /// when deleting spam.
-  void delete(fields, {term, terms}) {
-    frb_iw_delete;
+  void delete(String field, {String term, List<String> terms}) {
+    var p_field = allocString(field);
+    var p_term = allocString(term);
+//    int symbol = module.callMethod('_frt_intern', [p_field]);
+
+//    if (terms != null) {
+//      module.callMethod(
+//          '_frt_iw_delete_terms', [handle, symbol, p_terms, term_cnt]);
+//    } else if (term != null) {
+//      module.callMethod('_frt_iw_delete_term', [handle, symbol, term]);
+    module.callMethod('_frjs_iw_delete_term', [handle, p_field, p_term]);
+//    }
+
+    free(p_field);
+    free(p_term);
   }
 
   /// Get the [FieldInfos] object for this [IndexWriter]. This is useful if
@@ -585,11 +715,11 @@ class TermDocEnum {
 /// it is possible to continue to dynamically add fields as indexing goes
 /// along. If you add a document to the index which has fields that the index
 /// doesn't know about then the default properties are used for the new field.
-class FieldInfos {
+class FieldInfos extends JsProxy {
   /// Create a new [FieldInfos] object which uses the default values for
   /// fields specified in the [default_values] hash parameter. See [FieldInfo]
   /// for available property values.
-  FieldInfos(default_values) {
+  FieldInfos(default_values) : super() {
     frb_fis_init;
   }
 

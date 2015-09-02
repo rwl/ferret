@@ -27,6 +27,8 @@
 /// [Token.text] might be "begin" (after stemming).
 library ferret.ext.analysis;
 
+import '../../proxy.dart';
+
 part 'analyzer.dart';
 part 'filter.dart';
 part 'tokenizer.dart';
