@@ -16,6 +16,8 @@ abstract class JsProxy {
     }
   }
 
+  JsProxy.mixin() : module = js.context['Ferret'];
+
   int allocString(String s) {
     var ptr = module.callMethod('_malloc', [s.length + 1]);
     module.callMethod('writeStringToMemory', [s, ptr]);

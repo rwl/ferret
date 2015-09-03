@@ -13,7 +13,7 @@
 library ferret.ext.index;
 
 import 'dart:js' as js;
-import 'dart:collection' show MapBase;
+import 'dart:collection' show MapBase, MapMixin;
 
 import 'store.dart' show Directory;
 import 'analysis/analysis.dart' as analysis;
@@ -47,7 +47,7 @@ class IndexWriter extends JsProxy {
   static const DEFAULT_MAX_FIELD_LENGTH = default_config.max_field_length;
   static const DEFAULT_USE_COMPOUND_FILE = default_config.use_compound_file ? Qtrue : Qfalse;*/
 
-  var _boost;
+  /*var _boost;
 
   var _create;
   var _create_if_missing;
@@ -61,7 +61,9 @@ class IndexWriter extends JsProxy {
   var _max_buffered_docs;
   var _max_merge_docs;
   var _max_field_length;
-  var _use_compound_file;
+  var _use_compound_file;*/
+
+  analysis.Analyzer _analyzer;
 
   /// Create a new [IndexWriter]. You should either pass a path or a directory
   /// to this constructor. For example, here are three ways you can create an
@@ -156,6 +158,8 @@ class IndexWriter extends JsProxy {
       int merge_factor: 10, int max_buffered_docs: 10000, max_merge_docs,
       int max_field_length: 10000, bool use_compound_file: true})
       : super() {
+    _analyzer = analyzer;
+
     var p_store = dir != null ? dir.handle : 0;
     var p_analyzer = analyzer != null ? analyzer.handle : 0;
     var p_fis = field_infos != null ? field_infos.handle : 0;
@@ -171,9 +175,7 @@ class IndexWriter extends JsProxy {
 
   /// Returns the number of documents in the [Index]. Note that deletions
   /// won't be taken into account until the [IndexWriter] has been committed.
-  int doc_count() {
-    frb_iw_get_doc_count;
-  }
+  int doc_count() => module.callMethod('_frt_iw_doc_count');
 
   /// Close the [IndexWriter]. This will close and free all resources used
   /// exclusively by the index writer. The garbage collector will do this
@@ -292,144 +294,131 @@ class IndexWriter extends JsProxy {
   /// process. Note that calling the optimize method do not in any way effect
   /// indexing speed (except for the time taken to complete the optimization
   /// process).
-  void optimize() {
-    frb_iw_optimize;
-  }
+  void optimize() => module.callMethod('_frt_iw_optimize');
 
   /// Explicitly commit any changes to the index that may be hanging around in
   /// memory. You should call this method if you want to read the latest index
   /// with an [IndexWriter].
-  void commit() {
-    frb_iw_commit;
-  }
+  void commit() => module.callMethod('_frt_iw_commit');
 
   /// Use this method to merge other indexes into the one being written by
   /// [IndexWriter]. This is useful for parallel indexing. You can have
   /// several indexing processes running in parallel, possibly even on
   /// different machines. Then you can finish by merging all of the indexes
   /// into a single index.
-  void add_readers(List readers) {
-    frb_iw_add_readers;
-  }
+  //void add_readers(List readers) => frb_iw_add_readers;
 
-  /// Delete all documents in the index with the given [term] or [terms] in
+  /// Delete all documents in the index with the given [term] in
   /// the field [field]. You should usually have a unique document id which
   /// you use with this method, rather then deleting all documents with the
   /// word "the" in them. There are of course exceptions to this rule. For
   /// example, you may want to delete all documents with the term "viagra"
   /// when deleting spam.
-  void delete(String field, {String term, List<String> terms}) {
+  void delete(String field, String term) {
     var p_field = allocString(field);
     var p_term = allocString(term);
-//    int symbol = module.callMethod('_frt_intern', [p_field]);
+    int symbol = module.callMethod('_frt_intern', [p_field]);
 
-//    if (terms != null) {
-//      module.callMethod(
-//          '_frt_iw_delete_terms', [handle, symbol, p_terms, term_cnt]);
-//    } else if (term != null) {
-//      module.callMethod('_frt_iw_delete_term', [handle, symbol, term]);
-    module.callMethod('_frjs_iw_delete_term', [handle, p_field, p_term]);
-//    }
+    module.callMethod('_frt_iw_delete_term', [handle, symbol, p_term]);
 
     free(p_field);
     free(p_term);
   }
 
+  /// Delete all documents in the index with the given [terms] in
+  /// the field [field]. You should usually have a unique document id which
+  /// you use with this method, rather then deleting all documents with the
+  /// word "the" in them. There are of course exceptions to this rule. For
+  /// example, you may want to delete all documents with the term "viagra"
+  /// when deleting spam.
+  //void deleteAll(String field, List<String> terms) {}
+
   /// Get the [FieldInfos] object for this [IndexWriter]. This is useful if
   /// you need to dynamically add new fields to the index with specific
   /// properties.
-  FieldInfos get field_infos {
-    frb_iw_field_infos;
-  }
+  FieldInfos get field_infos => new FieldInfos()
+    ..handle = module.callMethod('_frjs_iw_field_infos', [handle]);
 
   /// Get the [Analyzer] for this [IndexWriter]. This is useful if you need
   /// to use the same analyzer in a [QueryParser].
-  Analyzer get analyzer {
-    frb_iw_get_analyzer;
+  analysis.Analyzer get analyzer {
+    if (_analyzer != null) {
+      _analyzer.handle = module.callMethod('_frjs_iw_get_analyzer', [handle]);
+      return _analyzer;
+    }
+    return null;
   }
 
   /// Set the [Analyzer] for this [IndexWriter]. This is useful if you need to
   /// change the analyzer for a special document. It is risky though as the
   /// same analyzer will be used for all documents during search.
-  void set analyzer(Analyzer a) {
-    frb_iw_set_analyzer();
+  void set analyzer(analysis.Analyzer a) {
+    module.callMethod('_frjs_iw_set_analyzer', [handle, a.handle]);
   }
 
   /// Returns the current version of the index writer.
-  int get version {
-    frb_iw_version();
+  int get version => module.callMethod('_frjs_iw_version', [handle]);
+
+  int get chunk_size => module.callMethod('_frjs_iw_get_chunk_size', [handle]);
+
+  void set chunk_size(int size) {
+    module.callMethod('_frjs_iw_set_chunk_size', [handle, size]);
   }
 
-  get chunk_size {
-    frb_iw_get_chunk_size;
+  int get max_buffer_memory =>
+      module.callMethod('_frjs_iw_get_max_buffer_memory', [handle]);
+
+  void set max_buffer_memory(int max) {
+    module.callMethod('_frjs_iw_set_max_buffer_memory', [handle, max]);
   }
 
-  set chunk_size(val) {
-    frb_iw_set_chunk_size;
+  int get term_index_interval =>
+      module.callMethod('_frjs_iw_get_index_interval', [handle]);
+
+  void set term_index_interval(int interval) {
+    module.callMethod('_frjs_iw_set_index_interval', [handle, interval]);
   }
 
-  get max_buffer_memory {
-    frb_iw_get_max_buffer_memory;
+  int get doc_skip_interval =>
+      module.callMethod('frjs_iw_get_skip_interval', [handle]);
+
+  void set doc_skip_interval(int interval) {
+    module.callMethod('_frjs_iw_set_skip_interval', [handle, interval]);
   }
 
-  set max_buffer_memory(val) {
-    frb_iw_set_max_buffer_memory;
+  int get merge_factor =>
+      module.callMethod('_frjs_iw_get_merge_factor', [handle]);
+
+  void set merge_factor(int factor) {
+    module.callMethod('_frjs_iw_set_merge_factor', [handle, factor]);
   }
 
-  get term_index_interval {
-    frb_iw_get_index_interval;
+  int get max_buffered_docs =>
+      module.callMethod('_frjs_iw_get_max_buffered_docs', [handle]);
+
+  void set max_buffered_docs(int max) {
+    module.callMethod('_frjs_iw_set_max_buffered_docs', [handle, max]);
   }
 
-  set term_index_interval(val) {
-    frb_iw_set_index_interval;
+  int get max_merge_docs =>
+      module.callMethod('_frjs_iw_get_max_merge_docs', [handle]);
+
+  void set max_merge_docs(int max) {
+    module.callMethod('_frjs_iw_set_max_merge_docs', [handle, max]);
   }
 
-  get doc_skip_interval {
-    frb_iw_get_skip_interval;
+  int get max_field_length =>
+      module.callMethod('_frjs_iw_get_max_field_length', [handle]);
+
+  void set max_field_length(int len) {
+    module.callMethod('_frjs_iw_set_max_field_length', [handle, len]);
   }
 
-  set doc_skip_interval(val) {
-    frb_iw_set_skip_interval;
-  }
+  bool get use_compound_file =>
+      module.callMethod('_frjs_iw_get_use_compound_file', [handle]) != 0;
 
-  get merge_factor {
-    frb_iw_get_merge_factor;
-  }
-
-  set merge_factor(val) {
-    frb_iw_set_merge_factor;
-  }
-
-  get max_buffered_docs {
-    frb_iw_get_max_buffered_docs;
-  }
-
-  set max_buffered_docs(val) {
-    frb_iw_set_max_buffered_docs;
-  }
-
-  get max_merge_docs {
-    frb_iw_get_max_merge_docs;
-  }
-
-  set max_merge_docs(val) {
-    frb_iw_set_max_merge_docs;
-  }
-
-  get max_field_length {
-    frb_iw_get_max_field_length;
-  }
-
-  set max_field_length(val) {
-    frb_iw_set_max_field_length;
-  }
-
-  get use_compound_file {
-    frb_iw_get_use_compound_file;
-  }
-
-  set use_compound_file(val) {
-    frb_iw_set_use_compound_file;
+  void set use_compound_file(bool use) {
+    module.callMethod('_frjs_iw_set_use_compound_file', [handle, use ? 1 : 0]);
   }
 }
 
@@ -501,13 +490,11 @@ class TVTerm {
 ///     while (te.next() != null) {
 ///       print("${te.term} occurred in ${te.doc_freq} documents in the index");
 ///     }
-class TermEnum {
-  final JsObject _module;
-  final num handle;
+class TermEnum extends JsProxy {
 
   /// Returns the next term in the enumeration or nil otherwise.
   String next() {
-    return _module.callMethod('_fjs_te_next', [_handle]);
+    return module.callMethod('_frjs_te_next', [handle]);
   }
 
   /// Returns the current term pointed to by the enum. This method should only
@@ -717,7 +704,7 @@ class FieldInfos extends JsProxy {
   /// Create a new [FieldInfos] object which uses the default values for
   /// fields specified in the [default_values] hash parameter. See [FieldInfo]
   /// for available property values.
-  FieldInfos(default_values) : super() {
+  FieldInfos({Map default_values}) : super() {
     frb_fis_init;
   }
 
@@ -1017,8 +1004,17 @@ class FieldInfo {
 ///     doc.keys     //=> ['title', 'content']
 ///     doc.values   //=> ["the title", "the content"]
 ///     doc.fields   //=> ['title', 'content']
-class LazyDoc extends MapBase {
+class LazyDoc extends JsProxy /*MapBase*/ with MapMixin {
+  Map _map = {};
+  Iterable get keys => _map.keys;
+  operator [](key) => _map[key];
+  operator []=(key, value) => _map[key] = value;
+  remove(key) => _map.remove(key);
+  void clear() => _map.clear();
+
   var _fields;
+
+  LazyDoc() : super.mixin();
 
   /// This method is used internally to lazily load fields. You should never
   /// really need to call it yourself.
@@ -1111,13 +1107,14 @@ class IndexReader extends JsProxy {
   delete(doc_id) => frb_ir_delete;
 
   /// Returns `true` if the document at [doc_id] has been deleted.
-  bool deleted(doc_id) => frb_ir_is_deleted;
+  bool deleted(int doc_id) =>
+      module.callMethod('_frjs_ir_is_deleted', [handle]) != 0;
 
   /// Returns 1 + the maximum document id in the index. It is the
   /// document_id that will be used by the next document added to the index.
   /// If there are no deletions, this number also refers to the number of
   /// documents in the index.
-  num max_doc() => frb_ir_max_doc;
+  num max_doc() => module.callMethod('_frjs_ir_max_doc', [handle]);
 
   /// Returns the number of accessible (not deleted) documents in the index.
   /// This will be equal to [max_doc] if there have been no documents deleted
@@ -1138,10 +1135,21 @@ class IndexReader extends JsProxy {
   /// Retrieve a document from the index. See [LazyDoc] for more details on
   /// the document returned. Documents are referenced internally by document
   /// ids which are returned by the Searchers search methods.
-  LazyDoc get_document(id) => frb_ir_get_doc;
+  LazyDoc get_document(int id) {
+    int max = max_doc();
+    int pos = (id < 0) ? (max + id) : id;
+    if (pos < 0 || pos >= max) {
+      throw new ArgumentError("index $pos is out of range [0..$max] for "
+          "IndexReader.get_document");
+    }
+
+    int p_doc = module.callMethod('_frjs_ir_get_lazy_doc', [handle, pos]);
+
+    return new LazyDoc()..handle = p_doc;
+  }
 
   /// Alias for [get_document].
-  LazyDoc operator [](id) => frb_ir_get_doc;
+  LazyDoc operator [](int id) => get_document(id);
 
   /// Return the [TermVector] for the field [field] in the document at
   /// [doc_id] in the index. Return `null` if no such term_vector exists.

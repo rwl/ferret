@@ -81,10 +81,10 @@ Analyzer *analyzer, FieldInfos *fis) {
 	return iw;
 }
 
-void
+/*void
 frjs_iw_delete_term(IndexWriter *iw, const char* field, const char* term) {
 	iw_delete_term(iw, frt_intern(field), term);
-}
+}*/
 
 /*void
 frjs_iw_delete_terms(IndexWriter *iw, const char* field, const char** terms,
@@ -100,4 +100,134 @@ frjs_ir_num_docs(IndexReader *ir) {
 bool
 frjs_tde_next(TermDocEnum *tde) {
 	return tde->next(tde);
+}
+
+bool
+frjs_ir_is_deleted(IndexReader *ir, int doc_id) {
+	return ir->is_deleted(ir, doc_id);
+}
+
+LazyDoc *
+frjs_ir_get_lazy_doc(IndexReader *ir, int pos) {
+	return ir->get_lazy_doc(ir, pos);
+}
+
+int
+frjs_ir_max_doc(IndexReader *ir) {
+	return ir->max_doc(ir);
+}
+
+FieldInfos *
+frjs_iw_field_infos(IndexWriter *iw) {
+	FieldInfos *fis = iw->fis;
+	REF(fis);
+	return fis;
+}
+
+Analyzer *
+frjs_iw_get_analyzer(IndexWriter *iw) {
+	Analyzer *a = iw->analyzer;
+	REF(a);
+	return a;
+}
+
+void
+frjs_iw_set_analyzer(IndexWriter *iw, Analyzer *a) {
+	a_deref(iw->analyzer);
+	iw->analyzer = a;
+}
+
+frt_u64
+frjs_iw_version(IndexWriter *iw) {
+	return iw->sis->version;
+}
+
+int
+frjs_iw_get_chunk_size(IndexWriter *iw) {
+	return iw->config.chunk_size;
+}
+
+void
+frjs_iw_set_chunk_size(IndexWriter *iw, int val) {
+	iw->config.chunk_size = val;
+}
+
+int
+frjs_iw_get_max_buffer_memory(IndexWriter *iw) {
+	return iw->config.max_buffer_memory;
+}
+
+void
+frjs_iw_set_max_buffer_memory(IndexWriter *iw, int val) {
+	iw->config.max_buffer_memory = val;
+}
+
+int
+frjs_iw_get_index_interval(IndexWriter *iw) {
+	return iw->config.index_interval;
+}
+
+void
+frjs_iw_set_index_interval(IndexWriter *iw, int val) {
+	iw->config.index_interval = val;
+}
+
+int
+frjs_iw_get_skip_interval(IndexWriter *iw) {
+	return iw->config.skip_interval;
+}
+
+void
+frjs_iw_set_skip_interval(IndexWriter *iw, int val) {
+    iw->config.skip_interval = val;
+}
+
+int
+frjs_iw_get_merge_factor(IndexWriter *iw) {
+	return iw->config.merge_factor;
+}
+
+void
+frjs_iw_set_merge_factor(IndexWriter *iw, int val) {
+	iw->config.merge_factor = val;
+}
+
+int
+frjs_iw_get_max_buffered_docs(IndexWriter *iw) {
+	return iw->config.max_buffered_docs;
+}
+
+void
+frjs_iw_set_max_buffered_docs(IndexWriter *iw, int val) {
+	iw->config.max_buffered_docs = val;
+}
+
+int
+frjs_iw_get_max_merge_docs(IndexWriter *iw) {
+	return iw->config.max_merge_docs;
+}
+
+void
+frjs_iw_set_max_merge_docs(IndexWriter *iw, int val) {
+	iw->config.max_merge_docs = val;
+}
+
+int
+frjs_iw_get_max_field_length(IndexWriter *iw) {
+	return iw->config.max_field_length;
+}
+
+void
+frjs_iw_set_max_field_length(IndexWriter *iw, int val) {
+	iw->config.max_field_length = val;
+}
+
+bool
+frjs_iw_get_use_compound_file(IndexWriter *iw) {
+	return iw->config.use_compound_file;
+}
+
+void
+frjs_iw_set_use_compound_file(IndexWriter *iw, bool val) {
+	iw->config.use_compound_file = val;
 }

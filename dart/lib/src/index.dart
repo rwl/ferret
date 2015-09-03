@@ -466,7 +466,9 @@ class Index {
     if (id is String) {
       _ensure_reader_open();
       var term_doc_enum = _reader.term_docs_for(_id_field, id);
-      return term_doc_enum.next() ? _reader[term_doc_enum.doc()] : null;
+      return term_doc_enum.next()
+          ? _reader.get_document(term_doc_enum.doc())
+          : null;
     } else {
       _ensure_reader_open(false);
       return _reader[arg];
