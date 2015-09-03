@@ -585,7 +585,7 @@ class TermEnum {
 ///       }
 ///       print("  ${positions.join(', ')}");
 ///     }
-class TermDocEnum {
+class TermDocEnum extends JsProxy {
   var field_num_map;
   var field_num;
 
@@ -620,9 +620,7 @@ class TermDocEnum {
 
   /// Move forward to the next document in the enumeration. Returns `true` if
   /// there is another document or `false` otherwise.
-  bool next() {
-    frb_tde_next;
-  }
+  bool next() => module.callMethod('_frjs_tde_next', [handle]) != 0;
 
   /// Move forward to the next document in the enumeration. Returns `true` if
   /// there is another document or `false` otherwise.
@@ -1047,7 +1045,7 @@ class LazyDocData {}
 /// usually used directly for more advanced tasks like iterating through
 /// terms in an index, accessing term-vectors or deleting documents by
 /// document id. It is also used internally by [IndexSearcher].
-class IndexReader {
+class IndexReader extends JsProxy {
   /// Create a new [IndexReader]. You can either pass a string path to a
   /// file-system directory or an actual [Directory] object. For example:
   ///
@@ -1068,8 +1066,14 @@ class IndexReader {
   ///     iw = new IndexReader([reader1, reader2, reader3]);
   ///
   ///     iw = new IndexReader(["/path/to/index1", "/path/to/index2"]);
-  IndexReader(dir) {
-    frb_ir_init;
+  IndexReader(Directory dir) : super() {
+    if (dir is List) {
+      throw dir; // FIXME
+    } else if (dir is Directory) {
+      handle = module.callMethod('_frt_ir_open', [dir.handle]);
+    } else if (dir is String) {
+      throw dir; // FIXME
+    }
   }
 
   /// Expert: change the boost value for a [field] in document at [doc_id].
@@ -1095,7 +1099,7 @@ class IndexReader {
   /// collector but you should call it explicitly to commit any changes as
   /// soon as possible and to close any locks held by the object to prevent
   /// locking errors.
-  close() => frb_ir_close;
+  close() => module.callMethod('_frt_ir_close', [handle]);
 
   /// Return `true` if the index has any deletions, either uncommitted by this
   /// [IndexReader] or committed by any other [IndexReader].
@@ -1118,7 +1122,7 @@ class IndexReader {
   /// Returns the number of accessible (not deleted) documents in the index.
   /// This will be equal to [max_doc] if there have been no documents deleted
   /// from the index.
-  int num_docs() => frb_ir_num_docs;
+  int num_docs() => module.callMethod('_frjs_ir_num_docs', [handle]);
 
   /// Undelete all deleted documents in the index. This is kind of like a
   /// rollback feature. Not that once an index is committed or a merge happens
@@ -1129,7 +1133,7 @@ class IndexReader {
   /// Return true if the index version referenced by this [IndexReader] is the
   /// latest version of the index. If it isn't you should close and reopen the
   /// index to search the latest documents added to the index.
-  bool latest() => frb_ir_is_latest;
+  bool latest() => module.callMethod('_frt_ir_is_latest', [handle]) != 0;
 
   /// Retrieve a document from the index. See [LazyDoc] for more details on
   /// the document returned. Documents are referenced internally by document
@@ -1159,7 +1163,18 @@ class IndexReader {
 
   /// Builds a [TermDocEnum] to iterate through the documents that contain the
   /// term [term] in the field [field].
-  TermDocEnum term_docs_for(field, term) => frb_ir_term_docs_for;
+  TermDocEnum term_docs_for(String field, String term) {
+    int p_field = allocString(field);
+    int symbol = module.callMethod('_frt_intern', [p_field]);
+    free(p_field);
+
+    int p_term = allocString(term);
+    int p_tde =
+        module.callMethod('_frt_ir_term_docs_for', [handle, symbol, p_term]);
+    free(p_term);
+
+    return new TermDocEnum()..handle = p_tde;
+  }
 
   /// Same as [term_docs_for] except the [TermDocEnum] will also allow you to
   /// scan through the positions at which a term occurs.

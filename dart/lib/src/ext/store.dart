@@ -141,8 +141,14 @@ class RAMDirectory extends Directory {
   /// You can optionally load another [Directory] (usually a [FSDirectory])
   /// into memory. This may be useful to speed up search performance but
   /// usually the speedup won't be worth the trouble. Be sure to benchmark.
-  RAMDirectory({dir: null}) : super() {
-    handle = module.callMethod('_frjs_ramdir_init');
+  RAMDirectory({Directory dir: null}) : super() {
+    //handle = module.callMethod('_frjs_ramdir_init');
+    if (dir != null) {
+      handle =
+          module.callMethod('_frt_open_ram_store_and_copy', [dir.handle, 0]);
+    } else {
+      handle = module.callMethod('_frt_open_ram_store');
+    }
   }
 }
 

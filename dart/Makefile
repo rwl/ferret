@@ -14,7 +14,8 @@ EXP_NAME = -s "EXPORT_NAME='Ferret'"
 
 EXP_FUNC = -s EXPORTED_FUNCTIONS="['_malloc',\
 '_frjs_init',\
-'_frjs_ramdir_init',\
+'_frt_open_ram_store_and_copy',\
+'_frt_open_ram_store',\
 '_frjs_dir_exists',\
 '_frjs_iw_init',\
 '_frjs_standard_analyzer_init',\
@@ -22,6 +23,12 @@ EXP_FUNC = -s EXPORTED_FUNCTIONS="['_malloc',\
 '_frt_intern',\
 '_frjs_iw_delete_term',\
 '_frt_iw_add_doc',\
+'_frt_ir_open',\
+'_frt_ir_close',\
+'_frt_ir_is_latest',\
+'_frt_ir_term_docs_for',\
+'_frjs_ir_num_docs',\
+'_frjs_tde_next',\
 '_frt_doc_new',\
 '_frt_doc_get_field',\
 '_frt_doc_add_field',\

@@ -903,7 +903,7 @@ class Index {
       _reader = new IndexReader(_dir);
       return _reader;
     }
-    return false;
+    return null; //false;
   }
 
   _ensure_searcher_open() {

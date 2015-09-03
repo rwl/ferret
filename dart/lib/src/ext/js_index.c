@@ -91,3 +91,13 @@ frjs_iw_delete_terms(IndexWriter *iw, const char* field, const char** terms,
 const int term_cnt) {
 	iw_delete_terms(iw, I(field), terms, term_cnt);
 }*/
+
+int
+frjs_ir_num_docs(IndexReader *ir) {
+	return ir->num_docs(ir);
+}
+
+bool
+frjs_tde_next(TermDocEnum *tde) {
+	return tde->next(tde);
+}
