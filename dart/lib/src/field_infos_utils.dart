@@ -2,7 +2,7 @@ library ferret.index.field_infos_utils;
 
 import 'package:yaml/yaml.dart';
 
-import 'ext/index.dart';
+import 'ext/index/index.dart';
 
 class FieldInfosUtils {
   /// Load FieldInfos from a YAML file. The YAML file should look something

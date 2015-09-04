@@ -1,7 +1,7 @@
 library ferret.index;
 
 import 'ext/store.dart';
-import 'ext/index.dart';
+import 'ext/index/index.dart';
 import 'ext/analysis/analysis.dart' as analysis;
 import 'ext/search/search.dart';
 import 'ext/query_parser.dart';

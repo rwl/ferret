@@ -25,4 +25,6 @@ abstract class JsProxy {
   }
 
   void free(int ptr) => module.callMethod('_free', [ptr]);
+
+  String stringify(int ptr) => module.callMethod('_Pointer_stringify', [ptr]);
 }
