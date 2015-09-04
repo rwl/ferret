@@ -112,20 +112,31 @@ class TVTerm {
 ///       print("${te.term} occurred in ${te.doc_freq} documents in the index");
 ///     }
 class TermEnum extends JsProxy {
+  String _term;
+
+  TermEnum(Map<String, int> fld_nums) : super();
 
   /// Returns the next term in the enumeration or nil otherwise.
-  String next() {
-    return module.callMethod('_frjs_te_next', [handle]);
+  String next() => _setTerm(module.callMethod('_frjs_te_next', [handle]));
+
+  String _setTerm(int p_term) {
+    if (p_term == 0) {
+      _term = null;
+    } else {
+      int len = module.callMethod('_frjs_te_get_curr_term_len', [handle]);
+      _term = stringify(p_term, len);
+    }
+    return _term;
   }
 
   /// Returns the current term pointed to by the enum. This method should only
   /// be called after a successful call to [next].
-  String term() => frb_te_next;
+  String term() => _term;
 
   /// Returns the document frequency of the current term pointed to by the
   /// enum. That is the number of documents that this term appears in. The
   /// method should only be called after a successful call to [next].
-  int doc_freq() => frb_te_doc_freq;
+  int doc_freq() => module.callMethod('_frjs_te_doc_freq', [handle]);
 
   /// Skip to term [target]. This method can skip forwards or backwards. If
   /// you want to skip back to the start, pass the empty string "". That is:
@@ -133,11 +144,26 @@ class TermEnum extends JsProxy {
   ///     term_enum.skip_to("");
   ///
   /// Returns the first term greater than or equal to +target+
-  String skip_to(String target) => frb_te_skip_to;
+  String skip_to(String target) {
+    int p_target = allocString(target);
+    var retval =
+        _setTerm(module.callMethod('_frjs_te_skip_to', [handle, p_target]));
+    free(p_target);
+    return retval;
+  }
 
   /// Iterates through all the terms in the field, yielding the term and the
   /// document frequency.
-  int each(fn(String term, int doc_freq)) => frb_te_each;
+  int each(fn(String term, int doc_freq)) {
+    String term = next();
+    var term_cnt = 0;
+    while (term != null) {
+      term_cnt++;
+      fn(term, doc_freq());
+      term = next();
+    }
+    return term_cnt;
+  }
 
   /// Set the [field] for the term_enum. The [field] value should be a symbol
   /// as usual. For example, to scan all title terms you'd do this:
@@ -145,10 +171,10 @@ class TermEnum extends JsProxy {
   ///     term_enum.set_field('title').each((term, doc_freq) {
   ///       do_something();
   ///     });
-  void set field(String field) => frb_te_set_field;
+  //void set field(String field) => frb_te_set_field;
 
   /// Alias for [field].
-  set_field(String field) {}
+  //set_field(String field) {}
 
   /// Returns a JSON representation of the term enum. You can speed this up by
   /// having the method return arrays instead of objects, simply by passing an
@@ -167,7 +193,26 @@ class TermEnum extends JsProxy {
   ///     //   ["banana",2],
   ///     //   ["cantaloupe",12]
   ///     // ]
-  List to_json({bool fast: false}) => frb_te_to_json;
+  String to_json({bool fast: false}) {
+    const ident = '  ';
+    var buf = new StringBuffer('[');
+    String term = next();
+    while (term != null) {
+      buf.write(ident);
+      if (fast) {
+        buf.write('["$term", ${doc_freq()}]');
+      } else {
+        buf.write('{"term": "$term", "frequency": ${doc_freq()}}');
+      }
+      term = next();
+      if (term != null) {
+        buf.write(',');
+      }
+      buf.write('\n');
+    }
+    buf.write(']');
+    return buf.toString();
+  }
 }
 
 /// Use a [TermDocEnum] to iterate through the documents that contain a
