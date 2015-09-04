@@ -239,15 +239,13 @@ class TermEnum extends JsProxy {
 ///       print("  ${positions.join(', ')}");
 ///     }
 class TermDocEnum extends JsProxy {
-  var field_num_map;
-  var field_num;
+  //var field_num_map;
+  //var field_num;
 
   /// Seek the term [term] in the index for [field]. After you call this
   /// method you can call next or each to skip through the documents and
   /// positions of this particular term.
-  void seek(String field, String term) {
-    frb_tde_seek;
-  }
+  //void seek(String field, String term) => frb_tde_seek;
 
   /// Seek the current term in [term_enum]. You could just use the standard
   /// seek method like this:
@@ -256,20 +254,16 @@ class TermDocEnum extends JsProxy {
   ///
   /// However the [seek_term_enum] method saves an index lookup so should
   /// offer a large performance improvement.
-  void seek_term_enum(String term) {
-    frb_tde_seek_te;
+  void seek_term_enum(TermEnum term_enum) {
+    module.callMethod('_frjs_tde_seek_te', [handle, term_enum.handle]);
   }
 
-  /// Returns the current document number pointed to by the [term_doc_enum].
-  dynamic doc() {
-    frb_tde_doc;
-  }
+  /// Returns the current document number pointed to by the term_doc_enum.
+  int doc() => module.callMethod('_frjs_tde_doc', [handle]);
 
   /// Returns the frequency of the current document pointed to by the
   /// [term_doc_enum].
-  int freq() {
-    frb_tde_freq;
-  }
+  int freq() => module.callMethod('_frjs_tde_freq', [handle]);
 
   /// Move forward to the next document in the enumeration. Returns `true` if
   /// there is another document or `false` otherwise.
@@ -278,7 +272,13 @@ class TermDocEnum extends JsProxy {
   /// Move forward to the next document in the enumeration. Returns `true` if
   /// there is another document or `false` otherwise.
   bool next_position() {
-    frb_tde_next_position;
+    int pos = module.callMethod('_frjs_tde_next_position', [handle]);
+    if (pos == -1) {
+      throw new UnsupportedError("to scan through positions you must create "
+          "the TermDocEnum with Index.term_positions method rather than the "
+          "Index.term_docs method");
+    }
+    return pos != 0;
   }
 
   /// Iterate through the documents and document frequencies in the
@@ -286,8 +286,13 @@ class TermDocEnum extends JsProxy {
   ///
   /// NOTE: This method can only be called once after each seek. If you need
   /// to call [each] again then you should call [seek] again too.
-  each(fn(doc_id, int freq)) {
-    frb_tde_each;
+  each(fn(int doc_id, int freq)) {
+    int doc_cnt = 0;
+    while (next()) {
+      doc_cnt++;
+      fn(doc(), freq());
+    }
+    return doc_cnt;
   }
 
   /// Iterate through each of the positions occupied by the current term in
@@ -301,15 +306,23 @@ class TermDocEnum extends JsProxy {
   ///       tde.each_position((pos) => positions.add(pos));
   ///       print("  ${positions.join(', ')}");
   ///     });
-  each_position(fn(int pos)) {
-    frb_tde_each_position;
+  void each_position(fn(int pos)) {
+    int pos = module.callMethod('_frjs_tde_next_position', [handle]);
+    if (pos == -1) {
+      throw new UnsupportedError("to scan through positions you must create "
+          "the TermDocEnum with Index.term_positions method rather than the "
+          "Index.term_docs method");
+    }
+    while (pos > 0) {
+      fn(pos);
+      pos = module.callMethod('_frjs_tde_next_position', [handle]);
+    }
   }
 
   /// Skip to the required document number [target] and return `true` if there
   /// is a document >= [target].
-  bool skip_to(target) {
-    frb_tde_skip_to;
-  }
+  bool skip_to(int target) =>
+      module.callMethod('_frjs_tde_skip_to', [handle, target]);
 
   /// Returns a json representation of the term doc enum. It will also add the
   /// term positions if they are available. You can speed this up by having
@@ -331,7 +344,51 @@ class TermDocEnum extends JsProxy {
   ///     //   [29,120],
   ///     //   [30,3]
   ///     // ]
-  List to_json({bool fast: false}) {
-    frb_tde_to_json;
+  String to_json({bool fast: false}) {
+    const ident = '  ';
+    bool do_positions =
+        module.callMethod('_frjs_tde_next_position', [handle]) >= 0;
+
+    var buf = new StringBuffer('[');
+    bool loop = next();
+    while (loop) {
+      buf.write(ident);
+      if (fast) {
+        buf.write('["${doc()}", ${freq()}');
+        if (do_positions) {
+          buf.write(", [");
+          int pos = module.callMethod('_frjs_tde_next_position', [handle]);
+          while (pos > 0) {
+            buf.write('$pos');
+            pos = module.callMethod('_frjs_tde_next_position', [handle]);
+            if (pos > 0) {
+              buf.write(', ');
+            }
+          }
+        }
+        buf.write(']');
+      } else {
+        buf.write('{"term": "${doc()}", "frequency": ${freq()}');
+        if (do_positions) {
+          buf.write(', "positions": [');
+          int pos = module.callMethod('_frjs_tde_next_position', [handle]);
+          while (pos > 0) {
+            buf.write('$pos');
+            pos = module.callMethod('_frjs_tde_next_position', [handle]);
+            if (pos > 0) {
+              buf.write(', ');
+            }
+          }
+        }
+        buf.write('}');
+      }
+      loop = next();
+      if (loop) {
+        buf.write(',');
+      }
+      buf.write('\n');
+    }
+    buf.write(']');
+    return buf.toString();
   }
 }

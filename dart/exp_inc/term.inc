@@ -13,4 +13,9 @@ EXP_TERM = \
 '_frjs_te_get_curr_term_len',\
 '_frjs_te_doc_freq',\
 '_frjs_te_skip_to',\
-'_frjs_tde_next'
+'_frjs_tde_seek_te',\
+'_frjs_tde_doc',\
+'_frjs_tde_freq',\
+'_frjs_tde_next',\
+'_frjs_tde_next_position',\
+'_frjs_tde_skip_to'
