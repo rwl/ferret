@@ -1,8 +1,7 @@
 #include <locale.h>
 
-#include "ferret.h"
 #include "internal.h"
-#include "index.h"
+#include "analysis.h"
 
 static char *frb_locale = NULL;
 

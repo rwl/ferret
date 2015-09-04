@@ -1,6 +1,6 @@
-#include "ferret.h"
+// #include "ferret.h"
 #include "internal.h"
-#include "store.h"
+#include "document.h"
 
 extern void frjs_doc_set_boost(Document *doc, float boost) {
 	doc->boost = boost;

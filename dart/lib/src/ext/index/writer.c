@@ -1,15 +1,7 @@
-#include <stdio.h>
-#include <stdint.h>
-
-#include "ferret.h"
+// #include "../ferret.h"
 #include "internal.h"
 #include "index.h"
-#include "symbol.h"
-
-void frjs_init(void) {
-	const char * const progname[] = { "dart" };
-	frt_init(1, progname);
-}
+// #include "symbol.h"
 
 IndexWriter *
 frjs_iw_init(bool create, bool create_if_missing, Store *store,
@@ -91,95 +83,6 @@ frjs_iw_delete_terms(IndexWriter *iw, const char* field, const char** terms,
 const int term_cnt) {
 	iw_delete_terms(iw, I(field), terms, term_cnt);
 }*/
-
-int
-frjs_ir_num_docs(IndexReader *ir) {
-	return ir->num_docs(ir);
-}
-
-bool
-frjs_tde_next(TermDocEnum *tde) {
-	return tde->next(tde);
-}
-
-bool
-frjs_ir_is_deleted(IndexReader *ir, int doc_id) {
-	return ir->is_deleted(ir, doc_id);
-}
-
-LazyDoc *
-frjs_ir_get_lazy_doc(IndexReader *ir, int pos) {
-	return ir->get_lazy_doc(ir, pos);
-}
-
-int
-frjs_ir_max_doc(IndexReader *ir) {
-	return ir->max_doc(ir);
-}
-
-bool
-frjs_ir_has_deletions(IndexReader *ir) {
-	return ir->has_deletions(ir);
-}
-
-TermVector *
-frjs_ir_term_vector(IndexReader *ir, int doc_id, char* field) {
-	return ir->term_vector(ir, doc_id, I(field));
-}
-
-const char *
-frjs_tv_get_field(TermVector *tv) {
-	return S(tv->field);
-}
-
-TVTerm *
-frjs_tv_get_term(TermVector *tv, int i) {
-	TVTerm *terms = tv->terms;
-	return &terms[i];
-}
-
-int
-frjs_tv_get_term_cnt(TermVector *tv) {
-	return tv->term_cnt;
-}
-
-char *
-frjs_tvt_get_text(TVTerm *tv_term) {
-	return tv_term->text;
-}
-
-int
-frjs_tvt_get_freq(TVTerm *tv_term) {
-	return tv_term->freq;
-}
-
-int
-frjs_tvt_get_position(TVTerm *tv_term, int i) {
-	int *positions = tv_term->positions;
-	return positions[i];
-}
-
-int
-frjs_tv_get_offset_cnt(TermVector *tv) {
-	return tv->offset_cnt;
-}
-
-Offset *
-frjs_tv_get_offset(TermVector *tv, int i) {
-	Offset *offsets = tv->offsets;
-	return &offsets[i];
-}
-
-u64
-frjs_tv_offset_get_start(Offset *offset) {
-	return (u64) offset->start;
-}
-
-u64
-frjs_tv_offset_get_end(Offset *offset) {
-	return (u64) offset->end;
-}
-
 
 FieldInfos *
 frjs_iw_field_infos(IndexWriter *iw) {
