@@ -14,6 +14,7 @@ EXP_NAME = -s "EXPORT_NAME='Ferret'"
 
 include ./exp_inc/analyzer.inc
 include ./exp_inc/document.inc
+include ./exp_inc/field_info.inc
 include ./exp_inc/index_reader.inc
 include ./exp_inc/term.inc
 include ./exp_inc/index_writer.inc
@@ -29,6 +30,7 @@ EXP_FUNC = -s EXPORTED_FUNCTIONS="[\
 '_frt_h_destroy',\
 $(EXP_ANALYZER),\
 $(EXP_DOCUMENT),\
+$(EXP_FIELD_INFO),\
 $(EXP_INDEX_READER),\
 $(EXP_TERM),\
 $(EXP_INDEX_WRITER),\

@@ -1,5 +1,46 @@
 part of ferret.ext.index;
 
+class StoreValue {
+  final String _name;
+  final int value;
+  const StoreValue._internal(this._name, this.value);
+  toString() => 'StoreValue.$_name';
+
+  static const NO = const StoreValue._internal('NO', 0);
+  static const YES = const StoreValue._internal('YES', 1);
+  static const COMPRESS = const StoreValue._internal('COMPRESS', 2);
+}
+
+class IndexValue {
+  final String _name;
+  final int value;
+  const IndexValue._internal(this._name, this.value);
+  toString() => 'IndexValue.$_name';
+
+  static const NO = const IndexValue._internal('NO', 0);
+  static const UNTOKENIZED = const IndexValue._internal('UNTOKENIZED', 1);
+  static const YES = const IndexValue._internal('YES', 3);
+  static const UNTOKENIZED_OMIT_NORMS =
+      const IndexValue._internal('UNTOKENIZED_OMIT_NORMS', 5);
+  static const YES_OMIT_NORMS = const IndexValue._internal('YES_OMIT_NORMS', 7);
+}
+
+class TermVectorValue {
+  final String _name;
+  final int value;
+  const TermVectorValue._internal(this._name, this.value);
+  toString() => 'TermVectorValue.$_name';
+
+  static const NO = const TermVectorValue._internal('NO', 0);
+  static const YES = const TermVectorValue._internal('YES', 1);
+  static const WITH_POSITIONS =
+      const TermVectorValue._internal('WITH_POSITIONS', 3);
+  static const WITH_OFFSETS =
+      const TermVectorValue._internal('WITH_OFFSETS', 5);
+  static const WITH_POSITIONS_OFFSETS =
+      const TermVectorValue._internal('WITH_POSITIONS_OFFSETS', 7);
+}
+
 /// The [FieldInfos] class holds all the field descriptors for an index. It is
 /// this class that is used to create a new index using the
 /// [FieldInfos.create_index] method. If you are happy with the default
@@ -34,8 +75,13 @@ class FieldInfos extends JsProxy {
   /// Create a new [FieldInfos] object which uses the default values for
   /// fields specified in the [default_values] hash parameter. See [FieldInfo]
   /// for available property values.
-  FieldInfos({Map default_values}) : super() {
-    frb_fis_init;
+  FieldInfos(
+      {StoreValue store: StoreValue.YES,
+      IndexValue index: IndexValue.YES,
+      TermVectorValue term_vector: TermVectorValue.WITH_POSITIONS_OFFSETS})
+      : super() {
+    handle = module.callMethod(
+        '_frt_fis_new', [store.value, index.value, term_vector.value]);
   }
 
   /// Return an array of the [FieldInfo] objects contained but this
