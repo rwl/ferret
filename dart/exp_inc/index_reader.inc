@@ -14,4 +14,7 @@ EXP_INDEX_READER = \
 '_frjs_ir_term_positions',\
 '_frt_ir_term_positions_for',\
 '_frt_ir_doc_freq',\
-'_frt_ir_terms'
+'_frt_ir_terms',\
+'_frjs_ir_term_count',\
+'_frjs_ir_field_infos',\
+'_frjs_ir_version'

@@ -212,30 +212,49 @@ class IndexReader extends JsProxy {
   }
 
   /// Same as [terms] except that it starts the enumerator off at term [term].
-  TermEnum terms_from(field, term) => frb_ir_terms_from;
+  TermEnum terms_from(String field, String term) {
+    int p_field = allocString(field);
+    int symbol = module.callMethod('_frt_intern', [p_field]);
+    free(p_field);
+
+    int p_term = allocString(term);
+    int p_te =
+        module.callMethod('_frt_ir_terms_from', [handle, symbol, p_term]);
+    free(p_term);
+
+    return new TermEnum._handle(p_te, _field_num_map);
+  }
 
   /// Same return a count of the number of terms in the field.
-  int term_count() => frb_ir_term_count;
+  int term_count(String field) {
+    int p_field = allocString(field);
+    int cnt = module.callMethod('_frjs_ir_term_count', [handle, p_field]);
+    free(p_field);
+    return cnt;
+  }
 
   /// Returns an array of field names in the index. This can be used to pass
   /// to the [QueryParser] so that the [QueryParser] knows how to expand the
   /// "*" wild-card to all fields in the index. A list of field names can also
   /// be gathered from the [FieldInfos] object.
-  List<String> get fields => frb_ir_fields;
+  List<String> get fields => field_infos.fields();
 
   /// Alias for [fields].
-  List<String> field_names() => frb_ir_fields;
+  List<String> field_names() => fields;
 
   /// Get the [FieldInfos] object for this [IndexReader].
-  FieldInfos get field_infos => frb_ir_field_infos;
+  FieldInfos get field_infos {
+    int p_fis = module.callMethod('_frjs_ir_field_infos', [handle]);
+    return new FieldInfos()..handle = p_fis;
+  }
 
   /// Returns an array of field names of all of the tokenized fields in the
-  /// index. This can be used to pass to the QueryParser so that the
+  /// index. This can be used to pass to the [QueryParser] so that the
   /// [QueryParser] knows how to expand the "*" wild-card to all fields in
   /// the index. A list of field names can also be gathered from the
   /// [FieldInfos] object.
-  List<String> tokenized_fields() => frb_ir_tk_fields;
+  List<String> tokenized_fields() => field_infos.tokenized_fields();
 
   /// Returns the current version of the index reader.
-  int get version => frb_ir_version;
+  int get version => module.callMethod('_frjs_ir_version', [handle]);
 }

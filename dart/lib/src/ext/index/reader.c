@@ -45,3 +45,26 @@ TermDocEnum *
 frjs_ir_term_positions(IndexReader *ir) {
 	return ir->term_positions(ir);
 }
+
+int
+frjs_ir_term_count(IndexReader *ir, char *field) {
+	TermEnum *te = ir_terms(ir, I(field));
+	int count = 0;
+	while (te->next(te)) {
+		count++;
+	}
+	te->close(te);
+	return count;
+}
+
+FieldInfos *
+frjs_ir_field_infos(IndexReader *ir) {
+	FieldInfos *fis = ir->fis;
+	REF(fis);
+	return fis;
+}
+
+u64
+frjs_ir_version(IndexReader *ir) {
+	return ir->sis->version;
+}
