@@ -72,13 +72,17 @@ class TermVectorValue {
 /// along. If you add a document to the index which has fields that the index
 /// doesn't know about then the default properties are used for the new field.
 class FieldInfos extends JsProxy {
+  final StoreValue store;
+  final IndexValue index;
+  final TermVectorValue term_vector;
+
   /// Create a new [FieldInfos] object which uses the default values for
   /// fields specified in the [default_values] hash parameter. See [FieldInfo]
   /// for available property values.
   FieldInfos(
-      {StoreValue store: StoreValue.YES,
-      IndexValue index: IndexValue.YES,
-      TermVectorValue term_vector: TermVectorValue.WITH_POSITIONS_OFFSETS})
+      {this.store: StoreValue.YES,
+      this.index: IndexValue.YES,
+      this.term_vector: TermVectorValue.WITH_POSITIONS_OFFSETS})
       : super() {
     handle = module.callMethod(
         '_frt_fis_new', [store.value, index.value, term_vector.value]);
@@ -87,7 +91,13 @@ class FieldInfos extends JsProxy {
   /// Return an array of the [FieldInfo] objects contained but this
   /// [FieldInfos] object.
   List<FieldInfo> to_a() {
-    frb_fis_to_a;
+    var n = size();
+    var a = new List<FieldInfo>(n);
+    for (int i = 0; i < n; i++) {
+      var p_fi = module.callMethod('_frjs_fis_get_field_info', [handle, i]);
+      a[i] = new FieldInfo._handle(p_fi);
+    }
+    return a;
   }
 
   /// Get the [FieldInfo] object. [FieldInfo] objects can be referenced by
@@ -97,37 +107,74 @@ class FieldInfos extends JsProxy {
   ///     var fi = fis['name'];
   ///     fi = fis[2];
   FieldInfo operator [](name_or_num) {
-    frb_fis_get;
+    int p_fi;
+    if (name_or_num is num) {
+      int i = name_or_num.toInt();
+      p_fi = module.callMethod('_frjs_fis_get_field_info', [handle, i]);
+    } else if (name_or_num is String) {
+      var p_name = allocString(name_or_num);
+      p_fi = module.callMethod('_frjs_fis_get_field', [handle, p_name]);
+      free(p_name);
+    } else {
+      throw new ArgumentError.value(
+          name_or_num, 'name_or_num', 'must be num or String');
+    }
+    return new FieldInfo._handle(p_fi);
   }
 
   /// Add a [FieldInfo] object. Use the [add_field] method where possible.
   void add(FieldInfo fi) {
-    frb_fis_add;
+    module.callMethod('_frjs_fis_add', [handle, fi.handle]);
   }
 
   /// Alias for [add].
-  operator <<(fi) => frb_fis_add;
+  FieldInfos operator <<(FieldInfo fi) {
+    add(fi);
+    return this;
+  }
 
   /// Add a new [field] to the [FieldInfos] object. See [FieldInfo] for a
-  /// description of the available [properties].
-  add_field(field, properties) {
-    frb_fis_add_field;
+  /// description of the available properties. Property values default to
+  /// those used in the constructor.
+  void add_field(String field,
+      {StoreValue store,
+      IndexValue index,
+      TermVectorValue term_vector,
+      double boost: 1.0}) {
+    if (store == null) {
+      store = this.store;
+    }
+    if (index == null) {
+      index = this.index;
+    }
+    if (term_vector == null) {
+      term_vector = this.term_vector;
+    }
+    int p_field = allocString(field);
+    module.callMethod('_frjs_fis_add_field',
+        [handle, p_field, store.value, index.value, term_vector.value, boost]);
+    free(p_field);
   }
 
   /// Iterate through the [FieldInfo] objects.
   void each(fn(FieldInfo fi)) {
-    frb_fis_each;
+    var n = size();
+    for (int i = 0; i < n; i++) {
+      var p_fi = module.callMethod('_frjs_fis_get_field_info', [handle, i]);
+      fn(new FieldInfo._handle(p_fi));
+    }
   }
 
   /// Return a string representation of the [FieldInfos] object.
   String to_s() {
-    frb_fis_to_s;
+    int p_s = module.callMethod('_frt_fis_to_s', [handle]);
+    var s = stringify(p_s);
+    free(p_s);
+    return s;
   }
 
   /// Return the number of fields in the [FieldInfos] object.
-  int size() {
-    frb_fis_size;
-  }
+  int size() => module.callMethod('_frjs_fis_size', [handle]);
 
   /// Create a new index in the directory specified. The directory [dir] can
   /// either be a string path representing a directory on the file-system or
@@ -135,19 +182,43 @@ class FieldInfos extends JsProxy {
   /// Any existing index (or other files for that matter) will be deleted from
   /// the directory and overwritten by the new index.
   void create_index(dir) {
-    frb_fis_create_index;
+    int p_store, p_dir;
+    if (dir is String) {
+      p_store = 0;
+      p_dir = allocString(dir);
+    } else if (dir is Directory) {
+      p_store = dir.handle;
+      p_dir = 0;
+    }
+    module.callMethod('_frjs_fis_create_index', [handle, p_store, p_dir]);
+    if (dir is String) {
+      free(p_dir);
+    }
   }
 
   /// Return a list of the field names (as symbols) of all the fields in the
   /// index.
   List<String> fields() {
-    frb_fis_get_fields;
+    int n = size();
+    var f = new List<String>(n);
+    for (int i = 0; i < n; i++) {
+      f[i] = this[i].name;
+    }
+    return f;
   }
 
   /// Return a list of the field names (as symbols) of all the tokenized
   /// fields in the index.
   List<String> tokenized_fields() {
-    frb_fis_get_tk_fields;
+    var tf = new List<String>();
+    for (int i = 0; i < size(); i++) {
+      var fi = this[i];
+      var tokd = module.callMethod('_frjs_fi_is_tokenized', [fi.handle]) != 0;
+      if (tokd) {
+        tf.add(fi.name);
+      }
+    }
+    return tf;
   }
 }
 
@@ -257,7 +328,7 @@ class FieldInfos extends JsProxy {
 ///
 ///     var fi = new FieldInfo('image', store: 'compressed', index: 'no',
 ///       term_vector: 'no');
-class FieldInfo {
+class FieldInfo extends JsProxy {
   var _store;
   var _index;
   var _term_vector;
@@ -272,6 +343,10 @@ class FieldInfo {
   var _with_positions;
   var _with_offsets;
   var _with_positions_offsets;
+
+  FieldInfo._handle(int hfi) : super() {
+    handle = hfi;
+  }
 
   /// Create a new [FieldInfo] object with the name [name] and the properties
   /// specified in [options]. The available options are [`store`, `index`,

@@ -43,6 +43,7 @@ JS_DIR = ./lib/src/ext
 JS_OBJS = \
 $(JS_DIR)/store.o \
 $(JS_DIR)/global.o \
+$(JS_DIR)/index/field_info.o \
 $(JS_DIR)/index/writer.o \
 $(JS_DIR)/index/term.o \
 $(JS_DIR)/index/reader.o \

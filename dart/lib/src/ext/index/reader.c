@@ -60,7 +60,9 @@ frjs_ir_term_count(IndexReader *ir, char *field) {
 FieldInfos *
 frjs_ir_field_infos(IndexReader *ir) {
 	FieldInfos *fis = ir->fis;
-	REF(fis);
+	if (fis) {
+		REF(fis);
+	}
 	return fis;
 }
 
