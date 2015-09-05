@@ -1,7 +1,5 @@
-// #include "../ferret.h"
 #include "internal.h"
 #include "index.h"
-// #include "symbol.h"
 
 int
 frjs_ir_num_docs(IndexReader *ir) {
@@ -31,4 +29,19 @@ frjs_ir_has_deletions(IndexReader *ir) {
 TermVector *
 frjs_ir_term_vector(IndexReader *ir, int doc_id, char* field) {
 	return ir->term_vector(ir, doc_id, I(field));
+}
+
+Hash *
+frjs_ir_term_vectors(IndexReader *ir, int doc_id) {
+	return ir->term_vectors(ir, doc_id);
+}
+
+TermDocEnum *
+frjs_ir_term_docs(IndexReader *ir) {
+	return ir->term_docs(ir);
+}
+
+TermDocEnum *
+frjs_ir_term_positions(IndexReader *ir) {
+	return ir->term_positions(ir);
 }

@@ -1,4 +1,3 @@
-// #include "../ferret.h"
 #include "internal.h"
 #include "index.h"
 

@@ -5,6 +5,8 @@ part of ferret.ext.index;
 /// terms in an index, accessing term-vectors or deleting documents by
 /// document id. It is also used internally by [IndexSearcher].
 class IndexReader extends JsProxy {
+  Map<String, int> _field_num_map;
+
   /// Create a new [IndexReader]. You can either pass a string path to a
   /// file-system directory or an actual [Directory] object. For example:
   ///
@@ -128,16 +130,33 @@ class IndexReader extends JsProxy {
   /// Return the [TermVector]s for the document at [doc_id] in the index. The
   /// value returned is a hash of the [TermVector]s for each field in the
   /// document and they are referenced by field names (as symbols).
-  Map term_vectors(doc_id) => frb_ir_term_vectors;
+  Map<String, TermVector> term_vectors(int doc_id) {
+    int p_tvs = module.callMethod('_', [handle, doc_id]);
+    int h_size = module.callMethod('_frjs_hash_get_size', [p_tvs]);
+    var m = new Map<String, TermVector>();
+    for (int i = 0; i < h_size; i++) {
+      int p_key = module.callMethod('_frjs_hash_get_key', [p_tvs, i]);
+      int p_val = module.callMethod('_frjs_hash_get_value', [p_tvs, i]);
+      var key = stringify(p_key);
+      m[key] = new TermVector._handle(p_val);
+    }
+    module.callMethod('_h_destroy', [p_tvs]);
+  }
 
   /// Builds a [TermDocEnum] (term-document enumerator) for the index. You can
   /// use this object to iterate through the documents in which certain terms
   /// occur. See [TermDocEnum] for more info.
-  TermDocEnum term_docs() => frb_ir_term_docs;
+  TermDocEnum term_docs() {
+    int p_tde = module.callMethod('_frjs_ir_term_docs', [handle]);
+    return new TermDocEnum._handle(p_tde, _field_num_map);
+  }
 
   /// Same as [term_docs] except the [TermDocEnum] will also allow you to scan
   /// through the positions at which a term occurs.
-  TermDocEnum term_positions() => frb_ir_term_positions;
+  TermDocEnum term_positions() {
+    int p_tde = module.callMethod('_frjs_ir_term_positions', [handle]);
+    return new TermDocEnum._handle(p_tde, _field_num_map);
+  }
 
   /// Builds a [TermDocEnum] to iterate through the documents that contain the
   /// term [term] in the field [field].
@@ -151,20 +170,46 @@ class IndexReader extends JsProxy {
         module.callMethod('_frt_ir_term_docs_for', [handle, symbol, p_term]);
     free(p_term);
 
-    return new TermDocEnum()..handle = p_tde;
+    return new TermDocEnum._handle(p_tde, _field_num_map);
   }
 
   /// Same as [term_docs_for] except the [TermDocEnum] will also allow you to
   /// scan through the positions at which a term occurs.
-  TermDocEnum term_positions_for(field, term) => frb_ir_t_pos_for;
+  TermDocEnum term_positions_for(String field, String term) {
+    int p_field = allocString(field);
+    int symbol = module.callMethod('_frt_intern', [p_field]);
+    free(p_field);
+
+    int p_term = allocString(term);
+    int p_tde = module.callMethod(
+        '_frt_ir_term_positions_for', [handle, symbol, p_term]);
+    free(p_term);
+    return new TermDocEnum._handle(p_tde, _field_num_map);
+  }
 
   /// Return the number of documents in which the term [term] appears in the
   /// field [field].
-  doc_freq(field, term) => frb_ir_doc_freq;
+  int doc_freq(String field, String term) {
+    int p_field = allocString(field);
+    int symbol = module.callMethod('_frt_intern', [p_field]);
+    free(p_field);
+
+    int p_term = allocString(term);
+    int freq = module.callMethod('_frt_ir_doc_freq', [handle, symbol, p_term]);
+    free(p_term);
+    return freq;
+  }
 
   /// Returns a term enumerator which allows you to iterate through all the
   /// terms in the field [field] in the index.
-  TermEnum terms(field) => frb_ir_terms;
+  TermEnum terms(String field) {
+    int p_field = allocString(field);
+    int symbol = module.callMethod('_frt_intern', [p_field]);
+    free(p_field);
+
+    int p_te = module.callMethod('_frt_ir_terms', [handle, symbol]);
+    return new TermEnum._handle(p_te, _field_num_map);
+  }
 
   /// Same as [terms] except that it starts the enumerator off at term [term].
   TermEnum terms_from(field, term) => frb_ir_terms_from;

@@ -23,6 +23,10 @@ EXP_FUNC = -s EXPORTED_FUNCTIONS="[\
 '_malloc',\
 '_frjs_init',\
 '_frt_intern',\
+'_frjs_hash_get_size',\
+'_frjs_hash_get_key',\
+'_frjs_hash_get_value',\
+'_frt_h_destroy',\
 $(EXP_ANALYZER),\
 $(EXP_DOCUMENT),\
 $(EXP_INDEX_READER),\

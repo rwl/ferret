@@ -113,8 +113,11 @@ class TVTerm {
 ///     }
 class TermEnum extends JsProxy {
   String _term;
+  Map<String, int> _field_num_map;
 
-  TermEnum(Map<String, int> fld_nums) : super();
+  TermEnum._handle(int h_te, this._field_num_map) : super() {
+    handle = h_te;
+  }
 
   /// Returns the next term in the enumeration or nil otherwise.
   String next() => _setTerm(module.callMethod('_frjs_te_next', [handle]));
@@ -239,8 +242,12 @@ class TermEnum extends JsProxy {
 ///       print("  ${positions.join(', ')}");
 ///     }
 class TermDocEnum extends JsProxy {
-  //var field_num_map;
+  Map<String, int> _field_num_map;
   //var field_num;
+
+  TermDocEnum._handle(int h_tde, this._field_num_map) : super() {
+    handle = h_tde;
+  }
 
   /// Seek the term [term] in the index for [field]. After you call this
   /// method you can call next or each to skip through the documents and
