@@ -16,8 +16,9 @@ include ./exp_inc/analyzer.inc
 include ./exp_inc/document.inc
 include ./exp_inc/field_info.inc
 include ./exp_inc/index_reader.inc
-include ./exp_inc/term.inc
 include ./exp_inc/index_writer.inc
+include ./exp_inc/lazy_doc.inc
+include ./exp_inc/term.inc
 include ./exp_inc/store.inc
 
 EXP_FUNC = -s EXPORTED_FUNCTIONS="[\
@@ -32,8 +33,9 @@ $(EXP_ANALYZER),\
 $(EXP_DOCUMENT),\
 $(EXP_FIELD_INFO),\
 $(EXP_INDEX_READER),\
-$(EXP_TERM),\
 $(EXP_INDEX_WRITER),\
+$(EXP_LAZY_DOC),\
+$(EXP_TERM),\
 $(EXP_STORE)]"
 
 EM_FLAGS = $(EXP_NAME) $(EXP_FUNC) --pre-js pre.js
@@ -44,6 +46,7 @@ JS_OBJS = \
 $(JS_DIR)/store.o \
 $(JS_DIR)/global.o \
 $(JS_DIR)/index/field_info.o \
+$(JS_DIR)/index/lazy_doc.o \
 $(JS_DIR)/index/writer.o \
 $(JS_DIR)/index/term.o \
 $(JS_DIR)/index/reader.o \
