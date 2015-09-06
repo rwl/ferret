@@ -78,7 +78,65 @@ frjs_fis_create_index(FieldInfos *fis, Store *store, const char *dir) {
     store_deref(store);
 }
 
+FieldInfo *
+frjs_fi_init(const char* name, StoreValue store, IndexValue index,
+        TermVectorValue term_vector, float boost) {
+    FieldInfo *fi = fi_new(I(name), store, index, term_vector);
+    fi->boost = boost;
+    return fi;
+}
+
+const char*
+frjs_fi_name(FieldInfo *fi) {
+    return S(fi->name);
+}
+
+bool
+frjs_fi_is_stored(FieldInfo *fi) {
+    return fi_is_stored(fi);
+}
+
+bool
+frjs_fi_is_compressed(FieldInfo *fi) {
+    return fi_is_compressed(fi);
+}
+
+bool
+frjs_fi_is_indexed(FieldInfo *fi) {
+    return fi_is_indexed(fi);
+}
+
 bool
 frjs_fi_is_tokenized(FieldInfo *fi) {
     return fi_is_tokenized(fi);
+}
+
+bool
+frjs_fi_omit_norms(FieldInfo *fi) {
+    return fi_omit_norms(fi);
+}
+
+bool
+frjs_fi_store_term_vector(FieldInfo *fi) {
+    return fi_store_term_vector(fi);
+}
+
+bool
+frjs_fi_store_positions(FieldInfo *fi) {
+    return fi_store_positions(fi);
+}
+
+bool
+frjs_fi_store_offsets(FieldInfo *fi) {
+    return fi_store_offsets(fi);
+}
+
+bool
+frjs_fi_has_norms(FieldInfo *fi) {
+    return fi_has_norms(fi);
+}
+
+float
+frjs_fi_boost(FieldInfo *fi) {
+    return fi->boost;
 }

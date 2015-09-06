@@ -332,29 +332,29 @@ class FieldInfo extends JsProxy {
   FieldInfo(name,
       {store: FieldStorage.YES,
       index: FieldIndexing.YES,
-      term_vector: TermVectorStorage.WITH_POSITIONS_OFFSETS}) {
-    frb_fi_init;
+      term_vector: TermVectorStorage.WITH_POSITIONS_OFFSETS,
+      double boost: 1.0}) {
+    int p_name = allocString(name);
+    handle = module.callMethod('_frjs_fi_init',
+        [p_name, store._value, index._value, term_vector._value, boost]);
+    free(p_name);
   }
 
   /// Return the name of the field.
   String get name {
-    frb_fi_name;
+    int p_name = module.callMethod('_frjs_fi_name', [handle]);
+    return stringify(p_name);
   }
 
   /// Return `true` if the field is stored in the index.
-  bool stored() {
-    frb_fi_is_stored;
-  }
+  bool stored() => module.callMethod('_frjs_fi_is_stored', [handle]) != 0;
 
   /// Return `true` if the field is stored in the index in compressed format.
-  bool compressed() {
-    frb_fi_is_compressed;
-  }
+  bool compressed() =>
+      module.callMethod('_frjs_fi_is_compressed', [handle]) != 0;
 
   /// Return `true` if the field is indexed, ie searchable in the index.
-  bool indexed() {
-    frb_fi_is_indexed;
-  }
+  bool indexed() => module.callMethod('_frjs_fi_is_indexed', [handle]) != 0;
 
   /// Return true if the field is tokenized. Tokenizing is the process of
   /// breaking the field up into tokens. That is "the quick brown fox"
@@ -363,9 +363,7 @@ class FieldInfo extends JsProxy {
   ///     ["the", "quick", "brown", "fox"]
   ///
   /// A field can only be tokenized if it is indexed.
-  bool tokenized() {
-    frb_fi_is_tokenized;
-  }
+  bool tokenized() => module.callMethod('_frjs_fi_is_tokenized', [handle]) != 0;
 
   /// Return true if the field omits the norm file. The norm file is the file
   /// used to store the field boosts for an indexed field. If you do not boost
@@ -373,42 +371,36 @@ class FieldInfo extends JsProxy {
   /// you can omit the norms file. This will give the index a slight
   /// performance boost and it will use less memory, especially for indexes
   /// which have a large number of documents.
-  bool omit_norms() {
-    frb_fi_omit_norms;
-  }
+  bool omit_norms() => module.callMethod('_frjs_fi_omit_norms', [handle]) != 0;
 
   /// Return `true` if the term-vectors are stored for this field.
-  bool store_term_vector() {
-    frb_fi_store_term_vector;
-  }
+  bool store_term_vector() =>
+      module.callMethod('_frjs_fi_store_term_vector', [handle]) != 0;
 
   /// Return `true` if positions are stored with the term-vectors for this
   /// field.
-  bool store_positions() {
-    frb_fi_store_positions;
-  }
+  bool store_positions() =>
+      module.callMethod('_frjs_fi_store_positions', [handle]) != 0;
 
   /// Return `true` if offsets are stored with the term-vectors for this
   /// field.
-  bool store_offsets() {
-    frb_fi_store_offsets;
-  }
+  bool store_offsets() =>
+      module.callMethod('_frjs_fi_store_offsets', [handle]) != 0;
 
   /// Return `true` if this field has a norms file. This is the same as
   /// calling:
   ///
   ///     fi.indexed() && !fi.omit_norms();
-  bool has_norms() {
-    frb_fi_has_norms;
-  }
+  bool has_norms() => module.callMethod('_frjs_fi_has_norms', [handle]) != 0;
 
   /// Return the default boost for this field.
-  num boost() {
-    frb_fi_boost;
-  }
+  double boost() => module.callMethod('_frjs_fi_boost', [handle]);
 
   /// Return a string representation of the [FieldInfo] object.
   String to_s() {
-    frb_fi_to_s;
+    int p_fi_s = module.callMethod('_frt_fi_to_s', [handle]);
+    var fi_s = stringify(p_fi_s);
+    free(p_fi_s);
+    return fi_s;
   }
 }
