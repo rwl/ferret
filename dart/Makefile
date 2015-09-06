@@ -12,7 +12,7 @@ CFLAGS += -std=c99 -pedantic -Wall -Wextra $(CINCS) -g -fno-common
 
 EXP_NAME = -s "EXPORT_NAME='Ferret'"
 
-include ./exp_inc/analyzer.inc
+include ./exp_inc/analysis.inc
 include ./exp_inc/document.inc
 include ./exp_inc/field_info.inc
 include ./exp_inc/index_reader.inc
@@ -29,7 +29,7 @@ EXP_FUNC = -s EXPORTED_FUNCTIONS="[\
 '_frjs_hash_get_key',\
 '_frjs_hash_get_value',\
 '_frt_h_destroy',\
-$(EXP_ANALYZER),\
+$(EXP_ANALYSIS),\
 $(EXP_DOCUMENT),\
 $(EXP_FIELD_INFO),\
 $(EXP_INDEX_READER),\

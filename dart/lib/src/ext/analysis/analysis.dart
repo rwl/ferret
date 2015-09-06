@@ -51,7 +51,11 @@ part 'tokenizer.dart';
 /// Note that the difference between [end_offset] and [start_offset] may not
 /// be equal to [text.length], as the term text may have been altered by a
 /// stemmer or some other filter.
-class Token implements Comparable {
+class Token extends JsProxy implements Comparable {
+  String _text;
+  int _start;
+  int _end;
+  int _pos_inc;
 
   /// Creates a new token setting the text, start and end offsets of the token
   /// and the position increment for the token.
@@ -78,8 +82,17 @@ class Token implements Comparable {
   /// [text] is the main text for the token. [start] is the start offset of
   /// the token in bytes. [end] is the end offset of the token in bytes.
   /// [pos_inc] is the position increment of a token.
-  Token(text, start, end, [num pos_inc = 1]) {
+  /*Token(this._text, this._start, this._end, [this._pos_inc = 1]) : super() {
     frb_token_init;
+  }*/
+
+  Token._handle(int htk) : super() {
+    handle = htk;
+    int p_text = module.callMethod('_frjs_tk_get_text', [handle]);
+    _text = stringify(p_text);
+    _start = module.callMethod('_frjs_tk_get_start', [handle]);
+    _end = module.callMethod('_frjs_tk_get_end', [handle]);
+    _pos_inc = module.callMethod('_frjs_tk_get_pos_inc', [handle]);
   }
 
   /// Used to compare two tokens. Token is extended by [Comparable] so you
@@ -91,26 +104,42 @@ class Token implements Comparable {
   /// by the token text.
   compareTo(Token other_token) => frb_token_cmp;
 
+  void _set() {
+    int p_text = allocString(_text);
+    module.callMethod(
+        '_frt_tk_set_no_len', [handle, p_text, _start, _end, _pos_inc]);
+    free(p_text);
+  }
+
   /// Returns the text that this token represents.
-  get text => frb_token_get_text;
+  String get text => _text;
 
   /// Set the text for this token.
-  set text(val) => frb_token_set_text;
+  void set text(String val) {
+    _text = val;
+    _set();
+  }
 
   /// Start byte-position of this token.
-  get start => frb_token_get_start_offset;
+  int get start => _start;
 
   /// Set start byte-position of this token.
-  set start(val) => frb_token_set_start_offset;
+  void set start(int val) {
+    _start = val;
+    _set();
+  }
 
   /// End byte-position of this token.
-  get end => frb_token_get_end_offset;
+  int get end => _end;
 
   /// Set end byte-position of this token.
-  set end(val) => frb_token_set_end_offset;
+  void set end(int val) {
+    _end = val;
+    _set();
+  }
 
   /// Position Increment for this token.
-  get pos_inc => frb_token_get_pos_inc;
+  int get pos_inc => _pos_inc;
 
   /// Set the position increment. This determines the position of this token
   /// relative to the previous Token in a TokenStream, used in phrase
@@ -133,10 +162,13 @@ class Token implements Comparable {
   ///   words and also sets the increment to the number of stop words removed
   ///   before each non-stop word.  Then exact phrase queries will only match
   ///   when the terms occur with no intervening stop words.
-  set pos_inc(val) => frb_token_set_pos_inc;
+  set pos_inc(int val) {
+    _pos_inc = val;
+    _set();
+  }
 
   /// Return a string representation of the token.
-  to_s() => frb_token_to_s;
+  String to_s() => 'token["$_text":$_start:$_end:$_pos_inc]';
 }
 
 /// A [TokenStream] enumerates the sequence of tokens, either from
@@ -146,17 +178,31 @@ class Token implements Comparable {
 ///
 /// * [Tokenizer]: a [TokenStream] whose input is a string
 /// * [TokenFilter]: a [TokenStream] whose input is another [TokenStream]
-abstract class TokenStream {
+abstract class TokenStream extends JsProxy {
+  TokenStream([int hts]) : super() {
+    handle = hts;
+  }
+
   /// Return the next token from the [TokenStream] or null if there are no
   /// more tokens.
-  next() => frb_ts_next;
+  Token next() {
+    int p_tk = module.callMethod('_frjs_ts_next', [handle]);
+    return new Token._handle(p_tk);
+  }
 
   /// Set the text attribute of the [TokenStream] to the text you wish to be
   /// tokenized. For example, you may do this:
   ///
   ///     token_stream.text = File.read(file_name);
-  set text(val) => frb_ts_set_text;
+  void set text(String val) {
+    int p_text = allocString(val);
+    module.callMethod('_frjs_ts_set_text', [handle, p_text]);
+    free(p_text);
+  }
 
   /// Return the text that the TokenStream is tokenizing.
-  get text => frb_ts_get_text;
+  String get text {
+    int p_text = module.callMethod('_frjs_ts_get_text', [handle]);
+    return stringify(p_text);
+  }
 }
