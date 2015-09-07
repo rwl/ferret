@@ -40,19 +40,90 @@ frjs_ts_get_text(TokenStream *ts) {
 	return ts->text;
 }
 
+TokenStream *
+frjs_analyzer_token_stream(Analyzer *a, char *field, char *text) {
+	TokenStream *ts = a_get_ts(a, I(field), text);
+	/* Make sure that there is no entry already */
+	//ts->text = text;
+	return ts;
+}
+
 Analyzer *
 frjs_standard_analyzer_init(bool lower, char **stop_words) {
 	Analyzer *a;
-//#ifndef POSH_OS_WIN32
+#ifndef POSH_OS_WIN32
 	if (!frb_locale) {
 		frb_locale = setlocale(LC_CTYPE, "");
 	}
-//#endif
+#endif
 	if (stop_words != NULL) {
 		a = mb_standard_analyzer_new_with_words((const char **) stop_words,
 				lower);
 	} else {
 		a = mb_standard_analyzer_new(lower);
+	}
+	return a;
+}
+
+Analyzer *
+frjs_letter_analyzer_init(bool lower) {
+#ifndef POSH_OS_WIN32
+	if (!frb_locale) {
+		frb_locale = setlocale(LC_CTYPE, "");
+	}
+#endif
+	return mb_letter_analyzer_new(lower);
+}
+
+TokenStream *
+frjs_letter_tokenizer_init(bool lower) {
+#ifndef POSH_OS_WIN32
+	if (!frb_locale) {
+		frb_locale = setlocale(LC_CTYPE, "");
+	}
+#endif
+	return mb_letter_tokenizer_new(lower);
+}
+
+TokenStream *
+frjs_whitespace_tokenizer_init(bool lower) {
+#ifndef POSH_OS_WIN32
+	if (!frb_locale) {
+		frb_locale = setlocale(LC_CTYPE, "");
+	}
+#endif
+	return mb_whitespace_tokenizer_new(lower);
+}
+
+TokenStream *
+frjs_standard_tokenizer_init() {
+#ifndef POSH_OS_WIN32
+	if (!frb_locale) {
+		frb_locale = setlocale(LC_CTYPE, "");
+	}
+#endif
+	return mb_standard_tokenizer_new();
+}
+
+Analyzer *
+frjs_white_space_analyzer_init(bool lower) {
+#ifndef POSH_OS_WIN32
+	if (!frb_locale) {
+		frb_locale = setlocale(LC_CTYPE, "");
+	}
+#endif
+	return mb_whitespace_analyzer_new(lower);
+}
+
+Analyzer *
+frjs_a_standard_analyzer_init(bool lower, char **stop_words) {
+	Analyzer *a;
+	if (stop_words != NULL) {
+		a = standard_analyzer_new_with_words((const char **)stop_words,
+			lower);
+		free(stop_words);
+	} else {
+		a = standard_analyzer_new(lower);
 	}
 	return a;
 }

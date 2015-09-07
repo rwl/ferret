@@ -7,8 +7,13 @@ part of ferret.ext.analysis;
 ///     "Dave's résumé, at http://www.davebalmain.com/ 1234"
 ///     => ["Dave", "s", "r", "sum", "at", "http", "www", "davebalmain", "com"]
 class AsciiLetterTokenizer extends TokenStream {
-  AsciiLetterTokenizer() {
-    frb_a_letter_tokenizer_init;
+  AsciiLetterTokenizer(String text) : super() {
+    handle = module.callMethod('_frt_letter_tokenizer_new');
+    this.text = text;
+  }
+
+  AsciiLetterTokenizer._handle(int h_ts) : super() {
+    handle = h_ts;
   }
 }
 
@@ -22,8 +27,13 @@ class AsciiLetterTokenizer extends TokenStream {
 class LetterTokenizer extends TokenStream {
   /// Create a new [LetterTokenizer] which optionally downcases tokens.
   /// Downcasing is done according the current locale.
-  LetterTokenizer({bool lower: true}) {
-    frb_letter_tokenizer_init;
+  LetterTokenizer(String text, {bool lower: true}) {
+    handle = module.callMethod('_frjs_letter_tokenizer_init', [lower ? 1 : 0]);
+    this.text = text;
+  }
+
+  LetterTokenizer._handle(int h_ts) {
+    handle = h_ts;
   }
 }
 
@@ -33,8 +43,13 @@ class LetterTokenizer extends TokenStream {
 ///     "Dave's résumé, at http://www.davebalmain.com/ 1234"
 ///     => ["Dave's", "résumé,", "at", "http://www.davebalmain.com", "1234"]
 class AsciiWhiteSpaceTokenizer extends TokenStream {
-  AsciiWhiteSpaceTokenizer() {
-    frb_a_whitespace_tokenizer_init;
+  AsciiWhiteSpaceTokenizer(String text) {
+    handle = module.callMethod('_frt_whitespace_tokenizer_new');
+    this.text = text;
+  }
+
+  AsciiWhiteSpaceTokenizer._handle(int h_ts) {
+    handle = h_ts;
   }
 }
 
@@ -46,8 +61,14 @@ class AsciiWhiteSpaceTokenizer extends TokenStream {
 class WhiteSpaceTokenizer extends TokenStream {
   /// Create a new [WhiteSpaceTokenizer] which optionally downcases tokens.
   /// Downcasing is done according the current locale.
-  WhiteSpaceTokenizer({bool lower: true}) {
-    frb_whitespace_tokenizer_init;
+  WhiteSpaceTokenizer(String text, {bool lower: true}) {
+    handle =
+        module.callMethod('_frjs_whitespace_tokenizer_init', [lower ? 1 : 0]);
+    this.text = text;
+  }
+
+  WhiteSpaceTokenizer._handle(int h_ts) {
+    handle = h_ts;
   }
 }
 
@@ -58,8 +79,13 @@ class WhiteSpaceTokenizer extends TokenStream {
 ///     "Dave's résumé, at http://www.davebalmain.com/ 1234"
 ///     => ["Dave's", "r", "sum", "at", "http://www.davebalmain.com", "1234"]
 class AsciiStandardTokenizer extends TokenStream {
-  AsciiStandardTokenizer() {
-    frb_a_standard_tokenizer_init;
+  AsciiStandardTokenizer(String text) {
+    handle = module.callMethod('_frt_standard_tokenizer_new');
+    this.text = text;
+  }
+
+  AsciiStandardTokenizer._handle(int h_ts) {
+    handle = h_ts;
   }
 }
 
@@ -72,8 +98,13 @@ class AsciiStandardTokenizer extends TokenStream {
 class StandardTokenizer extends TokenStream {
   /// Create a new StandardTokenizer which optionally downcases tokens.
   /// Downcasing is done according the current locale.
-  StandardTokenizer({bool lower: true}) {
-    frb_standard_tokenizer_init;
+  StandardTokenizer(String text, {bool lower: true}) {
+    handle = module.callMethod('_frjs_standard_tokenizer_init');
+    this.text = text;
+  }
+
+  StandardTokenizer._handle(int h_ts) {
+    handle = h_ts;
   }
 }
 
@@ -97,8 +128,8 @@ class RegExpTokenizer extends TokenStream {
 
   /// Set the text to be tokenized by the tokenizer. The tokenizer gets reset
   /// to tokenize the text from the beginning.
-  set text(val) => frb_rets_set_text;
+  void set text(String val) => frb_rets_set_text;
 
   /// Get the text being tokenized by the tokenizer.
-  get text => frb_rets_get_text;
+  String get text => frb_rets_get_text;
 }

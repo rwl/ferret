@@ -30,10 +30,22 @@ abstract class Analyzer extends JsProxy {
 //    frb_letter_analyzer_init;
   }
 
+  TokenStream _makeTokenStream(int h_ts);
+
   /// Create a new [TokenStream] to tokenize [input]. The [TokenStream]
-  /// created may also depend on the [field_name]. Although this parameter is
-  /// typically ignored.
-  token_stream(field_name, input) => frb_analyzer_token_stream;
+  /// created may also depend on the [field_name]. Although this parameter
+  /// is typically ignored.
+  TokenStream token_stream(String field_name, String input) {
+    int p_field = allocString(field_name);
+    int p_text = allocString(input);
+    int p_ts = module.callMethod(
+        '_frjs_analyzer_token_stream', [handle, p_field, p_text]);
+    free(p_field);
+    free(p_text);
+    var ts = _makeTokenStream(p_ts);
+    //ts.text = input;
+    return ts;
+  }
 }
 
 /// An [AsciiLetterAnalyzer] creates a [TokenStream] that splits the input up
@@ -63,7 +75,11 @@ class AsciiLetterAnalyzer extends Analyzer {
   /// but can optionally leave case as is. Lowercasing will only be done to
   /// ASCII characters.
   AsciiLetterAnalyzer({bool lower: true}) {
-    frb_a_letter_analyzer_init;
+    handle = module.callMethod('_frt_letter_analyzer_new', [lower ? 1 : 0]);
+  }
+
+  TokenStream _makeTokenStream(int h_ts) {
+    return new AsciiLetterTokenizer._handle(h_ts);
   }
 }
 
@@ -87,7 +103,11 @@ class LetterAnalyzer extends Analyzer {
   /// optionally leave case as is. Lowercasing will be done based on the
   /// current locale.
   LetterAnalyzer({bool lower: true}) {
-    frb_letter_analyzer_init;
+    handle = module.callMethod('_frjs_letter_analyzer_init', [lower ? 1 : 0]);
+  }
+
+  TokenStream _makeTokenStream(int h_ts) {
+    return new LetterTokenizer._handle(h_ts);
   }
 }
 
@@ -117,7 +137,11 @@ class AsciiWhiteSpaceAnalyzer extends Analyzer {
   /// but can optionally leave case as is. Lowercasing will only be done to
   /// ASCII characters.
   AsciiWhiteSpaceAnalyzer({bool lower: true}) {
-    frb_a_white_space_analyzer_init;
+    handle = module.callMethod('_frt_whitespace_analyzer_new', [lower ? 1 : 0]);
+  }
+
+  TokenStream _makeTokenStream(int h_ts) {
+    return new AsciiWhiteSpaceTokenizer._handle(h_ts);
   }
 }
 
@@ -141,7 +165,12 @@ class WhiteSpaceAnalyzer extends Analyzer {
   /// can optionally leave case as is. Lowercasing will be done based on the
   /// current locale.
   WhiteSpaceAnalyzer({bool lower: true}) {
-    frb_white_space_analyzer_init;
+    handle =
+        module.callMethod('_frjs_white_space_analyzer_init', [lower ? 1 : 0]);
+  }
+
+  TokenStream _makeTokenStream(int h_ts) {
+    return new WhiteSpaceTokenizer._handle(h_ts);
   }
 }
 
@@ -175,7 +204,13 @@ class AsciiStandardAnalyzer extends Analyzer {
   /// by the [StopFilter].
   AsciiStandardAnalyzer(
       {lower: true, stop_words /*: FULL_ENGLISH_STOP_WORDS*/}) {
-    frb_a_standard_analyzer_init;
+    int p_stop_words = 0; // FIXME
+    handle = module.callMethod(
+        '_frjs_a_standard_analyzer_init', [lower ? 1 : 0, p_stop_words]);
+  }
+
+  TokenStream _makeTokenStream(int h_ts) {
+    return new AsciiStandardTokenizer._handle(h_ts);
   }
 }
 
@@ -209,6 +244,10 @@ class StandardAnalyzer extends Analyzer {
     int p_stop_words = 0; // FIXME
     handle = module.callMethod(
         '_frjs_standard_analyzer_init', [_lower, p_stop_words]);
+  }
+
+  TokenStream _makeTokenStream(int h_ts) {
+    return new StandardTokenizer._handle(h_ts);
   }
 }
 

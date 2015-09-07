@@ -1,4 +1,4 @@
-EXP_ANALSIS = \
+EXP_ANALYSIS = \
 '_frjs_tk_get_text',\
 '_frjs_tk_get_start',\
 '_frjs_tk_get_end',\
@@ -7,4 +7,15 @@ EXP_ANALSIS = \
 '_frjs_ts_next',\
 '_frjs_ts_set_text',\
 '_frjs_ts_get_text',\
-'_frjs_standard_analyzer_init'
+'_frjs_standard_analyzer_init',\
+'_frjs_analyzer_token_stream',\
+'_frt_letter_analyzer_new',\
+'_frt_letter_tokenizer_new',\
+'_frjs_letter_analyzer_init',\
+'_frjs_letter_tokenizer_init',\
+'_frt_whitespace_tokenizer_new',\
+'_frjs_whitespace_tokenizer_init',\
+'_frt_standard_tokenizer_new',\
+'_frjs_standard_tokenizer_init',\
+'_frjs_white_space_analyzer_init',\
+'_frjs_a_standard_analyzer_init'
