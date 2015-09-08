@@ -3,6 +3,7 @@
 .idea
 .pub/
 build/
+doc/
 packages
 pubspec.lock
 *.iml
