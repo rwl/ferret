@@ -1,5 +1,7 @@
 library ferret.ext.search;
 
+import '../../proxy.dart';
+
 part 'filter.dart';
 part 'query.dart';
 part 'searcher.dart';

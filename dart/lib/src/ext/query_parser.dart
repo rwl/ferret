@@ -1,5 +1,11 @@
 library ferret.ext.query_parser;
 
+import 'dart:typed_data' show Int32List;
+
+import '../proxy.dart';
+import 'search/search.dart';
+import 'analysis/analysis.dart' show Analyzer;
+
 /// The [QueryParser] is used to transform user submitted query strings into
 /// QueryObjects. Ferret using its own Query Language known from now on as
 /// Ferret Query Language or FQL.
@@ -189,7 +195,7 @@ library ferret.ext.query_parser;
 /// query, you may want to set a minimum prefix length in the [FuzzyQuery]
 /// class. This can substantially reduce the number of terms that the query
 /// will iterate over.
-class QueryParser {
+class QueryParser extends JsProxy {
   var wild_card_downcase;
   var _fields;
   var all_fields;
@@ -245,17 +251,156 @@ class QueryParser {
   /// won't need to pad or normalize the data in the field in anyway to get
   /// correct results. However, performance will be a lot slower for large
   /// indexes, hence the default.
-  QueryParser({default_field: "*", analyzer, bool wild_card_downcase: true,
-      fields: const [], tokenized_fields, bool validate_fields: false,
-      bool or_default: true, default_slop: 0, bool handle_parse_errors: true,
-      bool clean_string: true, int max_clauses: 512, bool use_keywords: true,
-      bool use_typed_range_query: false}) {
-    frb_qp_init;
+  QueryParser(
+      {default_field: "*",
+      Analyzer analyzer,
+      List fields: const [],
+      tokenized_fields,
+      bool handle_parse_errors: true,
+      bool validate_fields: false,
+      bool wild_card_downcase: true,
+      bool or_default: true,
+      int default_slop: 0,
+      bool clean_string: true,
+      int max_clauses: 512,
+      bool use_keywords: true,
+      bool use_typed_range_query: false})
+      : super() {
+    int p_analyzer = analyzer != null ? analyzer.handle : 0;
+    int p_all_fields = 0;
+    if (fields != null) {
+      p_all_fields = module.callMethod('_frt_hs_new_ptr', [0]);
+      for (String field in fields) {
+        int p_field = allocString(field);
+        module.callMethod('_frt_hs_add', [p_all_fields, p_field]);
+      }
+    }
+    int p_tkz_fields = 0;
+    if (tokenized_fields != null) {
+      p_tkz_fields = module.callMethod('_frt_hs_new_ptr', [0]);
+      for (String field in fields) {
+        int p_field = allocString(field);
+        module.callMethod('_frt_hs_add', [p_tkz_fields, p_field]);
+      }
+    }
+    int p_def_fields = 0;
+    if (default_field != null) {
+      p_def_fields = module.callMethod('_frt_hs_new_ptr', [0]);
+      if (fields is List) {
+        for (String field in fields) {
+          int p_field = allocString(field);
+          module.callMethod('_frt_hs_add', [p_def_fields, p_field]);
+        }
+      } else {
+        int p_field = allocString(default_field.toString());
+        module.callMethod('_frt_hs_add', [p_def_fields, p_field]);
+      }
+    }
+    handle = module.callMethod('_frjs_qp_init', [
+      p_analyzer,
+      p_all_fields,
+      p_tkz_fields,
+      p_def_fields,
+      handle_parse_errors ? 1 : 0,
+      validate_fields ? 1 : 0,
+      wild_card_downcase ? 1 : 0,
+      or_default ? 1 : 0,
+      default_slop,
+      clean_string ? 1 : 0,
+      max_clauses,
+      use_keywords ? 1 : 0,
+      use_typed_range_query ? 1 : 0
+    ]);
   }
 
   /// Parse a query string returning a [Query] object if parsing was
   /// successful. Will raise a [QueryParseException] if unsuccessful.
-  Query parse(String query_string) => frb_qp_parse;
+  Query parse(String query_string) {
+    int p_str = allocString(query_string);
+
+    int pp_msg = module.callMethod('_malloc', [Int32List.BYTES_PER_ELEMENT]);
+    module.callMethod('setValue', [pp_msg, 0, 'i32']);
+
+    int p_q = module.callMethod('_frjs_qp_parse', [handle, p_str, pp_msg]);
+    free(p_str);
+    if (p_q == 0) {
+      int p_msg = module.callMethod('getValue', [pp_msg, 'i32']);
+      var msg = stringify(p_msg);
+      free(pp_msg);
+      throw new QueryParseException(msg);
+    }
+    free(pp_msg);
+
+    int qt_index = module.callMethod('_frjs_q_get_query_type', [p_q]);
+    if (!_queryTypes.containsKey(qt_index)) {
+      throw qt_index;
+    }
+    var qt = _queryTypes[qt_index];
+    Query query;
+    switch (qt) {
+      case QueryType.TERM_QUERY:
+        query = new TermQuery.handle(p_q);
+        break;
+      case QueryType.MULTI_TERM_QUERY:
+        query = new MultiTermQuery.handle(p_q);
+        break;
+      case QueryType.BOOLEAN_QUERY:
+        query = new BooleanQuery.handle(p_q);
+        break;
+      case QueryType.PHRASE_QUERY:
+        query = new PhraseQuery.handle(p_q);
+        break;
+      case QueryType.CONSTANT_QUERY:
+        query = new ConstantScoreQuery.handle(p_q);
+        break;
+      case QueryType.FILTERED_QUERY:
+        query = new FilteredQuery.handle(p_q);
+        break;
+      case QueryType.MATCH_ALL_QUERY:
+        query = new MatchAllQuery.handle(p_q);
+        break;
+      case QueryType.RANGE_QUERY:
+        query = new RangeQuery.handle(p_q);
+        break;
+      case QueryType.TYPED_RANGE_QUERY:
+        query = new TypedRangeQuery.handle(p_q);
+        break;
+      case QueryType.WILD_CARD_QUERY:
+        query = new WildcardQuery.handle(p_q);
+        break;
+      case QueryType.FUZZY_QUERY:
+        query = new FuzzyQuery.handle(p_q);
+        break;
+      case QueryType.PREFIX_QUERY:
+        query = new PrefixQuery.handle(p_q);
+        break;
+      case QueryType.SPAN_TERM_QUERY:
+        query = new SpanMultiTermQuery.handle(p_q);
+        break;
+      case QueryType.SPAN_MULTI_TERM_QUERY:
+        query = new SpanPrefixQuery.handle(p_q);
+        break;
+      case QueryType.SPAN_PREFIX_QUERY:
+        query = new SpanTermQuery.handle(p_q);
+        break;
+      case QueryType.SPAN_FIRST_QUERY:
+        query = new SpanFirstQuery.handle(p_q);
+        break;
+      case QueryType.SPAN_OR_QUERY:
+        query = new SpanOrQuery.handle(p_q);
+        break;
+      case QueryType.SPAN_NOT_QUERY:
+        query = new SpanNotQuery.handle(p_q);
+        break;
+      case QueryType.SPAN_NEAR_QUERY:
+        query = new SpanNearQuery.handle(p_q);
+        break;
+      default:
+        throw new ArgumentError.value(qt_index, 'qt', "Unknown query type");
+        break;
+    }
+    return query;
+  }
 
   /// Returns the list of all fields that the [QueryParser] knows about.
   List get fields => frb_qp_get_fields;
@@ -276,5 +421,30 @@ class QueryParser {
 /// Exception raised when there is an error parsing the query string passed to
 /// [QueryParser].
 class QueryParseException implements Exception {
-  QueryParseException();
+  factory QueryParseException(String msg) => new Exception(msg);
 }
+
+enum QueryType {
+  TERM_QUERY,
+  MULTI_TERM_QUERY,
+  BOOLEAN_QUERY,
+  PHRASE_QUERY,
+  CONSTANT_QUERY,
+  FILTERED_QUERY,
+  MATCH_ALL_QUERY,
+  RANGE_QUERY,
+  TYPED_RANGE_QUERY,
+  WILD_CARD_QUERY,
+  FUZZY_QUERY,
+  PREFIX_QUERY,
+  SPAN_TERM_QUERY,
+  SPAN_MULTI_TERM_QUERY,
+  SPAN_PREFIX_QUERY,
+  SPAN_FIRST_QUERY,
+  SPAN_OR_QUERY,
+  SPAN_NOT_QUERY,
+  SPAN_NEAR_QUERY
+}
+
+final Map<int, QueryType> _queryTypes = new Map.fromIterables(
+    QueryType.values, QueryType.values.map((QueryType qt) => qt.index));

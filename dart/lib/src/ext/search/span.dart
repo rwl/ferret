@@ -9,6 +9,10 @@ part of ferret.ext.search;
 /// being that it returns the start and end offset of all of its matches for
 /// use by enclosing SpanQueries.
 class SpanTermQuery extends Query {
+  SpanTermQuery.handle(int hquery) : super() {
+    handle = hquery;
+  }
+
   /// Create a new [SpanTermQuery] which matches all documents with the term
   /// [term] in the field [field].
   SpanTermQuery(field, term) {
@@ -20,6 +24,10 @@ class SpanTermQuery extends Query {
 /// difference being that it returns the start and end offset of all of its
 /// matches for use by enclosing SpanQueries.
 class SpanMultiTermQuery extends Query {
+  SpanMultiTermQuery.handle(int hquery) : super() {
+    handle = hquery;
+  }
+
   /// Create a new [SpanMultiTermQuery] which matches all documents with the
   /// terms [terms] in the field [field].
   SpanMultiTermQuery(field, List<String> terms) {
@@ -31,6 +39,10 @@ class SpanMultiTermQuery extends Query {
 /// difference being that it returns the start and end offset of all of its
 /// matches for use by enclosing SpanQueries.
 class SpanPrefixQuery extends Query {
+  SpanPrefixQuery.handle(int hquery) : super() {
+    handle = hquery;
+  }
+
   /// Create a new [SpanPrefixQuery] which matches all documents with the
   /// prefix [prefix] in the field [field].
   SpanPrefixQuery(field, prefix, {max_terms: 256}) {
@@ -49,6 +61,10 @@ class SpanPrefixQuery extends Query {
 ///
 /// NOTE: [SpanFirstQuery] only works with other SpanQueries.
 class SpanFirstQuery extends Query {
+  SpanFirstQuery.handle(int hquery) : super() {
+    handle = hquery;
+  }
+
   /// Create a new [SpanFirstQuery] which matches all documents where
   /// [span_query] matches before [end] where [end] is a byte-offset from the
   /// start of the field.
@@ -87,6 +103,10 @@ class SpanFirstQuery extends Query {
 /// NOTE: [SpanNearQuery] only works with other SpanQueries.
 class SpanNearQuery extends Query {
   var _slop, _in_order, _clauses;
+
+  SpanNearQuery.handle(int hquery) : super() {
+    handle = hquery;
+  }
 
   /// Create a new [SpanNearQuery]. You can add an array of clauses with the
   /// [clause] parameter or you can add clauses individually using the
@@ -146,6 +166,10 @@ class SpanNearQuery extends Query {
 ///
 /// NOTE: [SpanOrQuery] only works with other SpanQueries.
 class SpanOrQuery extends Query {
+  SpanOrQuery.handle(int hquery) : super() {
+    handle = hquery;
+  }
+
   /// Create a new [SpanOrQuery]. This is just like a [BooleanQuery] with all
   /// clauses with the occur value of `should`. The difference is that it can
   /// be passed to other SpanQuerys like [SpanNearQuery].
@@ -175,6 +199,10 @@ class SpanOrQuery extends Query {
 ///
 /// NOTE: [SpanOrQuery] only works with other SpanQueries.
 class SpanNotQuery extends Query {
+  SpanNotQuery.handle(int hquery) : super() {
+    handle = hquery;
+  }
+
   /// Create a new [SpanNotQuery] which matches all documents which match
   /// [include_query] and don't match [exclude_query].
   SpanNotQuery(include_query, exclude_query) {

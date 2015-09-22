@@ -20,10 +20,13 @@ include ./exp_inc/index_writer.inc
 include ./exp_inc/lazy_doc.inc
 include ./exp_inc/term.inc
 include ./exp_inc/store.inc
+include ./exp_inc/query_parser.inc
 
 EXP_FUNC = -s EXPORTED_FUNCTIONS="[\
 '_malloc',\
 '_frjs_init',\
+'_frt_hs_new_ptr',\
+'_frt_hs_add',\
 '_frt_intern',\
 '_frjs_hash_get_size',\
 '_frjs_hash_get_key',\
@@ -36,7 +39,8 @@ $(EXP_INDEX_READER),\
 $(EXP_INDEX_WRITER),\
 $(EXP_LAZY_DOC),\
 $(EXP_TERM),\
-$(EXP_STORE)]"
+$(EXP_STORE),\
+$(EXP_QUERY_PARSER)]"
 
 EM_FLAGS = $(EXP_NAME) $(EXP_FUNC) --pre-js pre.js
 
@@ -52,6 +56,7 @@ $(JS_DIR)/index/term.o \
 $(JS_DIR)/index/reader.o \
 $(JS_DIR)/analysis/analysis.o \
 $(JS_DIR)/document.o
+$(JS_DIR)/query_parser.o
 
 all: module
 

@@ -28,7 +28,7 @@ part of ferret.ext.search;
 /// [BooleanQuery]. For example, documents on Rails. To avoid getting results
 /// for train rails you might also add the tern Ruby but Rails is the more
 /// important term so you'd give it a boost.
-class Query {
+class Query extends JsProxy {
   /// Return a string representation of the query. Most of the time, passing
   /// this string through the [Query] parser will give you the exact [Query]
   /// you began with. This can be a good way to explore how the [QueryParser]
@@ -79,9 +79,13 @@ class Query {
 /// will downcase all text added to the index. The title in this case was not
 /// tokenized so the case would have been left as is.
 class TermQuery extends Query {
+  TermQuery.handle(int hquery) : super() {
+    handle = hquery;
+  }
+
   /// Create a new [TermQuery] object which will match all documents with the
   /// term [term] in the field [field].
-  TermQuery(field, term) {
+  TermQuery(field, term) : super() {
     frb_tq_init;
   }
 }
@@ -107,6 +111,10 @@ class MultiTermQuery extends Query {
   static int _default_max_terms = 512;
 
   int _max_terms, _min_score;
+
+  MultiTermQuery.handle(int hquery) : super() {
+    handle = hquery;
+  }
 
   /// Create a new [MultiTermQuery] on field [field]. You will also need to
   /// add terms to the query using the [add_term] method.
@@ -206,6 +214,10 @@ class BooleanClause {
 ///       ..add_query(bq2, 'must')
 ///       ..add_query(rq3, 'must');
 class BooleanQuery extends Query {
+  BooleanQuery.handle(int hquery) : super() {
+    handle = hquery;
+  }
+
   /// Create a new [BooleanQuery]. If you don't care about the scores of the
   /// sub-queries added to the query (as would be the case for many
   /// automatically generated queries) you can disable the coord_factor of the
@@ -266,6 +278,10 @@ class RangeQuery extends Query {
 
   var le, leq, ge, geq;
 
+  RangeQuery.handle(int hquery) : super() {
+    handle = hquery;
+  }
+
   /// Create a new [RangeQuery] on field [field]. There are two ways to build
   /// a range query. With the old-style options; [lower], [upper],
   /// [include_lower] and [include_upper] or the new style options; [le],
@@ -280,8 +296,15 @@ class RangeQuery extends Query {
   ///     var q = new RangeQuery('date', lower: "200501", upper: 200502);
   ///     // is equivalent to
   ///     var q = new RangeQuery('date', geq: "200501", leq: 200502);
-  RangeQuery(field, {lower, upper, bool include_lower, bool include_upper, le,
-      leq, ge, geq}) {
+  RangeQuery(field,
+      {lower,
+      upper,
+      bool include_lower,
+      bool include_upper,
+      le,
+      leq,
+      ge,
+      geq}) {
     frb_rq_init;
   }
 }
@@ -302,6 +325,10 @@ class RangeQuery extends Query {
 /// usually better to use a standard [RangeQuery]. This will require a little
 /// work on your behalf. See [RangeQuery] for notes on how to do this.
 class TypedRangeQuery extends Query {
+  TypedRangeQuery.handle(int hquery) : super() {
+    handle = hquery;
+  }
+
   /// Create a new [TypedRangeQuery] on field [field]. This differs from the
   /// standard [RangeQuery] in that it allows range queries with unpadded
   /// numbers, both positive and negative, integer and float. You can even use
@@ -324,8 +351,15 @@ class TypedRangeQuery extends Query {
   ///      var q = new TypedRangeQuery('date', lower: "-12.32", upper: 0.21);
   ///      // is equivalent to
   ///      var q = new TypedRangeQuery('date', geq: "-12.32", leq: 0.21);
-  TypedRangeQuery(field, {lower, upper, bool include_lower, bool include_upper,
-      le, leq, ge, geq}) {
+  TypedRangeQuery(field,
+      {lower,
+      upper,
+      bool include_lower,
+      bool include_upper,
+      le,
+      leq,
+      ge,
+      geq}) {
     frb_trq_init;
   }
 }
@@ -389,6 +423,10 @@ class TypedRangeQuery extends Query {
 /// 0. With a little help from your analyzer you can actually tag bold or
 /// italic text for example.
 class PhraseQuery extends Query {
+  PhraseQuery.handle(int hquery) : super() {
+    handle = hquery;
+  }
+
   /// Create a new [PhraseQuery] on the field [field]. You need to add terms
   /// to the query it will do anything of value. See [add_term].
   PhraseQuery(field, {slop: 0}) {
@@ -441,6 +479,10 @@ class PhraseQuery extends Query {
 ///     // matches => "cat2/sub_cat1"
 ///     // matches => "cat2/sub_cat2"
 class PrefixQuery extends Query {
+  PrefixQuery.handle(int hquery) : super() {
+    handle = hquery;
+  }
+
   /// Create a new [PrefixQuery] to search for all terms with the prefix
   /// [prefix] in the field [field]. There is one option that you can set to
   /// change the behaviour of this query. [max_terms] specifies the maximum
@@ -478,6 +520,10 @@ class PrefixQuery extends Query {
 ///     // matches => "falling"
 ///     // matches => "folly"
 class WildcardQuery extends Query {
+  WildcardQuery.handle(int hquery) : super() {
+    handle = hquery;
+  }
+
   /// Create a new [WildcardQuery] to search for all terms where the pattern
   /// [pattern] matches in the field [field].
   ///
@@ -510,6 +556,10 @@ class WildcardQuery extends Query {
 ///       prefix_length: 2);
 ///     // matches => "gogle", "goggle", "googol", "googel"
 class FuzzyQuery extends Query {
+  FuzzyQuery.handle(int hquery) : super() {
+    handle = hquery;
+  }
+
   static double _default_min_similarity = 0.5;
   static int _default_prefix_length = 0;
 
@@ -572,6 +622,10 @@ class FuzzyQuery extends Query {
 /// this query in combination with a filter, however, [ConstantScoreQuery] is
 /// probably better in that circumstance.
 class MatchAllQuery extends Query {
+  MatchAllQuery.handle(int hquery) : super() {
+    handle = hquery;
+  }
+
   /// Create a query which matches all documents.
   MatchAllQuery() {
     frb_maq_init;
@@ -591,6 +645,10 @@ class MatchAllQuery extends Query {
 /// Once this is run once the results are cached and will be returned very
 /// quickly in future requests.
 class ConstantScoreQuery extends Query {
+  ConstantScoreQuery.handle(int hquery) : super() {
+    handle = hquery;
+  }
+
   /// Create a [ConstantScoreQuery] which uses [filter] to match documents
   /// giving each document a constant score.
   ConstantScoreQuery(filter) {
@@ -604,6 +662,10 @@ class ConstantScoreQuery extends Query {
 /// directly to a [Searcher.search] method unless you are applying more than
 /// one filter since the search method also takes a filter as a parameter.
 class FilteredQuery extends Query {
+  FilteredQuery.handle(int hquery) : super() {
+    handle = hquery;
+  }
+
   /// Create a new FilteredQuery which filters [query] with [filter].
   FilteredQuery(query, filter) {
     frb_fqq_init;
