@@ -196,20 +196,6 @@ import 'analysis/analysis.dart' show Analyzer;
 /// class. This can substantially reduce the number of terms that the query
 /// will iterate over.
 class QueryParser extends JsProxy {
-  var wild_card_downcase;
-  var _fields;
-  var all_fields;
-  var _tokenized_fields;
-  var default_field;
-  var validate_fields;
-  var or_default;
-  var default_slop;
-  var handle_parse_errors;
-  var clean_string;
-  var max_clauses;
-  var use_keywords;
-  var use_typed_range_query;
-
   /// Create a new [QueryParser]. The [QueryParser] is used to convert string
   /// queries into [Query] objects.
   ///
@@ -332,10 +318,7 @@ class QueryParser extends JsProxy {
     free(pp_msg);
 
     int qt_index = module.callMethod('_frjs_q_get_query_type', [p_q]);
-    if (!_queryTypes.containsKey(qt_index)) {
-      throw qt_index;
-    }
-    var qt = _queryTypes[qt_index];
+    var qt = QueryType.values[qt_index];
     Query query;
     switch (qt) {
       case QueryType.TERM_QUERY:
@@ -403,19 +386,55 @@ class QueryParser extends JsProxy {
   }
 
   /// Returns the list of all fields that the [QueryParser] knows about.
-  List get fields => frb_qp_get_fields;
+  List get fields {
+    int p_fields = module.callMethod('_frjs_qp_all_fields', [handle]);
+    var a = [];
+    int p_hse = module.callMethod('_frjs_hash_set_first', [p_fields]);
+    while (p_hse != 0) {
+      int p_elem = module.callMethod('_frjs_hash_set_entry_elem', [p_hse]);
+      a.add(stringify(p_elem));
+      p_hse = module.callMethod('_frjs_hash_set_entry_next', [p_hse]);
+    }
+    return a;
+  }
 
   /// Set the list of fields. These fields are expanded for searches on "*".
-  void set fields(List flds) => frb_qp_set_fields;
+  void set fields(List flds) {
+    int p_fields = module.callMethod('_frt_hs_new_ptr', [0]);
+    for (String field in flds) {
+      int p_field = allocString(field);
+      module.callMethod('_frt_hs_add', [p_fields, p_field]);
+    }
+    module.callMethod('_frjs_qp_set_fields', [handle, p_fields]);
+  }
 
   /// Returns the list of all tokenized_fields that the [QueryParser] knows
   /// about.
-  List get tokenized_fields => frb_qp_get_tkz_fields;
+  List get tokenized_fields {
+    int p_fields = module.callMethod('_frjs_qp_tokenized_fields', [handle]);
+    var a = [];
+    if (p_fields != 0) {
+      int p_hse = module.callMethod('_frjs_hash_set_first', [p_fields]);
+      while (p_hse != 0) {
+        int p_elem = module.callMethod('_frjs_hash_set_entry_elem', [p_hse]);
+        a.add(stringify(p_elem));
+        p_hse = module.callMethod('_frjs_hash_set_entry_next', [p_hse]);
+      }
+    }
+    return a;
+  }
 
   /// Set the list of tokenized_fields. These tokenized_fields are tokenized
   /// in the queries. If this is set to null then all fields will be
   /// tokenized.
-  set tokenized_fields(List flds) => frb_qp_set_tkz_fields;
+  set tokenized_fields(List flds) {
+    int p_fields = module.callMethod('_frt_hs_new_ptr', [0]);
+    for (String field in flds) {
+      int p_field = allocString(field);
+      module.callMethod('_frt_hs_add', [p_fields, p_field]);
+    }
+    module.callMethod('_frjs_qp_set_tkz_fields', [handle, p_fields]);
+  }
 }
 
 /// Exception raised when there is an error parsing the query string passed to
@@ -445,6 +464,3 @@ enum QueryType {
   SPAN_NOT_QUERY,
   SPAN_NEAR_QUERY
 }
-
-final Map<int, QueryType> _queryTypes = new Map.fromIterables(
-    QueryType.values, QueryType.values.map((QueryType qt) => qt.index));

@@ -65,3 +65,56 @@ QueryType *
 frjs_q_get_query_type(Query *q) {
     return q->type;
 }
+
+HashSet *
+frjs_qp_all_fields(QParser *qp) {
+    return qp->all_fields;
+}
+
+HashSet *
+frjs_qp_tokenized_fields(QParser *qp) {
+    return qp->tokenized_fields;
+}
+
+void
+frjs_qp_set_fields(QParser *qp, HashSet *fields) {
+    /* if def_fields == all_fields then we need to replace both */
+    if (qp->def_fields == qp->all_fields) {
+        qp->def_fields = NULL;
+    }
+    if (qp->tokenized_fields == qp->all_fields) {
+        qp->tokenized_fields = NULL;
+    }
+
+    if (fields == NULL) {
+        fields = hs_new_ptr(NULL);
+    }
+
+    /* make sure all the fields in tokenized fields are contained in
+     * all_fields */
+    if (qp->tokenized_fields) {
+        hs_safe_merge(fields, qp->tokenized_fields);
+    }
+
+    /* delete old fields set */
+    assert(qp->all_fields->free_elem_i == dummy_free);
+    hs_destroy(qp->all_fields);
+
+    /* add the new fields set and add to def_fields if necessary */
+    qp->all_fields = fields;
+    if (qp->def_fields == NULL) {
+        qp->def_fields = fields;
+        qp->fields_top->fields = fields;
+    }
+    if (qp->tokenized_fields == NULL) {
+        qp->tokenized_fields = fields;
+    }
+}
+
+void
+frjs_qp_set_tkz_fields(QParser *qp, HashSet *fields) {
+    if (qp->tokenized_fields != qp->all_fields) {
+        hs_destroy(qp->tokenized_fields);
+    }
+    qp->tokenized_fields = fields;
+}

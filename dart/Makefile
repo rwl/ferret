@@ -27,6 +27,9 @@ EXP_FUNC = -s EXPORTED_FUNCTIONS="[\
 '_frjs_init',\
 '_frt_hs_new_ptr',\
 '_frt_hs_add',\
+'_frjs_hash_set_first',\
+'_frjs_hash_set_entry_next',\
+'_frjs_hash_set_entry_elem',\
 '_frt_intern',\
 '_frjs_hash_get_size',\
 '_frjs_hash_get_key',\

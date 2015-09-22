@@ -8,6 +8,21 @@ frjs_init(void) {
 	frt_init(1, progname);
 }
 
+HashSetEntry *
+frjs_hash_set_first(HashSet *hs) {
+	return hs->first;
+}
+
+HashSetEntry *
+frjs_hash_set_entry_next(HashSetEntry *hse) {
+	return hse->next;
+}
+
+void *
+frjs_hash_set_entry_elem(HashSetEntry *hse) {
+	return hse->elem;
+}
+
 int
 frjs_hash_get_size(Hash *hash) {
 	return hash->size;
