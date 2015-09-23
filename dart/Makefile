@@ -21,6 +21,7 @@ include ./exp_inc/lazy_doc.inc
 include ./exp_inc/term.inc
 include ./exp_inc/store.inc
 include ./exp_inc/query_parser.inc
+include ./exp_inc/utils.inc
 
 EXP_FUNC = -s EXPORTED_FUNCTIONS="[\
 '_malloc',\
@@ -43,7 +44,8 @@ $(EXP_INDEX_WRITER),\
 $(EXP_LAZY_DOC),\
 $(EXP_TERM),\
 $(EXP_STORE),\
-$(EXP_QUERY_PARSER)]"
+$(EXP_QUERY_PARSER),\
+$(EXP_UTILS)]"
 
 EM_FLAGS = $(EXP_NAME) $(EXP_FUNC) --pre-js pre.js
 

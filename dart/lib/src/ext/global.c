@@ -51,3 +51,13 @@ frjs_hash_get_value(Hash *hash, int i) {
 	}
 	return NULL;
 }
+
+int
+frjs_bv_count(BitVector *bv) {
+    return bv->count;
+}
+
+bool
+frjs_bv_extends_as_ones(BitVector *bv) {
+    return bv->extends_as_ones;
+}
