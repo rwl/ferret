@@ -28,20 +28,28 @@ part of ferret.ext.search;
 /// [BooleanQuery]. For example, documents on Rails. To avoid getting results
 /// for train rails you might also add the tern Ruby but Rails is the more
 /// important term so you'd give it a boost.
-class Query extends JsProxy {
+abstract class Query extends JsProxy {
   /// Return a string representation of the query. Most of the time, passing
   /// this string through the [Query] parser will give you the exact [Query]
   /// you began with. This can be a good way to explore how the [QueryParser]
   /// works.
-  to_s() => frb_q_to_s;
+  String to_s(String field) {
+    int p_field = allocString(field);
+    int p_str = module.callMethod('_frjs_q_to_s', [handle, p_field]);
+    var str = stringify(p_str);
+    free(p_str);
+    return str;
+  }
 
   /// Returns the queries boost value. See the [Query] description for more
   /// information on [Query] boosts.
-  get boost => frb_q_get_boost;
+  double get boost => module.callMethod('_frjs_q_get_boost', [handle]);
 
   /// Set the boost for a query. See the [Query] description for more
   /// information on [Query] boosts.
-  set boost(b) => frb_q_set_boost;
+  void set boost(double b) {
+    module.callMethod('_frjs_q_set_boost', [handle, b]);
+  }
 
   /// Return true if query equals [other_query]. Theoretically, two queries
   /// are equal if the always return the same results, no matter what the
@@ -50,20 +58,45 @@ class Query extends JsProxy {
   /// of clauses unspecified. "Ruby AND Rails" will not match "Rails AND Ruby"
   /// for example, although their result sets will be identical. Most queries
   /// should match as expected however.
-  bool eql(other_query) => frb_q_eql;
+  bool eql(Query other_query) =>
+      module.callMethod('_frjs_q_eql', [handle, other_query.handle]) != 0;
 
   /// Alias for [eql].
-  operator ==(other_query) => frb_q_eql;
+  bool operator ==(Query other_query) => eql(other_query);
 
   /// Return a hash value for the query. This is used for caching query results
   /// in a hash object.
-  hash() => frb_q_hash;
+  int hash() => module.callMethod('_frjs_q_hash', [handle]);
 
   /// Returns an array of terms searched for by this query. This can be used
   /// for implementing an external query highlighter for example. You must
   /// supply a searcher so that the query can be rewritten and optimized like
   /// it would be in a real search.
-  List terms(searcher) => frb_q_get_terms;
+  List<Term> terms(Searcher searcher) {
+    int p_terms =
+        module.callMethod('_frjs_q_get_terms', [handle, searcher.handle]);
+
+    var terms = <Term>[];
+    int p_hse = module.callMethod('_frjs_hash_get_first', [p_terms]);
+    while (p_hse != 0) {
+      int p_term = module.callMethod('_frjs_hash_get_entry_elem', [p_hse]);
+
+      int p_field = module.callMethod('_frjs_term_get_field', [p_term]);
+      int p_text = module.callMethod('_frjs_term_get_text', [p_term]);
+
+      terms.add(new Term._(stringify(p_field), stringify(p_text)));
+
+      p_hse = module.callMethod('_frjs_hash_get_entry_next', [p_hse]);
+    }
+    module.callMethod('_frt_hs_destroy', [p_terms]);
+    return terms;
+  }
+}
+
+class Term {
+  final String field;
+  final String text;
+  Term._(this.field, this.text);
 }
 
 /// [TermQuery] is the most basic query and it is the building block for most

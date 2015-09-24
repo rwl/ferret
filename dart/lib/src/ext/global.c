@@ -9,17 +9,17 @@ frjs_init(void) {
 }
 
 HashSetEntry *
-frjs_hash_set_first(HashSet *hs) {
+frjs_hash_get_first(HashSet *hs) {
 	return hs->first;
 }
 
 HashSetEntry *
-frjs_hash_set_entry_next(HashSetEntry *hse) {
+frjs_hash_get_entry_next(HashSetEntry *hse) {
 	return hse->next;
 }
 
 void *
-frjs_hash_set_entry_elem(HashSetEntry *hse) {
+frjs_hash_get_entry_elem(HashSetEntry *hse) {
 	return hse->elem;
 }
 
@@ -54,10 +54,10 @@ frjs_hash_get_value(Hash *hash, int i) {
 
 int
 frjs_bv_count(BitVector *bv) {
-    return bv->count;
+	return bv->count;
 }
 
 bool
 frjs_bv_extends_as_ones(BitVector *bv) {
-    return bv->extends_as_ones;
+	return bv->extends_as_ones;
 }

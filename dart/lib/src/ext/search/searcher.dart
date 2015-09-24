@@ -22,7 +22,7 @@ part of ferret.ext.search;
 ///         sort: "date DESC, title", (doc_id, score) {
 ///       print("${searcher[doc_id][title] scored ${score}");
 ///     });
-class Searcher {
+class Searcher extends JsProxy {
   var _offset;
   var _limit;
   var _start_doc;
@@ -185,9 +185,13 @@ class Searcher {
   /// [ellipsis] is the string that is appended at the beginning and end of
   /// excerpts (unless the excerpt hits the start or end of the field. You'll
   /// probably want to change this so a Unicode ellipsis character.
-  List<String> highlight(query, doc_id, field, {excerpt_length: 150,
-      num_excerpts: 2, pre_tag: "<b>", post_tag: "</b>",
-      ellipsis: "..."}) => frb_sea_highlight;
+  List<String> highlight(query, doc_id, field,
+          {excerpt_length: 150,
+          num_excerpts: 2,
+          pre_tag: "<b>",
+          post_tag: "</b>",
+          ellipsis: "..."}) =>
+      frb_sea_highlight;
 }
 
 /// See [Searcher] for the methods that you can use on this object. A

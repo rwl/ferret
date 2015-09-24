@@ -389,11 +389,11 @@ class QueryParser extends JsProxy {
   List get fields {
     int p_fields = module.callMethod('_frjs_qp_all_fields', [handle]);
     var a = [];
-    int p_hse = module.callMethod('_frjs_hash_set_first', [p_fields]);
+    int p_hse = module.callMethod('_frjs_hash_get_first', [p_fields]);
     while (p_hse != 0) {
-      int p_elem = module.callMethod('_frjs_hash_set_entry_elem', [p_hse]);
+      int p_elem = module.callMethod('_frjs_hash_get_entry_elem', [p_hse]);
       a.add(stringify(p_elem));
-      p_hse = module.callMethod('_frjs_hash_set_entry_next', [p_hse]);
+      p_hse = module.callMethod('_frjs_hash_get_entry_next', [p_hse]);
     }
     return a;
   }
@@ -414,11 +414,11 @@ class QueryParser extends JsProxy {
     int p_fields = module.callMethod('_frjs_qp_tokenized_fields', [handle]);
     var a = [];
     if (p_fields != 0) {
-      int p_hse = module.callMethod('_frjs_hash_set_first', [p_fields]);
+      int p_hse = module.callMethod('_frjs_hash_get_first', [p_fields]);
       while (p_hse != 0) {
-        int p_elem = module.callMethod('_frjs_hash_set_entry_elem', [p_hse]);
+        int p_elem = module.callMethod('_frjs_hash_get_entry_elem', [p_hse]);
         a.add(stringify(p_elem));
-        p_hse = module.callMethod('_frjs_hash_set_entry_next', [p_hse]);
+        p_hse = module.callMethod('_frjs_hash_get_entry_next', [p_hse]);
       }
     }
     return a;
