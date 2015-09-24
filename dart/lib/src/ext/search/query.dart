@@ -222,6 +222,10 @@ class BooleanClause extends JsProxy {
     handle = module.callMethod('_frjs_bc_init', [query.handle, occur.index]);
   }
 
+  BooleanClause._handle(int p_bc) : super() {
+    handle = p_bc;
+  }
+
   /// Return the query object wrapped by this [BooleanClause].
   // Query get query => frb_bc_get_query;
 
@@ -294,8 +298,8 @@ class BooleanQuery extends Query {
   /// automatically generated queries) you can disable the coord_factor of the
   /// score. This will slightly improve performance for the query. Usually you
   /// should leave this parameter as is.
-  BooleanQuery({coord_disable: false}) {
-    frb_bq_init;
+  BooleanQuery({bool coord_disable: false}) : super() {
+    handle = module.callMethod('_frt_bq_new', [coord_disable ? 1 : 0]);
   }
 
   /// Us this method to add sub-queries to a [BooleanQuery]. You can either
@@ -308,10 +312,85 @@ class BooleanQuery extends Query {
   /// set the occurrence property because it is already set in the
   /// [BooleanClause].  Therefor the [occur] parameter will be ignored in this
   /// case.
-  BooleanClause add_query(query, {occur: 'should'}) => frb_bq_add_query;
+  BooleanClause add_query(query, {BCType occur: BCType.SHOULD}) {
+    if (query is BooleanClause) {
+      module.callMethod('_frt_bq_add_clause', [handle, query.handle]);
+      return query;
+    } else if (query is Query) {
+      int p_bc = module.callMethod(
+          '_frt_bq_add_query', [handle, query.handle, occur.index]);
+      return new BooleanClause._handle(p_bc);
+    } else {
+      throw new ArgumentError.value(
+          query, 'query', "Cannot add $query to a BooleanQuery");
+    }
+  }
 
   /// Alias for [add_query].
-  operator <<(query) => frb_bq_add_query;
+  void operator <<(query) {
+    add_query(query);
+  }
+}
+
+RangeParams _range_params(lower, upper, lower_exclusive, upper_exclusive,
+    bool include_lower, bool include_upper, le, leq, ge, geq) {
+  String lterm;
+  String uterm;
+
+  if (null != lower) {
+    lterm = lower.toString();
+    include_lower = true;
+  }
+  if (null != upper) {
+    uterm = upper.toString();
+    include_upper = true;
+  }
+  if (null != lower_exclusive) {
+    lterm = le.toString();
+    include_lower = false;
+  }
+  if (null != upper_exclusive) {
+    uterm = ge.toString();
+    include_upper = false;
+  }
+  if (null != ge) {
+    lterm = ge.toString();
+    include_lower = false;
+  }
+  if (null != geq) {
+    lterm = geq.toString();
+    include_lower = true;
+  }
+  if (null != le) {
+    uterm = le.toString();
+    include_upper = false;
+  }
+  if (null != leq) {
+    uterm = leq.toString();
+    include_upper = true;
+  }
+  if (lterm == null && uterm == null) {
+    throw new ArgumentError("The bounds of a range should not both be null");
+  }
+  if (include_lower && lterm == null) {
+    throw new ArgumentError(
+        "The lower bound should not be null if it is inclusive");
+  }
+  if (include_upper && uterm == null) {
+    throw new ArgumentError(
+        "The upper bound should not be nil if it is inclusive");
+  }
+
+  return new RangeParams(include_lower, include_upper, lterm, uterm);
+}
+
+class RangeParams {
+  final bool include_lower;
+  final bool include_upper;
+
+  final String lterm;
+  final String uterm;
+  RangeParams(this.include_lower, this.include_upper, this.lterm, this.uterm);
 }
 
 /// [RangeQuery] is used to find documents with terms in a range.
@@ -340,15 +419,6 @@ class BooleanQuery extends Query {
 ///     // note that we have added 1000 to all numbers to make them all positive
 ///     [1010, 0001, 0910, 1100, 1534]
 class RangeQuery extends Query {
-  var upper;
-  var lower;
-  var upper_exclusive;
-  var lower_exclusive;
-  var include_upper;
-  var include_lower;
-
-  var le, leq, ge, geq;
-
   RangeQuery.handle(int hquery) : super() {
     handle = hquery;
   }
@@ -367,16 +437,43 @@ class RangeQuery extends Query {
   ///     var q = new RangeQuery('date', lower: "200501", upper: 200502);
   ///     // is equivalent to
   ///     var q = new RangeQuery('date', geq: "200501", leq: 200502);
-  RangeQuery(field,
+  RangeQuery(String field,
       {lower,
       upper,
-      bool include_lower,
-      bool include_upper,
+      lower_exclusive,
+      upper_exclusive,
+      bool include_lower: false,
+      bool include_upper: false,
       le,
       leq,
       ge,
-      geq}) {
-    frb_rq_init;
+      geq})
+      : super() {
+    int p_field = allocString(field);
+    int symbol = module.callMethod('_frt_internal', [p_field]);
+    free(p_field);
+
+    RangeParams params = _range_params(lower, upper, lower_exclusive,
+        upper_exclusive, include_lower, include_upper, le, leq, ge, geq);
+
+    int lterm = 0;
+    int uterm = 0;
+    if (params.lterm != null) {
+      lterm = allocString(params.lterm);
+    }
+    if (params.uterm != null) {
+      uterm = allocString(params.uterm);
+    }
+
+    handle = module.callMethod('_frt_rq_new', [
+      symbol,
+      lterm,
+      uterm,
+      params.include_lower ? 1 : 0,
+      params.include_upper ? 1 : 0
+    ]);
+    free(lterm);
+    free(uterm);
   }
 }
 
@@ -425,13 +522,40 @@ class TypedRangeQuery extends Query {
   TypedRangeQuery(field,
       {lower,
       upper,
+      lower_exclusive,
+      upper_exclusive,
       bool include_lower,
       bool include_upper,
       le,
       leq,
       ge,
-      geq}) {
-    frb_trq_init;
+      geq})
+      : super() {
+    int p_field = allocString(field);
+    int symbol = module.callMethod('_frt_internal', [p_field]);
+
+    RangeParams params = _range_params(lower, upper, lower_exclusive,
+        upper_exclusive, include_lower, include_upper, le, leq, ge, geq);
+
+    int lterm = 0;
+    int uterm = 0;
+    if (params.lterm != null) {
+      lterm = allocString(params.lterm);
+    }
+    if (params.uterm != null) {
+      uterm = allocString(params.uterm);
+    }
+
+    handle = module.callMethod('_frt_trq_new', [
+      symbol,
+      lterm,
+      uterm,
+      params.include_lower ? 1 : 0,
+      params.include_upper ? 1 : 0
+    ]);
+    free(p_field);
+    free(lterm);
+    free(uterm);
   }
 }
 
@@ -500,8 +624,12 @@ class PhraseQuery extends Query {
 
   /// Create a new [PhraseQuery] on the field [field]. You need to add terms
   /// to the query it will do anything of value. See [add_term].
-  PhraseQuery(field, {slop: 0}) {
-    frb_phq_init;
+  PhraseQuery(String field, {int slop: 0}) : super() {
+    int p_field = allocString(field);
+    int symbol = module.callMethod('_frt_intern', [p_field]);
+    handle = module.callMethod('_frt_phq_new', [symbol]);
+    this.slop = slop;
+    free(p_field);
   }
 
   /// Add a term to the phrase query. By default the position_increment is set
@@ -514,18 +642,44 @@ class PhraseQuery extends Query {
   ///     // matches => "big brick house"
   ///     // matches => "big red house"
   ///     // doesn't match => "big house"
-  add_term(term, [int position_increment = 1]) => frb_phq_add;
+  void add_term(term, [int position_increment = 1]) {
+    if (term is String) {
+      int p_term = allocString(term);
+      module.callMethod(
+          '_frt_phq_add_term', [handle, p_term, position_increment]);
+      free(p_term);
+    } else if (term is List) {
+      if (term.length == 0) {
+        throw new ArgumentError("Cannot add empty array to a "
+            "PhraseQuery. You must add either a string or "
+            "an array of strings");
+      }
+      var t = term[0];
+      int p_term = allocString(t);
+      module.callMethod(
+          '_frt_phq_add_term', [handle, p_term, position_increment]);
+      free(p_term);
+      for (int i = 1; i < term.length; i++) {
+        int p_term = allocString(term[i]);
+        module.callMethod('_frt_phq_append_multi_term', [handle, p_term]);
+        free(p_term);
+      }
+    } else {
+      throw new ArgumentError("You can only add a string or an array of "
+          "strings to a PhraseQuery");
+    }
+  }
 
   /// Alias for [add_term].
-  operator <<(term) => frb_phq_add;
+  void operator <<(term) => add_term(term);
 
   /// Return the slop set for this phrase query. See the [PhraseQuery]
   /// description for more information on slop.
-  int get slop => frb_phq_get_slop;
+  int get slop => module.callMethod('_frjs_phq_get_slop', [handle]);
 
   /// Set the slop set for this phrase query. See the [PhraseQuery]
   /// description for more information on slop.
-  set slop(int s) => frb_phq_set_slop;
+  void set slop(int s) => module.callMethod('_frjs_phq_set_slop', [handle, s]);
 }
 
 /// A prefix query is like a [TermQuery] except that it matches any term with
@@ -567,8 +721,17 @@ class PrefixQuery extends Query {
   /// To prevent queries like this crashing your application you can set
   /// [max_terms] which limits the number of terms that get added to the
   /// query. By default it is set to 512.
-  PrefixQuery(field, prefix, {max_terms: 512}) {
-    frb_prq_init;
+  PrefixQuery(String field, String prefix, {int max_terms}) {
+    if (max_terms == null) {
+      max_terms = MultiTermQuery.default_max_terms;
+    }
+    int p_field = allocString(field);
+    int symbol = module.callMethod('_frt_intern', [p_field]);
+    int p_prefix = allocString(prefix);
+    handle = module.callMethod('_frt_prefixq_new', [symbol, p_prefix]);
+    module.callMethod('_frjs_mtq_set_max_terms', [handle, max_terms]);
+    free(p_field);
+    free(p_prefix);
   }
 }
 
@@ -608,8 +771,17 @@ class WildcardQuery extends Query {
   /// in the index. To prevent queries like this crashing your application you
   /// can set [max_terms] which limits the number of terms that get added to
   /// the query. By default it is set to 512.
-  WildcardQuery(field, pattern, {max_terms: 512}) {
-    frb_wcq_init;
+  WildcardQuery(String field, String pattern, {int max_terms}) {
+    if (max_terms == null) {
+      max_terms = MultiTermQuery.default_max_terms;
+    }
+    int p_field = allocString(field);
+    int symbol = module.callMethod('_frt_intern', [p_field]);
+    int p_pattern = allocString(pattern);
+    handle = module.callMethod('_frt_wcq_new', [symbol, p_pattern]);
+    module.callMethod('_frjs_mtq_set_max_terms', [handle, max_terms]);
+    free(p_field);
+    free(p_pattern);
   }
 }
 
@@ -677,16 +849,50 @@ class FuzzyQuery extends Query {
   /// [max_terms] limits the number of terms that can be added to the query
   /// when it is expanded as a [MultiTermQuery]. This is not usually a problem
   /// with FuzzyQueries unless you set [min_similarity] to a very low value.
-  FuzzyQuery(field, term,
-      {min_similarity: 0.5, prefix_length: 0, max_terms: 512}) {
-    frb_fq_init;
+  FuzzyQuery(String field, String term,
+      {double min_similarity, int prefix_length, int max_terms}) {
+    if (min_similarity == null) {
+      min_similarity = _default_min_similarity;
+    }
+    if (prefix_length == null) {
+      prefix_length = _default_prefix_length;
+    }
+    if (max_terms == null) {
+      max_terms = MultiTermQuery.default_max_terms;
+    }
+
+    if (min_similarity >= 1.0) {
+      throw new ArgumentError("$min_similarity >= 1.0. "
+          "min_similarity must be < 1.0");
+    } else if (min_similarity < 0.0) {
+      throw new ArgumentError("$min_similarity < 0.0. "
+          "min_similarity must be > 0.0");
+    }
+    if (prefix_length < 0) {
+      throw new ArgumentError("$prefix_length < 0. "
+          "prefix_length must be >= 0");
+    }
+    if (max_terms < 0) {
+      throw new ArgumentError("$max_terms < 0. "
+          "max_terms must be >= 0");
+    }
+
+    int p_field = allocString(field);
+    int symbol = module.callMethod('_frt_intern', [p_field]);
+    int p_term = allocString(term);
+
+    handle = module.callMethod('_frt_fuzq_new_conf',
+        [p_field, p_term, min_similarity, prefix_length, max_terms]);
+
+    free(p_field);
+    free(p_term);
   }
 
   /// Get the [prefix_length] for the query.
-  get prefix_length => frb_fq_pre_len;
+  int get prefix_length => module.callMethod('_frjs_fq_pre_len', [handle]);
 
   /// Get the [min_similarity] for the query.
-  min_similarity() => frb_fq_min_sim;
+  double min_similarity() => module.callMethod('_frjs_fq_min_sim', [handle]);
 }
 
 /// [MatchAllQuery] matches all documents in the index. You might want use
@@ -698,8 +904,8 @@ class MatchAllQuery extends Query {
   }
 
   /// Create a query which matches all documents.
-  MatchAllQuery() {
-    frb_maq_init;
+  MatchAllQuery() : super() {
+    handle = module.callMethod('_frt_maq_new');
   }
 }
 
@@ -722,8 +928,8 @@ class ConstantScoreQuery extends Query {
 
   /// Create a [ConstantScoreQuery] which uses [filter] to match documents
   /// giving each document a constant score.
-  ConstantScoreQuery(filter) {
-    frb_csq_init;
+  ConstantScoreQuery(Filter filter) : super() {
+    handle = module.callMethod('_frt_csq_new', [filter.handle]);
   }
 }
 
@@ -738,7 +944,7 @@ class FilteredQuery extends Query {
   }
 
   /// Create a new FilteredQuery which filters [query] with [filter].
-  FilteredQuery(query, filter) {
-    frb_fqq_init;
+  FilteredQuery(Query query, Filter filter) {
+    handle = module.callMethod('_frjs_fqq_init', [query.handle, filter.handle]);
   }
 }

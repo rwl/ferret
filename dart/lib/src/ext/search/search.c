@@ -63,3 +63,36 @@ bool
 frjs_bc_is_prohibited(BooleanClause *bc) {
     return bc->is_prohibited;
 }
+
+int
+frjs_phq_get_slop(PhraseQuery *q) {
+    return q->slop;
+}
+
+void
+frjs_phq_set_slop(PhraseQuery *q, int slop) {
+    q->slop = slop;
+}
+
+void
+frjs_mtq_set_max_terms(Query *q, int max_terms) {
+    MTQMaxTerms(q) = max_terms;
+}
+
+int
+frjs_fq_pre_len(FuzzyQuery *q) {
+    return q->pre_len;
+}
+
+float
+frjs_fq_min_sim(FuzzyQuery *q) {
+    return q->min_sim;
+}
+
+Query *
+frjs_fqq_init(Query *query, Filter *filter) {
+    Query *q = fq_new(query, f);
+    REF(query);
+    REF(filter);
+    return q
+}

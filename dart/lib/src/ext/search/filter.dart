@@ -9,7 +9,7 @@ part of ferret.ext.search;
 ///
 /// TODO: add support for user implemented Filter.
 /// TODO: add example of user implemented Filter.
-class Filter {
+class Filter extends JsProxy {
   var _bits;
 
   /// Get the bit_vector used by this filter. This method will usually be used
@@ -46,8 +46,15 @@ class RangeFilter {
   ///     var f = new RangeFilter('date', lower: "200501", upper: 200502);
   ///     // is equivalent to
   ///     var f = new RangeFilter('date', geq: "200501", leq: 200502);
-  RangeFilter(field, {lower, upper, bool include_lower, bool include_upper, le,
-      leq, ge, geq}) {
+  RangeFilter(field,
+      {lower,
+      upper,
+      bool include_lower,
+      bool include_upper,
+      le,
+      leq,
+      ge,
+      geq}) {
     frb_rf_init;
   }
 }
@@ -78,8 +85,15 @@ class TypedRangeFilter {
   ///     var f = new TypedRangeFilter('date', lower: "-132.2", upper: -1.4);
   ///     // is equivalent to
   ///     var f = new TypedRangeFilter('date', geq: "-132.2", leq: -1.4);
-  TypedRangeFilter(field, {lower, upper, bool include_lower, bool include_upper,
-      le, leq, ge, geq}) {
+  TypedRangeFilter(field,
+      {lower,
+      upper,
+      bool include_lower,
+      bool include_upper,
+      le,
+      leq,
+      ge,
+      geq}) {
     frb_trf_init;
   }
 }
