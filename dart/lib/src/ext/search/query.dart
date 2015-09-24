@@ -33,10 +33,11 @@ abstract class Query extends JsProxy {
   /// this string through the [Query] parser will give you the exact [Query]
   /// you began with. This can be a good way to explore how the [QueryParser]
   /// works.
-  String to_s(String field) {
+  String to_s([String field]) {
     int p_field = allocString(field);
     int p_str = module.callMethod('_frjs_q_to_s', [handle, p_field]);
     var str = stringify(p_str);
+    free(p_field);
     free(p_str);
     return str;
   }
@@ -118,8 +119,13 @@ class TermQuery extends Query {
 
   /// Create a new [TermQuery] object which will match all documents with the
   /// term [term] in the field [field].
-  TermQuery(field, term) : super() {
-    frb_tq_init;
+  TermQuery(String field, String term) : super() {
+    int p_field = allocString(field);
+    int symbol = module.callMethod('_frt_intern', [p_field]);
+    int p_term = allocString(term);
+    handle = module.callMethod('_frt_tq_new', [symbol, p_term]);
+    free(p_field);
+    free(p_term);
   }
 }
 
@@ -141,9 +147,9 @@ class TermQuery extends Query {
 ///       ..add("Rails")
 ///       ..add("Search");
 class MultiTermQuery extends Query {
-  static int _default_max_terms = 512;
+  static int default_max_terms = 512;
 
-  int _max_terms, _min_score;
+  // int _max_terms, _min_score;
 
   MultiTermQuery.handle(int hquery) : super() {
     handle = hquery;
@@ -162,25 +168,39 @@ class MultiTermQuery extends Query {
   /// that gives matches a score. To limit the number of terms added to the
   /// query you could set a lower limit to this score. [FuzzyQuery] in
   /// particular makes use of this parameter.
-  MultiTermQuery(field, {max_terms, min_score}) {
-    frb_mtq_init;
+  MultiTermQuery(String field, {int max_terms, double min_score: 0.0})
+      : super() {
+    if (max_terms == null) {
+      max_terms = default_max_terms;
+    }
+    int p_field = allocString(field);
+    int symbol = module.callMethod('_frt_intern', [p_field]);
+    handle = module.callMethod(
+        '_frt_multi_tq_new_conf', [symbol, max_terms, min_score]);
+    free(p_field);
   }
 
   /// Get the default value for [max_terms] in a [MultiTermQuery]. This value
   /// is also used by [PrefixQuery], [FuzzyQuery] and [WildcardQuery].
-  static double get default_max_terms => frb_mtq_get_dmt;
+  // static double get default_max_terms => frb_mtq_get_dmt;
 
   /// Set the default value for [max_terms] in a [MultiTermQuery]. This value
   /// is also used by [PrefixQuery], [FuzzyQuery] and [WildcardQuery].
-  static set default_max_terms(max_terms) => frb_mtq_set_dmt;
+  // static set default_max_terms(max_terms) => frb_mtq_set_dmt;
 
   /// Add a term to the [MultiTermQuery] with the score 1.0 unless specified
   /// otherwise.
-  add_term(term, [score = 1.0]) => frb_mtq_add_term;
+  void add_term(String term, [double score = 1.0]) {
+    int p_term = allocString(term);
+    module.callMethod('_multi_tq_add_term_boost', [handle, p_term, score]);
+    free(p_term);
+  }
 
   /// Alias for [add_term].
-  operator <<(term) => frb_mtq_add_term;
+  void operator <<(term) => add_term(term);
 }
+
+enum BCType { SHOULD, MUST, MUST_NOT }
 
 /// A [BooleanClause] holes a single query within a [BooleanQuery] specifying
 /// wither the query `must` match, `should` match or `must_not` match.
@@ -193,38 +213,56 @@ class MultiTermQuery extends Query {
 ///
 ///     var query = new BooleanQuery();
 ///     query..add(clause1)..add(clause2);
-class BooleanClause {
-  var should;
-  var must;
-  var must_not;
+class BooleanClause extends JsProxy {
+  final Query query;
+  BCType _occur;
 
-  ///
-  BooleanClause(query, {occur: 'should'}) {
-    frb_bc_init;
+  BooleanClause(this.query, {BCType occur: BCType.SHOULD}) : super() {
+    _occur = occur;
+    handle = module.callMethod('_frjs_bc_init', [query.handle, occur.index]);
   }
 
   /// Return the query object wrapped by this [BooleanClause].
-  Query get query => frb_bc_get_query;
+  // Query get query => frb_bc_get_query;
 
   /// Set the [query] wrapped by this [BooleanClause].
-  set query(Query query) => frb_bc_set_query;
+//  set query(Query query) => frb_bc_set_query;
 
   /// Return `true` if this clause is required. ie, this will be true if occur
   /// was equal to `must`.
-  bool required() => frb_bc_is_required;
+  bool required() => module.callMethod('_frjs_bc_is_required', [handle]) != 0;
 
   /// Return `true` if this clause is prohibited. ie, this will be true if
   /// occur was equal to `must_not`.
-  bool prohibited() => frb_bc_is_prohibited;
+  bool prohibited() =>
+      module.callMethod('_frjs_bc_is_prohibited', [handle]) != 0;
 
   /// Set the [occur] value for this [BooleanClause]. [occur] must be one of
   /// `must`, `should` or `must_not`.
-  set occur(String val) => frb_bc_set_occur;
+  void set occur(BCType val) {
+    _occur = val;
+    module.callMethod('_frt_bc_set_occur', [handle, val.index]);
+  }
 
   /// Return a string representation of this clause. This will not be used by
   /// [BooleanQuery.to_s]. It is only used by [BooleanClause.to_s] and will
   /// specify whether the clause is `must`, `should` or `must_not`.
-  String to_s() => frb_bc_to_s;
+  String to_s() {
+    String ostr = "";
+    var qstr = query.to_s();
+    switch (_occur) {
+      case BCType.SHOULD:
+        ostr = "Should";
+        break;
+      case BCType.MUST:
+        ostr = "Must";
+        break;
+      case BCType.MUST_NOT:
+        ostr = "Must Not";
+        break;
+    }
+    return "$ostr:$qstr";
+  }
 }
 
 /// A [BooleanQuery] is used for combining many queries into one. This is best

@@ -47,3 +47,19 @@ char *
 frjs_term_get_text(Term *term) {
     return term->text;
 }
+
+BooleanClause *
+frjs_bc_init(Query *sub_q, unsigned int occur) {
+    REF(sub_q);
+    return bc_new(sub_q, occur);
+}
+
+bool
+frjs_bc_is_required(BooleanClause *bc) {
+    return bc->is_required;
+}
+
+bool
+frjs_bc_is_prohibited(BooleanClause *bc) {
+    return bc->is_prohibited;
+}
