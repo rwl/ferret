@@ -47,7 +47,7 @@ import '../proxy.dart';
 /// methods. Note that the [each] method will automatically scan unset bits
 /// if the [BitVector] has been flipped (using [not]).
 class BitVector extends JsProxy {
-  BitVector._handle(int handle) : super() {
+  BitVector.handle(int handle) : super() {
     this.handle = handle;
   }
 

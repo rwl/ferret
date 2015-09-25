@@ -10,15 +10,22 @@ part of ferret.ext.search;
 /// TODO: add support for user implemented Filter.
 /// TODO: add example of user implemented Filter.
 class Filter extends JsProxy {
-  var _bits;
-
   /// Get the bit_vector used by this filter. This method will usually be used
   /// to group filters or apply filters to other filters.
-  BitVector bits(index_reader) => frb_f_get_bits;
+  BitVector bits(IndexReader index_reader) {
+    int p_bv =
+        module.callMethod('_frt_filt_get_bv', [handle, index_reader.handle]);
+    return new BitVector.handle(p_bv);
+  }
 
   /// Return a human readable string representing the [Filter] object that the
   /// method was called on.
-  to_s() => frb_f_to_s;
+  String to_s() {
+    int p_s = module.callMethod('_frjs_f_to_s', [handle]);
+    var s = stringify(p_s);
+    free(p_s);
+    return s;
+  }
 }
 
 /// RangeFilter filters a set of documents which contain a lexicographical
@@ -30,7 +37,7 @@ class Filter extends JsProxy {
 ///
 /// See [RangeQuery] for notes on how to use the [RangeFilter] on a field
 /// containing numbers.
-class RangeFilter {
+class RangeFilter extends Filter {
   /// Create a new [RangeFilter] on field [field]. There are two ways to build
   /// a range filter. With the old-style options; [lower], [upper],
   /// [include_lower] and [include_upper] or the new style options; [le],
@@ -46,16 +53,43 @@ class RangeFilter {
   ///     var f = new RangeFilter('date', lower: "200501", upper: 200502);
   ///     // is equivalent to
   ///     var f = new RangeFilter('date', geq: "200501", leq: 200502);
-  RangeFilter(field,
+  RangeFilter(String field,
       {lower,
       upper,
-      bool include_lower,
-      bool include_upper,
+      lower_exclusive,
+      upper_exclusive,
+      bool include_lower: false,
+      bool include_upper: false,
       le,
       leq,
       ge,
-      geq}) {
-    frb_rf_init;
+      geq})
+      : super() {
+    int p_field = allocString(field);
+    int symbol = module.callMethod('_frt_internal', [p_field]);
+    free(p_field);
+
+    RangeParams params = _range_params(lower, upper, lower_exclusive,
+        upper_exclusive, include_lower, include_upper, le, leq, ge, geq);
+
+    int lterm = 0;
+    int uterm = 0;
+    if (params.lterm != null) {
+      lterm = allocString(params.lterm);
+    }
+    if (params.uterm != null) {
+      uterm = allocString(params.uterm);
+    }
+
+    handle = module.callMethod('_frt_rfilt_new', [
+      symbol,
+      lterm,
+      uterm,
+      params.include_lower ? 1 : 0,
+      params.include_upper ? 1 : 0
+    ]);
+    free(lterm);
+    free(uterm);
   }
 }
 
@@ -68,7 +102,7 @@ class RangeFilter {
 /// Find all products that cost less than  or equal to $50.00.
 ///
 ///     var filter = new TypedRangeFilter('created_on', leq: "50.00");
-class TypedRangeFilter {
+class TypedRangeFilter extends Filter {
   /// Create a new [TypedRangeFilter] on field [field]. There are two ways to
   /// build a range filter. With the old-style options; [lower], [upper],
   /// [include_lower] and [include_upper] or the new style options; [le],
@@ -85,16 +119,43 @@ class TypedRangeFilter {
   ///     var f = new TypedRangeFilter('date', lower: "-132.2", upper: -1.4);
   ///     // is equivalent to
   ///     var f = new TypedRangeFilter('date', geq: "-132.2", leq: -1.4);
-  TypedRangeFilter(field,
+  TypedRangeFilter(String field,
       {lower,
       upper,
-      bool include_lower,
-      bool include_upper,
+      lower_exclusive,
+      upper_exclusive,
+      bool include_lower: false,
+      bool include_upper: false,
       le,
       leq,
       ge,
-      geq}) {
-    frb_trf_init;
+      geq})
+      : super() {
+    int p_field = allocString(field);
+    int symbol = module.callMethod('_frt_internal', [p_field]);
+    free(p_field);
+
+    RangeParams params = _range_params(lower, upper, lower_exclusive,
+        upper_exclusive, include_lower, include_upper, le, leq, ge, geq);
+
+    int lterm = 0;
+    int uterm = 0;
+    if (params.lterm != null) {
+      lterm = allocString(params.lterm);
+    }
+    if (params.uterm != null) {
+      uterm = allocString(params.uterm);
+    }
+
+    handle = module.callMethod('_frt_trfilt_new', [
+      symbol,
+      lterm,
+      uterm,
+      params.include_lower ? 1 : 0,
+      params.include_upper ? 1 : 0
+    ]);
+    free(lterm);
+    free(uterm);
   }
 }
 
@@ -114,9 +175,9 @@ class TypedRangeFilter {
 ///
 /// Just remember to use the same QueryFilter each time to take advantage of
 /// caching. Don't create a new one for each request.
-class QueryFilter {
+class QueryFilter extends Filter {
   /// Create a new [QueryFilter] which applies the query [query].
-  QueryFilter(query) {
-    frb_qf_init;
+  QueryFilter(Query query) : super() {
+    handle = module.callMethod('_frt_qfilt_new', [query.handle]);
   }
 }

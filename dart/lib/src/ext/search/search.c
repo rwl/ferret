@@ -101,3 +101,8 @@ void
 frjs_spq_set_max_terms(SpanPrefixQuery *q, int max_terms) {
     q->max_terms = max_terms;
 }
+
+char *
+frjs_f_to_s(Filter *f) {
+    return f->to_s(f);
+}

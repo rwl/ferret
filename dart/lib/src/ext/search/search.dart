@@ -1,6 +1,8 @@
 library ferret.ext.search;
 
 import '../../proxy.dart';
+import '../utils.dart' show BitVector;
+import '../index/index.dart' show IndexReader;
 
 part 'filter.dart';
 part 'query.dart';

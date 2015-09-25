@@ -40,4 +40,9 @@ EXP_SEARCH = \
 '_frt_spannq_add_clause',\
 '_frt_spanoq_new',\
 '_frt_spanoq_add_clause',\
-'_frt_spanxq_new'
+'_frt_spanxq_new',\
+'_frt_filt_get_bv',\
+'_frjs_f_to_s',\
+'_frt_rfilt_new',\
+'_frt_trfilt_new',\
+'_frt_qfilt_new'
