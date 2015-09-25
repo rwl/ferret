@@ -15,8 +15,13 @@ class SpanTermQuery extends Query {
 
   /// Create a new [SpanTermQuery] which matches all documents with the term
   /// [term] in the field [field].
-  SpanTermQuery(field, term) {
-    frb_spantq_init;
+  SpanTermQuery(field, term) : super() {
+    int p_field = allocString(field);
+    int symbol = module.callMethod('_frt_intern', [p_field]);
+    int p_term = allocString(term);
+    handle = module.callMethod('_frt_spantq_new', [symbol, p_term]);
+    free(p_field);
+    free(p_term);
   }
 }
 
@@ -30,8 +35,16 @@ class SpanMultiTermQuery extends Query {
 
   /// Create a new [SpanMultiTermQuery] which matches all documents with the
   /// terms [terms] in the field [field].
-  SpanMultiTermQuery(field, List<String> terms) {
-    frb_spanmtq_init;
+  SpanMultiTermQuery(field, List<String> terms) : super() {
+    int p_field = allocString(field);
+    int symbol = module.callMethod('_frt_intern', [p_field]);
+    handle = module.callMethod('_frt_spanmtq_new', [symbol]);
+    free(p_field);
+    for (var term in terms) {
+      int p_term = allocString(term);
+      module.callMethod('_frt_spanmtq_add_term', [handle, p_term]);
+      free(p_term);
+    }
   }
 }
 
@@ -45,8 +58,14 @@ class SpanPrefixQuery extends Query {
 
   /// Create a new [SpanPrefixQuery] which matches all documents with the
   /// prefix [prefix] in the field [field].
-  SpanPrefixQuery(field, prefix, {max_terms: 256}) {
-    frb_spanprq_init;
+  SpanPrefixQuery(String field, String prefix, {int max_terms: 256}) : super() {
+    int p_field = allocString(field);
+    int symbol = module.callMethod('_frt_intern', [p_field]);
+    int p_prefix = allocString(prefix);
+    handle = module.callMethod('_frt_spanprq_new', [symbol, p_prefix]);
+    module.callMethod('_frjs_spq_set_max_terms', [handle, max_terms]);
+    free(p_field);
+    free(p_prefix);
   }
 }
 
@@ -68,8 +87,8 @@ class SpanFirstQuery extends Query {
   /// Create a new [SpanFirstQuery] which matches all documents where
   /// [span_query] matches before [end] where [end] is a byte-offset from the
   /// start of the field.
-  SpanFirstQuery(span_query, end) {
-    frb_spanfq_init;
+  SpanFirstQuery(Query span_query, int end) : super() {
+    handle = module.callMethod('_frt_spanfq_new', [span_query.handle, end]);
   }
 }
 
@@ -102,7 +121,7 @@ class SpanFirstQuery extends Query {
 ///
 /// NOTE: [SpanNearQuery] only works with other SpanQueries.
 class SpanNearQuery extends Query {
-  var _slop, _in_order, _clauses;
+  // var _slop, _in_order, _clauses;
 
   SpanNearQuery.handle(int hquery) : super() {
     handle = hquery;
@@ -124,17 +143,23 @@ class SpanNearQuery extends Query {
   /// [in_order] specifies whether or not the matches have to occur in the
   /// order they were added to the query. When slop is set to 0, this
   /// parameter will make no difference.
-  SpanNearQuery({List clauses, slop: 0, in_order: false}) {
-    frb_spannq_init;
+  SpanNearQuery({List<Query> clauses, int slop: 0, bool in_order: false})
+      : super() {
+    handle = module.callMethod('_frt_spannq_new', [slop, in_order ? 1 : 0]);
+    for (var clause in clauses) {
+      this.add(clause);
+    }
   }
 
   /// Add a clause to the [SpanNearQuery]. Clauses are stored in the order
   /// they are added to the query which is important for matching. Note that
   /// clauses must be SpanQueries, not other types of query.
-  add(span_query) => frb_spannq_add;
+  void add(Query span_query) {
+    module.callMethod('_frt_spannq_add_clause', [handle, span_query.handle]);
+  }
 
   /// Alias for [add].
-  operator <<(span_query) => frb_spannq_add;
+  void operator <<(Query span_query) => this.add(span_query);
 }
 
 /// [SpanOrQuery] is just like a [BooleanQuery] with all `should` clauses.
@@ -173,16 +198,21 @@ class SpanOrQuery extends Query {
   /// Create a new [SpanOrQuery]. This is just like a [BooleanQuery] with all
   /// clauses with the occur value of `should`. The difference is that it can
   /// be passed to other SpanQuerys like [SpanNearQuery].
-  SpanOrQuery([clauses]) {
-    frb_spanoq_init;
+  SpanOrQuery([List<Query> clauses]) : super() {
+    handle = module.callMethod('_frt_spanoq_new');
+    for (var clause in clauses) {
+      this.add(clause);
+    }
   }
 
   /// Add a clause to the [SpanOrQuery]. Note that clauses must be SpanQueries,
   /// not other types of query.
-  add(span_query) => frb_spanoq_add;
+  void add(Query span_query) {
+    module.callMethod('_frt_spanoq_add_clause', [handle, span_query.handle]);
+  }
 
   /// Alias for [add].
-  operator <<(span_query) => frb_spanoq_add;
+  void operator <<(Query span_query) => this.add(span_query);
 }
 
 /// [SpanNotQuery] is like a [BooleanQuery] with a `must_not` clause. The
@@ -205,7 +235,8 @@ class SpanNotQuery extends Query {
 
   /// Create a new [SpanNotQuery] which matches all documents which match
   /// [include_query] and don't match [exclude_query].
-  SpanNotQuery(include_query, exclude_query) {
-    frb_spanxq_init;
+  SpanNotQuery(Query include_query, Query exclude_query) : super() {
+    handle = module.callMethod(
+        '_frt_spanxq_new', [include_query.handle, exclude_query.handle]);
   }
 }

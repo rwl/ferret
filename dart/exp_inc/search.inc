@@ -29,4 +29,15 @@ EXP_SEARCH = \
 '_frjs_fq_min_sim',\
 '_frt_maq_new',\
 '_frt_csq_new',\
-'_frjs_fqq_init'
+'_frjs_fqq_init',\
+'_frt_spantq_new',\
+'_frt_spanmtq_new',\
+'_frt_spanmtq_add_term',\
+'_frt_spanprq_new',\
+'_frjs_spq_set_max_terms',\
+'_frt_spanfq_new',\
+'_frt_spannq_new',\
+'_frt_spannq_add_clause',\
+'_frt_spanoq_new',\
+'_frt_spanoq_add_clause',\
+'_frt_spanxq_new'

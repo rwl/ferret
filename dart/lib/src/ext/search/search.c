@@ -96,3 +96,8 @@ frjs_fqq_init(Query *query, Filter *filter) {
     REF(filter);
     return q
 }
+
+void
+frjs_spq_set_max_terms(SpanPrefixQuery *q, int max_terms) {
+    q->max_terms = max_terms;
+}
