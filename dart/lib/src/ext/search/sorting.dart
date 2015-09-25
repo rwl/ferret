@@ -1,5 +1,7 @@
 part of ferret.ext.search;
 
+enum SortType { SCORE, DOC, BYTE, INTEGER, FLOAT, STRING, AUTO }
+
 /// A [SortField] is used to sort the result-set of a search be the contents
 /// of a field. The following types of [sort_field] are available:
 ///
@@ -28,19 +30,10 @@ part of ferret.ext.search;
 ///
 /// Note 2: When sorting by integer, integers are only 4 bytes so anything
 /// larger will cause strange sorting behaviour.
-class SortField {
-  var _type;
-  var _reverse;
-  var _comparator;
-
-  /* Sort types */
-  var integer;
-  var float;
-  var string;
-  var auto;
-  var doc_id;
-  var score;
-  var byte;
+class SortField extends JsProxy {
+  SortField._handle(int p_sf) : super() {
+    handle = p_sf;
+  }
 
   /// Create a new [SortField] which can be used to sort the result-set by the
   /// value in field [field].
@@ -52,31 +45,51 @@ class SortField {
   /// is locale dependent and works for multibyte character sets like UTF-8 if
   /// you have your locale set correctly.
   /// Set [reverse] to `true` if you want to reverse the sort.
-  SortField(field, {type: 'auto', bool reverse: false}) {
-    frb_sf_init;
+  SortField(String field, {SortType type: SortType.AUTO, bool reverse: false})
+      : super() {
+    int p_field = allocString(field);
+    int symbol = module.callMethod('_frt_internal', [p_field]);
+    free(p_field);
+    handle = module.callMethod(
+        '_frt_sort_field_new', [symbol, type.index, reverse ? 1 : 0]);
   }
 
   /// Return `true` if the field is to be reverse sorted. This attribute is
   /// set when you create the sort_field.
-  bool get reverse => frb_sf_is_reverse;
+  bool get reverse => module.callMethod('_frjs_sf_is_reverse', [handle]) != 0;
+
+  void _reverse() {
+    module.callMethod('_frjs_sort_field_reverse', [handle]);
+  }
 
   /// Returns the name of the field to be sorted.
-  String get name => frb_sf_get_name;
+  String get name {
+    int p_name = module.callMethod('_frjs_sf_get_name', [handle]);
+    return stringify(p_name);
+  }
 
   /// Return the type of sort. Should be one of; `auto`, `integer`, `float`,
   /// `string`, `byte`, `doc_id` or `score`.
-  type() => frb_sf_get_type;
+  SortType type() {
+    int t = module.callMethod('_frjs_sf_get_type', [handle]);
+    return SortType.values[t];
+  }
 
   /// TODO: currently unsupported
-  comparator() => frb_sf_get_comparator;
+  //comparator() => frb_sf_get_comparator;
 
   /// Return a human readable string describing this sort_field.
-  to_s() => frb_sf_to_s;
+  String to_s() {
+    int p_s = module.callMethod('_sort_field_to_s', [handle]);
+    var s = stringify(p_s);
+    free(p_s);
+    return s;
+  }
 
-  static const ScoreField SCORE = null;
-  static const ScoreField SCORE_REV = null;
-  static const ScoreField DOC_ID = null;
-  static const ScoreField DOC_ID_REV = null;
+  static SortField SCORE;
+  static SortField SCORE_REV;
+  static SortField DOC;
+  static SortField DOC_REV;
 }
 
 /// A [Sort] object is used to combine and apply a list of [SortField]s. The
@@ -91,23 +104,47 @@ class SortField {
 ///
 /// Remember that the [type] parameter for [SortField] is set to `auto` be
 /// default be I strongly recommend you specify a `type` value.
-class Sort {
+class Sort extends JsProxy {
   /// Create a new Sort object. If [reverse] is true, all sort_fields will be
-  /// reversed so if any of them are already reversed the  will be turned back
+  /// reversed so if any of them are already reversed the will be turned back
   /// to their natural order again.
-  Sort({sort_fields: const [
-    SortField.SCORE,
-    SortField.DOC_ID
-  ], reverse: false}) {
-    frb_sort_init;
+  Sort({List<SortField> sort_fields, bool reverse: false}) : super() {
+    if (sort_fields == null) {
+      sort_fields = [SortField.SCORE, SortField.DOC];
+    }
+    handle = module.callMethod('_frt_sort_new');
+    module.callMethod('_frjs_sort_set_destroy_all', [handle, 0]);
+    for (var sf in sort_fields) {
+      if (reverse) {
+        sf._reverse();
+      }
+      module.callMethod('_frt_sort_add_sort_field', [handle, sf.handle]);
+    }
+    if (!sort_fields.contains(SortField.DOC)) {
+      module.callMethod(
+          '_frt_sort_add_sort_field', [handle, SortField.DOC.handle]);
+    }
   }
 
   /// Returns an array of the [SortField]s held by the [Sort] object.
-  List<SortField> get fields => frb_sort_get_fields;
+  List<SortField> get fields {
+    int size = module.callMethod('_frjs_sort_get_size', [handle]);
+    var a = new List<SortField>(size);
+    for (int i = 0; i < size; i++) {
+      int p_sf = module.callMethod('_frjs_sort_get_sort_field', [handle, i]);
+      a[i] = new SortField._handle(p_sf);
+    }
+    return a;
+  }
 
   /// Returns a human readable string representing the sort object.
-  String to_s() => frb_sort_to_s;
+  String to_s() {
+    int p_s = module.callMethod('_frt_sort_to_s', [handle]);
+    var s = stringify(p_s);
+    free(p_s);
+    return s;
+  }
 
-  static final Sort RELEVANCE;
-  static final Sort INDEX_ORDER;
+  static final Sort RELEVANCE = new Sort();
+  static final Sort INDEX_ORDER = new Sort(sort_fields: [SortField.DOC]);
 }

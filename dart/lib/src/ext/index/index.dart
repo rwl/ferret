@@ -17,6 +17,7 @@ import 'dart:collection' show MapBase, MapMixin;
 
 import '../store.dart' show Directory;
 import '../analysis/analysis.dart' as analysis;
+import '../search/search.dart' show SortField;
 
 import '../../proxy.dart';
 
@@ -32,4 +33,9 @@ void initFerret({String moduleName: 'Ferret', js.JsObject context}) {
     throw new ArgumentError.notNull('Ferret module');
   }
   module.callMethod('_frjs_init');
+
+  SortField.SCORE = module.callMethod('_frjs_sort_field_score');
+  SortField.SCORE_REV = module.callMethod('_frjs_sort_field_score_rev');
+  SortField.DOC = module.callMethod('_frjs_sort_field_doc');
+  SortField.DOC_REV = module.callMethod('_frjs_sort_field_doc_rev');
 }

@@ -106,3 +106,58 @@ char *
 frjs_f_to_s(Filter *f) {
     return f->to_s(f);
 }
+
+bool
+frjs_sf_is_reverse(SortField *sf) {
+    return sf->reverse;
+}
+
+char *
+frjs_sf_get_name(SortField *sf) {
+    return sf->field ? S(sf->field) : NULL;
+}
+
+int
+frjs_sf_get_type(SortField *sf) {
+    return (int) sf->type;
+}
+
+SortField *
+frjs_sort_field_doc() {
+    return (SortField *) &SORT_FIELD_DOC;
+}
+
+SortField *
+frjs_sort_field_score() {
+    return (SortField *) &SORT_FIELD_SCORE;
+}
+
+SortField *
+frjs_sort_field_doc_rev() {
+    return (SortField *) &SORT_FIELD_DOC_REV;
+}
+
+SortField *
+frjs_sort_field_score_rev() {
+    return (SortField *) &SORT_FIELD_SCORE_REV;
+}
+
+void
+frjs_sort_field_reverse(SortField *sf) {
+    sf->reverse = !sf->reverse;
+}
+
+void
+frjs_sort_set_destroy_all(Sort *sort, bool val) {
+    sort->destroy_all = val;
+}
+
+int
+frjs_sort_get_size(Sort *sort) {
+    return sort->size;
+}
+
+SortField *
+frjs_sort_get_sort_field(Sort *sort, int index) {
+    return sort->sort_fields[index];
+}
