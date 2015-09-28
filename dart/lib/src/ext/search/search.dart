@@ -1,6 +1,7 @@
 library ferret.ext.search;
 
 import 'dart:js' as js;
+import 'dart:typed_data' show Int32List, Uint8List;
 
 import '../../proxy.dart';
 import '../utils.dart' show BitVector;

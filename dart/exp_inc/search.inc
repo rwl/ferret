@@ -75,4 +75,8 @@ EXP_SEARCH = \
 '_frjs_td_get_max_score',\
 '_frt_expl_to_s',\
 '_frt_expl_to_html',\
-'_frjs_expl_get_score'
+'_frjs_expl_get_score',\
+'_frjs_sea_scan',\
+'_frjs_sea_explain',\
+'_frjs_sea_highlight',\
+'_frt_msea_new'

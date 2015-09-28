@@ -233,3 +233,36 @@ float
 frjs_expl_get_score(Explanation *expl) {
     return expl->value;
 }
+
+int *
+frjs_sea_scan(Searcher *sea, Query *q, int start_doc, int limit, int *count) {
+    int *doc_array = ALLOC_N(int, limit);
+    *count = searcher_search_unscored(sea, q, doc_array, limit, start_doc);
+    return doc_array;
+}
+
+Explanation *
+frjs_sea_explain(Searcher *sea, Query *query, int doc_id) {
+    return sea->explain(sea, query, doc_id);
+}
+
+char **
+frjs_sea_highlight(Searcher *sea,
+        Query *query,
+        const int doc_num,
+        char *field,
+        const int excerpt_len,
+        const int num_excerpts,
+        const char *pre_tag,
+        const char *post_tag,
+        const char *ellipsis,
+        int *size) {
+    char **excerpts;
+    if ((excerpts = searcher_highlight(sea, query, doc_num, I(field),
+            excerpt_length, num_excerpts, pre_tag, post_tag,
+            ellipsis)) != NULL) {
+        *size = ary_size(excerpts);
+        return excerpts;
+    }
+    return NULL;
+}

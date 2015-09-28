@@ -151,12 +151,21 @@ class Searcher extends JsProxy {
   /// score and the [Searcher] object as its parameters and returns a [bool]
   /// value specifying whether the result should be included in the result
   /// set.
-  search_each(Query query,
-          {int offset: 0,
-          int limit: 10,
-          Sort sort,
-          Filter filter /*, filter_proc*/}) =>
-      frb_sea_search_each;
+  int search_each(Query query, fn(int doc, double score),
+      {int offset: 0,
+      int limit: 10,
+      Sort sort,
+      Filter filter /*, filter_proc*/}) {
+    var td =
+        search(query, offset: offset, limit: limit, sort: sort, filter: filter);
+    var max_score = td.max_score > 1.0 ? td.max_score : 1.0;
+    for (var hit in td.hits) {
+      fn(hit.doc, hit.score / max_score);
+    }
+    var total = td.total_hits;
+    td.destroy();
+    return total;
+  }
 
   /// Run a query through the [Searcher] on the index, ignoring scoring and
   /// starting at [start_doc] and stopping when [limit] matches have been
@@ -186,13 +195,40 @@ class Searcher extends JsProxy {
   ///       start_doc = results.last;
   ///       // start_doc will be nil now if results is empty, ie no more matches
   ///     }); while start_doc
-  scan(query, {start_doc: 0, limit: 50}) => frb_sea_scan;
+  List<int> scan(Query query, {int start_doc: 0, int limit: 50}) {
+    if (start_doc < 0) {
+      throw new ArgumentError("start_doc must be >= 0");
+    }
+    if (limit == -1) {
+      limit = 65536;
+    }
+    if (limit <= 0) {
+      throw new ArgumentError("limit must be > 0");
+    }
+    int p_count = module.callMethod('_malloc', [Int32List.BYTES_PER_ELEMENT]);
+    module.callMethod('setValue', [p_count, 0, 'i32']);
+
+    int p_array = module.callMethod(
+        '_frjs_sea_scan', [handle, query.handle, start_doc, limit, p_count]);
+
+    int count = module.callMethod('getValue', [p_count, 'i32']);
+    free(p_count);
+
+    var array = new List<int>.from(
+        module.callMethod('getInt32Array', [p_array, count]));
+    free(p_array);
+    return array;
+  }
 
   /// Create an explanation object to explain the score returned for a
   /// particular document at [doc_id] in the index for the query [query].
   ///
   ///     print(searcher.explain(query, doc_id).to_s());
-  explain(query, doc_id) => frb_sea_explain;
+  Explanation explain(Query query, int doc_id) {
+    int p_expl =
+        module.callMethod('_frjs_sea_explain', [handle, query.handle, doc_id]);
+    return new Explanation._handle(p_expl);
+  }
 
   /// Returns an array of strings with the matches highlighted.
   ///
@@ -208,13 +244,51 @@ class Searcher extends JsProxy {
   /// [ellipsis] is the string that is appended at the beginning and end of
   /// excerpts (unless the excerpt hits the start or end of the field. You'll
   /// probably want to change this so a Unicode ellipsis character.
-  List<String> highlight(query, doc_id, field,
-          {excerpt_length: 150,
-          num_excerpts: 2,
-          pre_tag: "<b>",
-          post_tag: "</b>",
-          ellipsis: "..."}) =>
-      frb_sea_highlight;
+  List<String> highlight(Query query, int doc_id, String field,
+      {excerpt_length: 150,
+      num_excerpts: 2,
+      pre_tag: "<b>",
+      post_tag: "</b>",
+      ellipsis: "..."}) {
+    if (excerpt_length == -1) {
+      excerpt_length = 65536 ~/ 2;
+    }
+    int p_field = allocString(field);
+    int p_pre_tag = allocString(pre_tag);
+    int p_post_tag = allocString(post_tag);
+    int p_ellipsis = allocString(ellipsis);
+
+    int p_size = module.callMethod('_malloc', [Int32List.BYTES_PER_ELEMENT]);
+    module.callMethod('setValue', [p_size, 0, 'i32']);
+
+    int pp_high = module.callMethod('_frjs_sea_highlight', [
+      handle,
+      query.handle,
+      doc_id,
+      p_field,
+      excerpt_length,
+      num_excerpts,
+      p_pre_tag,
+      p_post_tag,
+      p_ellipsis,
+      p_size
+    ]);
+
+    int size = module.callMethod('getValue', [p_size, 'i32']);
+    free(p_size);
+
+    if (pp_high == 0) {
+      return null;
+    }
+    var p_high = module.callMethod('getUint8List', [pp_high, size]);
+    var high = new List<String>(size);
+    for (var i = 0; i < size; i++) {
+      high[i] = stringify(p_high[i]);
+      free(p_high[i]);
+    }
+    free(pp_high);
+    return high;
+  }
 }
 
 /// See [Searcher] for the methods that you can use on this object. A
@@ -226,7 +300,14 @@ class Searcher extends JsProxy {
 class MultiSearcher extends Searcher {
   /// Create a new [MultiSearcher] by passing a list of subsearchers to the
   /// constructor.
-  MultiSearcher(searchers) : super(null) {
-    frb_ms_init;
+  MultiSearcher(List<Searcher> searchers) : super(null) {
+    int top = searchers.length;
+    int p_seas =
+        module.callMethod('_malloc', [Uint8List.BYTES_PER_ELEMENT * top]);
+    for (int i = 0; i < top; i++) {
+      module.callMethod('setValue', [p_seas, searchers[i].handle, 'i8']);
+    }
+    handle = module.callMethod('_frt_msea_new', [p_seas, top, 0]);
+    free(p_seas);
   }
 }
