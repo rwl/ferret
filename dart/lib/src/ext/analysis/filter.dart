@@ -8,8 +8,9 @@ class AsciiLowerCaseFilter extends TokenStream {
   /// Create an [AsciiLowerCaseFilter] which normalizes a token's text to
   /// lowercase but only for ASCII characters. For other characters use
   /// [LowerCaseFilter].
-  AsciiLowerCaseFilter(TokenStream token_stream) {
-    frb_a_lowercase_filter_init;
+  AsciiLowerCaseFilter(TokenStream token_stream) : super() {
+    handle =
+        module.callMethod('_frt_lowercase_filter_new', [token_stream.handle]);
   }
 }
 
@@ -20,8 +21,9 @@ class AsciiLowerCaseFilter extends TokenStream {
 class LowerCaseFilter extends TokenStream {
   /// Create an [LowerCaseFilter] which normalizes a token's text to
   /// lowercase based on the current locale.
-  LowerCaseFilter(TokenStream token_stream) {
-    frb_lowercase_filter_init;
+  LowerCaseFilter(TokenStream token_stream) : super() {
+    handle =
+        module.callMethod('_frjs_lowercase_filter_init', [token_stream.handle]);
   }
 }
 
@@ -38,8 +40,8 @@ class HyphenFilter extends TokenStream {
   /// split into multiple words. ie "e-mail" becomes "email" and "e mail".
   /// This way a search for "e-mail", "email" and "mail" will all match.
   /// This filter is used by default by the [StandardAnalyzer].
-  HyphenFilter(TokenStream token_stream) {
-    frb_hyphen_filter_init;
+  HyphenFilter(TokenStream token_stream) : super() {
+    handle = module.callMethod('_frt_hyphen_filter_new', [token_stream.handle]);
   }
 }
 
@@ -92,8 +94,22 @@ class MappingFilter extends TokenStream {
   ///         ['à','á','â','ã','ä','å'] => 'a',
   ///         ['è','é','ê','ë','ē','ę'] => 'e'
   ///       });
-  MappingFilter(TokenStream token_stream, Map mapping) {
-    frb_mapping_filter_init;
+  MappingFilter(TokenStream token_stream, Map<List<String>, String> mapping)
+      : super() {
+    handle =
+        module.callMethod('_frt_mapping_filter_new', [token_stream.handle]);
+    mapping.forEach((List<String> patterns, String replacement) {
+      int p_replacement = allocString(replacement);
+      patterns.forEach((String pattern) {
+        int p_pattern = allocString(pattern);
+        module.callMethod(
+            '_frt_mapping_filter_add', [handle, p_pattern, p_replacement]);
+        free(p_pattern);
+      });
+      free(p_replacement);
+    });
+    int p_mapping = module.callMethod('_frjs_mapping_get_mapper', [handle]);
+    module.callMethod('_frt_mulmap_compile', [p_mapping]);
   }
 }
 
@@ -109,8 +125,27 @@ class StopFilter extends TokenStream {
   /// [stop_words] is a [List] of *stop-words* you wish to be filtered out.
   /// This defaults to a list of English stop-words. The Analysis library
   /// contains a number of stop-word lists.
-  StopFilter(TokenStream token_stream, [List<String> stop_words]) {
-    frb_stop_filter_init;
+  StopFilter(TokenStream token_stream, [List<String> stop_words]) : super() {
+    if (stop_words != null) {
+      int p_stop_words = module.callMethod(
+          '_malloc', [Uint8List.BYTES_PER_ELEMENT * stop_words.length]);
+      for (int i = 0; i < stop_words.length; i++) {
+        int p_stop_word = allocString(stop_words[i]);
+        module.callMethod('setValue', [
+          p_stop_words + (i * Uint8List.BYTES_PER_ELEMENT),
+          p_stop_word,
+          'i8'
+        ]);
+      }
+      handle = module.callMethod('_frt_stop_filter_new_with_words',
+          [token_stream.handle, p_stop_words]);
+      for (int i = 0; i < stop_words.length; i++) {
+        free(p_stop_words + (i * Uint8List.BYTES_PER_ELEMENT));
+      }
+      free(p_stop_words);
+    } else {
+      handle = module.callMethod('_frt_stop_filter_new', [token_stream.handle]);
+    }
   }
 }
 
@@ -159,7 +194,19 @@ class StemFilter extends TokenStream {
   /// Porter) to stem words. You can optionally specify the [algorithm] and
   /// [encoding].
   StemFilter(TokenStream token_stream,
-      {String algorithm: "english", String encoding: "UTF-8"}) {
-    frb_stem_filter_init;
+      {String algorithm: "english", String encoding: "UTF-8"})
+      : super() {
+    int p_algorithm = allocString(algorithm);
+    int p_charenc = allocString(encoding);
+    handle = module.callMethod(
+        '_frt_stem_filter_new', [token_stream.handle, p_algorithm, p_charenc]);
+    free(p_algorithm);
+    free(p_charenc);
+    int p_stemmer =
+        module.callMethod('_frjs_stem_filter_get_stemmer', [handle]);
+    if (p_stemmer == 0) {
+      throw new ArgumentError("No stemmer could be found with the encoding "
+          "$encoding and the language $algorithm");
+    }
   }
 }

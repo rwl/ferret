@@ -127,3 +127,23 @@ frjs_a_standard_analyzer_init(bool lower, char **stop_words) {
 	}
 	return a;
 }
+
+TokenStream *
+frjs_lowercase_filter_init(TokenStream *ts)  {
+#ifndef POSH_OS_WIN32
+	if (!frb_locale) {
+		frb_locale = setlocale(LC_CTYPE, "");
+	}
+#endif
+	return mb_lowercase_filter_new(ts);
+}
+
+MultiMapper *
+frjs_mapping_get_mapper(TokenStream *ts) {
+	return ((MappingFilter *)ts)->mapper;
+}
+
+TokenStream *
+frjs_stem_filter_get_stemmer(TokenStream *ts) {
+	return ((StemFilter *)ts)->stemmer;
+}

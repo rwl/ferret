@@ -27,6 +27,8 @@
 /// [Token.text] might be "begin" (after stemming).
 library ferret.ext.analysis;
 
+import 'dart:typed_data' show Uint8List;
+
 import '../../proxy.dart';
 
 part 'analyzer.dart';
@@ -102,7 +104,23 @@ class Token extends JsProxy implements Comparable {
   /// the start offset. If two tokens have the same start offset, (see
   /// [pos_inc]) then, they are sorted by the end offset and then lexically
   /// by the token text.
-  compareTo(Token other_token) => frb_token_cmp;
+  int compareTo(Token other_token) {
+    int cmp;
+    if (start > other_token.start) {
+      cmp = 1;
+    } else if (start < other_token.start) {
+      cmp = -1;
+    } else {
+      if (end > other_token.end) {
+        cmp = 1;
+      } else if (end < other_token.end) {
+        cmp = -1;
+      } else {
+        cmp = text.compareTo(other_token.text);
+      }
+    }
+    return cmp;
+  }
 
   void _set() {
     int p_text = allocString(_text);
@@ -179,7 +197,7 @@ class Token extends JsProxy implements Comparable {
 /// * [Tokenizer]: a [TokenStream] whose input is a string
 /// * [TokenFilter]: a [TokenStream] whose input is another [TokenStream]
 abstract class TokenStream extends JsProxy {
-  TokenStream([int hts]) : super() {
+  TokenStream._handle(int hts) : super() {
     handle = hts;
   }
 

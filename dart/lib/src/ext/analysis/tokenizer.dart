@@ -12,9 +12,7 @@ class AsciiLetterTokenizer extends TokenStream {
     this.text = text;
   }
 
-  AsciiLetterTokenizer._handle(int h_ts) : super() {
-    handle = h_ts;
-  }
+  AsciiLetterTokenizer._handle(int h_ts) : super._handle(h_ts);
 }
 
 /// A [LetterTokenizer] is a tokenizer that divides text at non-letters. That
@@ -27,14 +25,12 @@ class AsciiLetterTokenizer extends TokenStream {
 class LetterTokenizer extends TokenStream {
   /// Create a new [LetterTokenizer] which optionally downcases tokens.
   /// Downcasing is done according the current locale.
-  LetterTokenizer(String text, {bool lower: true}) {
+  LetterTokenizer(String text, {bool lower: true}) : super() {
     handle = module.callMethod('_frjs_letter_tokenizer_init', [lower ? 1 : 0]);
     this.text = text;
   }
 
-  LetterTokenizer._handle(int h_ts) {
-    handle = h_ts;
-  }
+  LetterTokenizer._handle(int h_ts) : super._handle(h_ts);
 }
 
 /// A [WhiteSpaceTokenizer] is a tokenizer that divides text at white-space.
@@ -43,14 +39,12 @@ class LetterTokenizer extends TokenStream {
 ///     "Dave's résumé, at http://www.davebalmain.com/ 1234"
 ///     => ["Dave's", "résumé,", "at", "http://www.davebalmain.com", "1234"]
 class AsciiWhiteSpaceTokenizer extends TokenStream {
-  AsciiWhiteSpaceTokenizer(String text) {
+  AsciiWhiteSpaceTokenizer(String text) : super() {
     handle = module.callMethod('_frt_whitespace_tokenizer_new');
     this.text = text;
   }
 
-  AsciiWhiteSpaceTokenizer._handle(int h_ts) {
-    handle = h_ts;
-  }
+  AsciiWhiteSpaceTokenizer._handle(int h_ts) : super._handle(h_ts);
 }
 
 /// A [WhiteSpaceTokenizer] is a tokenizer that divides text at white-space.
@@ -61,15 +55,13 @@ class AsciiWhiteSpaceTokenizer extends TokenStream {
 class WhiteSpaceTokenizer extends TokenStream {
   /// Create a new [WhiteSpaceTokenizer] which optionally downcases tokens.
   /// Downcasing is done according the current locale.
-  WhiteSpaceTokenizer(String text, {bool lower: true}) {
+  WhiteSpaceTokenizer(String text, {bool lower: true}) : super() {
     handle =
         module.callMethod('_frjs_whitespace_tokenizer_init', [lower ? 1 : 0]);
     this.text = text;
   }
 
-  WhiteSpaceTokenizer._handle(int h_ts) {
-    handle = h_ts;
-  }
+  WhiteSpaceTokenizer._handle(int h_ts) : super._handle(h_ts);
 }
 
 /// The standard tokenizer is an advanced tokenizer which tokenizes most
@@ -79,14 +71,12 @@ class WhiteSpaceTokenizer extends TokenStream {
 ///     "Dave's résumé, at http://www.davebalmain.com/ 1234"
 ///     => ["Dave's", "r", "sum", "at", "http://www.davebalmain.com", "1234"]
 class AsciiStandardTokenizer extends TokenStream {
-  AsciiStandardTokenizer(String text) {
+  AsciiStandardTokenizer(String text) : super() {
     handle = module.callMethod('_frt_standard_tokenizer_new');
     this.text = text;
   }
 
-  AsciiStandardTokenizer._handle(int h_ts) {
-    handle = h_ts;
-  }
+  AsciiStandardTokenizer._handle(int h_ts) : super._handle(h_ts);
 }
 
 /// The standard tokenizer is an advanced tokenizer which tokenizes most
@@ -98,14 +88,12 @@ class AsciiStandardTokenizer extends TokenStream {
 class StandardTokenizer extends TokenStream {
   /// Create a new StandardTokenizer which optionally downcases tokens.
   /// Downcasing is done according the current locale.
-  StandardTokenizer(String text, {bool lower: true}) {
+  StandardTokenizer(String text, {bool lower: true}) : super() {
     handle = module.callMethod('_frjs_standard_tokenizer_init');
     this.text = text;
   }
 
-  StandardTokenizer._handle(int h_ts) {
-    handle = h_ts;
-  }
+  StandardTokenizer._handle(int h_ts) : super._handle(h_ts);
 }
 
 /// A tokenizer that recognizes tokens based on a regular expression passed to
@@ -122,7 +110,7 @@ class StandardTokenizer extends TokenStream {
 ///     => ["Dave", "s", "résumé", "at", "http", "www", "davebalmain", "com"]
 class RegExpTokenizer extends TokenStream {
   /// Create a new tokenizer based on a regular expression.
-  RegExpTokenizer(String text, RegExp regexp) {
+  RegExpTokenizer(String text, RegExp regexp) : super() {
     frb_rets_init;
   }
 

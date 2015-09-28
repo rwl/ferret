@@ -18,4 +18,10 @@ EXP_ANALYSIS = \
 '_frt_standard_tokenizer_new',\
 '_frjs_standard_tokenizer_init',\
 '_frjs_white_space_analyzer_init',\
-'_frjs_a_standard_analyzer_init'
+'_frjs_a_standard_analyzer_init',\
+'_frt_lowercase_filter_new',\
+'_frjs_lowercase_filter_init',\
+'_frt_hyphen_filter_new',\
+'_frjs_mapping_get_mapper',\
+'_frt_mulmap_compile',\
+'_frjs_stem_filter_get_stemmer'

@@ -305,7 +305,11 @@ class MultiSearcher extends Searcher {
     int p_seas =
         module.callMethod('_malloc', [Uint8List.BYTES_PER_ELEMENT * top]);
     for (int i = 0; i < top; i++) {
-      module.callMethod('setValue', [p_seas, searchers[i].handle, 'i8']);
+      module.callMethod('setValue', [
+        p_seas + (i * Uint8List.BYTES_PER_ELEMENT),
+        searchers[i].handle,
+        'i8'
+      ]);
     }
     handle = module.callMethod('_frt_msea_new', [p_seas, top, 0]);
     free(p_seas);
