@@ -161,3 +161,75 @@ SortField *
 frjs_sort_get_sort_field(Sort *sort, int index) {
     return sort->sort_fields[index];
 }
+
+void
+frjs_searcher_set_close_ir(IndexSearcher *sea, bool val) {
+    sea->close_ir = val;
+}
+
+void
+frjs_sea_close(IndexSearcher *sea) {
+    sea->close(sea);
+}
+
+IndexSearcher *
+frjs_sea_get_reader(IndexSearcher *sea) {
+    return sea->ir;
+}
+
+int
+frjs_sea_doc_freq(IndexSearcher *sea, char *field, char *term) {
+    return sea->doc_freq(sea, I(field), term);
+}
+
+LazyDoc *
+frjs_sea_doc(IndexSearcher *sea, int doc_id) {
+    return sea->get_lazy_doc(sea, doc_id);
+}
+
+int
+frjs_sea_max_doc(IndexSearcher *sea) {
+    return sea->max_doc(sea);
+}
+
+TopDocs *
+frjs_sea_search(IndexSearcher *sea, Query *query, int offset, int limit,
+        Filter *filter, Sort *sort) {
+    PostFilter *post_filter = NULL;
+    return sea->search(sea, query, offset, limit, filter, sort, post_filter, 0);
+}
+
+int
+frjs_td_get_size(TopDocs *td) {
+    return td->size;
+}
+
+Hit *
+frjs_td_get_hit(TopDocs *td, int i) {
+    return td->hits[i];
+}
+
+int
+frjs_td_get_total_hits(TopDocs *td) {
+    return td->total_hits;
+}
+
+int
+frjs_hit_get_doc(Hit *hit) {
+    return hit->doc;
+}
+
+float
+frjs_hit_get_score(Hit *hit) {
+    return hit->score;
+}
+
+float
+frjs_td_get_max_score(TopDocs *td) {
+    return td->max_score;
+}
+
+float
+frjs_expl_get_score(Explanation *expl) {
+    return expl->value;
+}

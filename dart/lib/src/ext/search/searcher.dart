@@ -23,53 +23,61 @@ part of ferret.ext.search;
 ///       print("${searcher[doc_id][title] scored ${score}");
 ///     });
 class Searcher extends JsProxy {
-  var _offset;
-  var _limit;
-  var _start_doc;
-  var _all;
-  var _filter;
-  var _filter_proc;
-  var _c_filter_proc;
-  var _sort;
-
-  var _excerpt_length;
-  var _num_excerpts;
-  var _pre_tag;
-  var _post_tag;
-  var _ellipsis;
-
   /// Create a new [Searcher] object. [dir] can either be a string path to an
   /// index directory on the file-system, an actual [Directory] object or a
   /// [IndexReader]. You should use the [IndexReader] for searching multiple
   /// indexes. Just open the [IndexReader] on multiple directories.
-  Searcher(obj) {
-    frb_sea_init;
+//  Searcher.dir(String path) {}
+
+  Searcher.store(Directory dir) {
+    int p_ir = module.callMethod('_frt_ir_open', [dir.handle]);
+    handle = module.callMethod('_frt_isea_new', [p_ir]);
+    module.callMethod('_frjs_searcher_set_close_ir', [handle, 0]);
+  }
+
+  Searcher(IndexReader ir) {
+    handle = module.callMethod('_frt_isea_new', [ir.handle]);
+    module.callMethod('_frjs_searcher_set_close_ir', [handle, 0]);
   }
 
   /// Close the searcher. The garbage collector will do this for you or you can
   /// call this method explicitly.
-  close() => frb_sea_close;
+  void close() => module.callMethod('_frjs_sea_close', [handle]);
 
   /// Return the [IndexReader] wrapped by this searcher.
-  IndexReader get reader => frb_sea_get_reader;
+  IndexReader get reader {
+    int p_ir = module.callMethod('_frjs_sea_get_reader', [handle]);
+    return new IndexReader.handle(p_ir);
+  }
 
   /// Return the number of documents in which the term [term] appears in the
   /// field [field].
-  int doc_freq(field, term) => frb_sea_doc_freq;
+  int doc_freq(String field, String term) {
+    int p_field = allocString(field);
+    int p_term = allocString(term);
+    int freq =
+        module.callMethod('_frjs_sea_doc_freq', [handle, p_field, p_term]);
+    free(p_field);
+    free(p_term);
+    return freq;
+  }
 
   /// Retrieve a document from the index. See [LazyDoc] for more details on
   /// the document returned. Documents are referenced internally by document
   /// ids which are returned by the Searchers search methods.
-  get_document(doc_id) => frb_sea_doc;
+  LazyDoc get_document(int doc_id) {
+    int p_ld = module.callMethod('_frjs_sea_doc', [handle, doc_id]);
+    return new LazyDoc.handle(p_ld);
+  }
 
   /// Alias for [get_document].
-  operator [](doc_id) => frb_sea_doc;
+  LazyDoc operator [](int doc_id) => get_document(doc_id);
 
   /// Returns 1 + the maximum document id in the index. It is the
   /// document_id that will be used by the next document added to the index.
   /// If there are no deletions, this number also refers to the number of
   /// documents in the index.
-  num max_doc() => frb_sea_max_doc;
+  int max_doc() => module.callMethod('_frjs_sea_max_doc', [handle]);
 
   /// Run a query through the [Searcher] on the index. A [TopDocs] object is
   /// returned with the relevant results. The [query] is a built in [Query]
@@ -98,9 +106,21 @@ class Searcher extends JsProxy {
   /// a [double] between 0 and 1.0 to be used as a factor to scale the score
   /// of the object. This can be used, for example, to weight the score
   /// of a matched document by it's age.
-  TopDocs search(query,
-          {offset: 0, limit: 10, sort, Filter filter, filter_proc}) =>
-      frb_sea_search;
+  TopDocs search(Query query,
+      {int offset: 0,
+      int limit: 10,
+      Sort sort,
+      Filter filter /*, filter_proc*/}) {
+    if (offset < 0) {
+      throw new ArgumentError("offset must be >= 0");
+    }
+    if (limit == 0 || limit < -1) {
+      throw new ArgumentError.value(limit, 'limit');
+    }
+    int p_td = module.callMethod('_frjs_sea_search',
+        [handle, query.handle, offset, limit, filter.handle, sort.handle]);
+    return new TopDocs._module(module, p_td, this);
+  }
 
   /// Run a query through the [Searcher] on the index. A [TopDocs] object is
   /// returned with the relevant results. The [query] is a Query object. The
@@ -131,8 +151,11 @@ class Searcher extends JsProxy {
   /// score and the [Searcher] object as its parameters and returns a [bool]
   /// value specifying whether the result should be included in the result
   /// set.
-  search_each(query,
-          {offset: 0, limit: 10, sort, Filter filter, filter_proc}) =>
+  search_each(Query query,
+          {int offset: 0,
+          int limit: 10,
+          Sort sort,
+          Filter filter /*, filter_proc*/}) =>
       frb_sea_search_each;
 
   /// Run a query through the [Searcher] on the index, ignoring scoring and

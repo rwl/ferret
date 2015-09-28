@@ -1,8 +1,11 @@
 library ferret.ext.search;
 
+import 'dart:js' as js;
+
 import '../../proxy.dart';
 import '../utils.dart' show BitVector;
-import '../index/index.dart' show IndexReader;
+import '../index/index.dart' show IndexReader, LazyDoc;
+import '../store.dart' show Directory;
 
 part 'filter.dart';
 part 'query.dart';
@@ -16,7 +19,11 @@ part 'span.dart';
 /// is not normalized so it can be greater than 1.0. To normalize scores to
 /// the range 0.0..1.0 divide the scores by [TopDocs.max_score].
 class Hit {
-  var doc, score;
+  final int doc;
+  final double score;
+  Hit._handle(js.JsObject module, int handle)
+      : doc = module.callMethod('_frjs_hit_get_doc', [handle]),
+        score = module.callMethod('_frjs_hit_get_score', [handle]);
 }
 
 /// A [TopDocs] object holds a result set for a search. The number of
@@ -33,13 +40,66 @@ class Hit {
 ///       print("${hit.doc} scored ${hit.score * 100.0 / top_docs.max_score}");
 ///     });
 class TopDocs {
-  var total_hits, hits, max_score, searcher;
+  int total_hits;
+  List<Hit> hits;
+  int max_score;
+  Searcher searcher;
+
+  TopDocs._module(js.JsObject module, int handle, this.searcher) {
+    int sz = module.callMethod('_frjs_td_get_size', [handle]);
+    hits = new List<Hit>(sz);
+    for (var i = 0; i < sz; i++) {
+      int p_hit = module.callMethod('_frjs_td_get_hit', [handle, i]);
+      hits[i] = new Hit._handle(module, p_hit);
+    }
+    total_hits = module.callMethod('_frjs_td_get_total_hits', [handle]);
+    max_score = module.callMethod('_frjs_td_get_max_score', [handle]);
+  }
 
   /// Returns a string representation of the top_doc in readable format.
-  to_s() => frb_td_to_s;
+  String to_s(String field) {
+    var sb = new StringBuffer(
+        "TopDocs: total_hits = $total_hits, max_score = $max_score [\n");
+    for (var hit in hits) {
+      var value = '';
+      var ld = searcher.get_document(hit.doc);
+      if (ld.containsKey(field)) {
+        value = ld[field];
+      }
+      sb.write('\t${hit.doc} "$value": ${hit.score}\n');
+    }
+    sb.write("]\n");
+    return sb.toString();
+  }
 
   /// Returns a json representation of the top_doc.
-  to_json() => frb_td_to_json;
+  String to_json() {
+    var sb = new StringBuffer('[');
+    for (var i = 0; i < hits.length; i++) {
+      var hit = hits[i];
+      if (i != 0) {
+        sb.write(',');
+      }
+      var ld = searcher.get_document(hit.doc);
+      int j = 0;
+      ld.forEach((String name, value) {
+        if (j != 0) {
+          sb.write(',');
+        }
+        sb.write('"$name":');
+        if (value is Iterable) {
+          sb.write('[');
+          sb.write(value.join(','));
+          sb.write(']');
+        } else {
+          sb.write(value.toString());
+        }
+        j++;
+      });
+    }
+    sb.write(']');
+    return sb.toString();
+  }
 }
 
 /// Explanation is used to give a description of why a document matched with
@@ -50,16 +110,30 @@ class TopDocs {
 /// method.
 ///
 ///     print(searcher.explain(query, doc_id).to_s);
-class Explanation {
+class Explanation extends JsProxy {
+  Explanation._handle(int p_expl) : super() {
+    handle = p_expl;
+  }
+
   /// Returns a string representation of the explanation in readable format.
-  to_s() => frb_expl_to_s;
+  String to_s() {
+    int p_s = module.callMethod('_frt_expl_to_s', [handle]);
+    var s = stringify(p_s);
+    free(p_s);
+    return s;
+  }
 
   /// Returns an html representation of the explanation in readable format.
-  to_html() => frb_expl_to_html;
+  String to_html() {
+    int p_html = module.callMethod('_frt_expl_to_html', [handle]);
+    var html = stringify(p_html);
+    free(p_html);
+    return html;
+  }
 
   /// Returns the score represented by the query. This can be used for
   /// debugging purposes mainly to check that the score returned by the
   /// explanation matches that of the score for the document in the original
   /// query.
-  double score() => frb_expl_score;
+  double score() => module.callMethod('_frjs_expl_get_score', [handle]);
 }

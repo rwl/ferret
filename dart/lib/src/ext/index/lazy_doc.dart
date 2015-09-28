@@ -27,7 +27,7 @@ class LazyDoc extends JsProxy /*MapBase*/ with MapMixin<String, dynamic> {
 
   List<String> _fields;
 
-  LazyDoc._handle(int h_lzd)
+  LazyDoc.handle(int h_lzd)
       : super.mixin(),
         _map = new Map<String, dynamic>() {
     handle = h_lzd;
