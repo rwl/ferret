@@ -197,6 +197,8 @@ class Token extends JsProxy implements Comparable {
 /// * [Tokenizer]: a [TokenStream] whose input is a string
 /// * [TokenFilter]: a [TokenStream] whose input is another [TokenStream]
 abstract class TokenStream extends JsProxy {
+  TokenStream() : super();
+
   TokenStream._handle(int hts) : super() {
     handle = hts;
   }

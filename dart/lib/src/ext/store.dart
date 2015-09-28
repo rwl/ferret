@@ -36,48 +36,51 @@ abstract class Directory extends JsProxy {
 
   /// Return true if a file with the name [file_name] exists in the directory.
   bool exists(String file_name) {
-    /*var retval = module.callMethod('ccall', [
-      'frjs_dir_exists',
-      'number',
-      ['number', 'string'],
-      [handle, file_name]
-    ]);*/
-
-    //var retval = module.callMethod('_frjs_dir_exists', [handle, file_name]);
-
-    /*var buffer = module.callMethod('_malloc', [file_name.length + 1]);
-    module.callMethod('writeStringToMemory', [file_name, buffer]);
-    var retval = module.callMethod('_frjs_dir_exists', [handle, buffer]);
-    module.callMethod('_free', [buffer]);*/
-
-    var p_fname = allocString(file_name);
-    var retval = module.callMethod('_frjs_dir_exists', [handle, p_fname]);
+    int p_fname = allocString(file_name);
+    int retval = module.callMethod('_frjs_dir_exists', [handle, p_fname]);
     free(p_fname);
-
     return 0 != retval;
   }
 
   /// Create an empty file in the directory with the name [file_name].
-  touch(String file_name) => frb_dir_touch;
+  void touch(String file_name) {
+    int p_fname = allocString(file_name);
+    module.callMethod('_frjs_dir_touch', [handle, p_fname]);
+    free(p_fname);
+  }
 
   /// Remove file [file_name] from the directory. Returns true if successful.
-  delete(String file_name) => frb_dir_delete;
+  bool delete(String file_name) {
+    int p_fname = allocString(file_name);
+    return module.callMethod('_frjs_dir_delete', [handle, p_fname]) != 0;
+  }
 
   /// Return a count of the number of files in the directory.
-  int file_count() => frb_dir_file_count;
+  int file_count() => module.callMethod('_frjs_dir_file_count', [handle]);
 
   /// Delete all files in the directory. It gives you a clean slate.
-  refresh() => frb_dir_refresh;
+  void refresh() => module.callMethod('_frjs_dir_refresh', [handle]);
 
   /// Rename a file from [from] to [to]. An error will be raised if the file
   /// doesn't exist or there is some other type of IOError.
-  rename(String from, String to) => frb_dir_rename;
+  void rename(String from, String to) {
+    int p_from = allocString(from);
+    int p_to = allocString(to);
+    module.callMethod('_frjs_dir_rename', [handle, p_from, p_to]);
+    free(p_from);
+    free(p_to);
+  }
 
   /// Make a lock with the name [lock_name]. Note that lockfiles will be
   /// stored in the directory with other files but they won't be visible to
   /// you. You should avoid using files with a `.lck` extension as this
   /// extension is reserved for lock files.
-  Lock make_lock(String lock_name) => frb_dir_make_lock;
+  Lock make_lock(String lock_name) {
+    int p_name = allocString(lock_name);
+    int p_lock = module.callMethod('_frt_open_lock', [handle]);
+    free(p_name);
+    return new Lock._handle(p_lock);
+  }
 }
 
 /// A [Lock] is used to lock a data source so that not more than one
@@ -99,7 +102,11 @@ abstract class Directory extends JsProxy {
 ///     write_lock.while_locked(WRITE_LOCK_TIME_OUT, () {
 ///       ... # Do your file modifications # ...
 ///     });
-class Lock {
+class Lock extends JsProxy {
+  Lock._handle(int p_lock) : super() {
+    handle = p_lock;
+  }
+
   /// Obtain a lock. Returns true if lock was successfully obtained. Make sure
   /// the lock is released using [Lock.release]. Otherwise you'll be left with
   /// a stale lock file.
@@ -111,24 +118,40 @@ class Lock {
   ///
   /// Returns `true` if lock was successfully obtained. Raises a [LockError]
   /// otherwise.
-  bool obtain({timeout: 1}) => frb_lock_obtain;
+  bool obtain({int timeout: 1}) {
+    int success = module.callMethod('_frjs_lock_obtain', [handle]);
+    if (success == 0) {
+      int p_name = module.callMethod('_frjs_lock_get_name', [handle]);
+      var name = stringify(p_name);
+      throw new LockError._("could not obtain lock: $name");
+    }
+  }
 
   /// Run the code in a block while a lock is obtained, automatically
   /// releasing the lock when the block returns.
   ///
   /// Returns `true` if lock was successfully obtained. Raises a [LockError]
   /// otherwise.
-  bool while_locked({timeout: 1, fn}) => frb_lock_while_locked;
+  bool while_locked(fn(), {int timeout: 1}) {
+    obtain(timeout: timeout);
+    fn();
+    release();
+    return true;
+  }
 
   /// Release the lock. This should only be called by the process which
   /// obtains the lock.
-  release() => frb_lock_release;
+  void release() => module.callMethod('_frjs_lock_release', [handle]);
 
   /// Returns `true` if the lock has been obtained.
-  bool locked() => frb_lock_is_locked;
+  bool locked() => module.callMethod('_frjs_lock_is_locked', [handle]) != 0;
 }
 
-class LockError implements Exception {}
+class LockError implements Exception {
+  String _msg;
+  LockError._(this._msg);
+  String toString() => _msg;
+}
 
 /// Memory resident [Directory] implementation. You should use a
 /// [RAMDirectory] during testing but otherwise you should stick with
@@ -163,7 +186,7 @@ class FSDirectory extends Directory {
   /// specify the [create] parameter. If [create] is true the [FSDirectory]
   /// will be refreshed as new. That is to say, any existing files in the
   /// directory will be deleted.
-  static FSDirectory create(path, {bool create: false}) {
+  static FSDirectory create(String path, {bool create: false}) {
     frb_fsdir_new;
   }
 }
