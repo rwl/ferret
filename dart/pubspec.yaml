@@ -3,3 +3,5 @@ dependencies:
   browser: any
   test: any
   yaml: any
+dev_dependencies:
+  quiver: any
