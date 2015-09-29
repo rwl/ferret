@@ -5,6 +5,7 @@
 build/
 doc/
 packages
+.packages
 pubspec.lock
 *.iml
 .project
