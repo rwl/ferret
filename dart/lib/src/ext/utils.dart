@@ -352,7 +352,7 @@ class PriorityQueue extends JsProxy {
   int size = 0;
   int capa;
   int mem_capa = 32;
-  List heap = [];
+  List heap;
   var proc;
 
   /// Returns a new empty priority queue object with an optional capacity.
@@ -361,13 +361,14 @@ class PriorityQueue extends JsProxy {
   /// inserted into the queue.
   PriorityQueue({int capacity: 32, Function less_than_proc}) : super() {
     if (less_than_proc == null) {
-      less_than_proc = (a, b) => a < b;
+      less_than_proc = (a, b) => a.compareTo(b) < 0;
     }
     if (capacity < 0) {
       throw new ArgumentError.value(capacity);
     }
     capa = capacity;
     proc = less_than_proc;
+    heap = new List()..length = mem_capa;
   }
 
   /// Returns a shallow clone of the priority queue. That is only the priority
