@@ -77,7 +77,7 @@ class BitVector extends JsProxy {
     if (i < 0) {
       throw new ArgumentError.value(i);
     }
-    if (val) {
+    if (val != null && val) {
       this.set(i);
     } else {
       this.unset(i);
@@ -115,12 +115,12 @@ class BitVector extends JsProxy {
 
   /// Perform an inplace boolean _and_ operation.
   void andx(BitVector bv2) {
-    module.callMethod('_frjs_bv_and_x', [handle, bv2]);
+    module.callMethod('_frjs_bv_and_x', [handle, bv2.handle]);
   }
 
   /// Perform a boolean _and_ operation.
   BitVector and(BitVector bv2) {
-    int h = module.callMethod('_frjs_bv_and', [handle, bv2]);
+    int h = module.callMethod('_frjs_bv_and', [handle, bv2.handle]);
     return new BitVector.handle(h);
   }
 
@@ -129,12 +129,12 @@ class BitVector extends JsProxy {
 
   /// Perform an inplace boolean _or_ operation.
   void orx(BitVector bv2) {
-    module.callMethod('_frjs_bv_or_x', [handle, bv2]);
+    module.callMethod('_frjs_bv_or_x', [handle, bv2.handle]);
   }
 
   /// Perform a boolean _or_ operation.
   BitVector or(BitVector bv2) {
-    int h = module.callMethod('_frjs_bv_or', [handle, bv2]);
+    int h = module.callMethod('_frjs_bv_or', [handle, bv2.handle]);
     return new BitVector.handle(h);
   }
 
@@ -143,12 +143,12 @@ class BitVector extends JsProxy {
 
   /// Perform an inplace boolean _xor_ operation.
   void xorx(BitVector bv2) {
-    module.callMethod('_frjs_bv_xor_x', [handle, bv2]);
+    module.callMethod('_frjs_bv_xor_x', [handle, bv2.handle]);
   }
 
   /// Perform a boolean _or_ operation.
   BitVector xor(BitVector bv2) {
-    int h = module.callMethod('_frjs_bv_xor', [handle, bv2]);
+    int h = module.callMethod('_frjs_bv_xor', [handle, bv2.handle]);
     return new BitVector.handle(h);
   }
 
@@ -392,7 +392,7 @@ class PriorityQueue extends JsProxy {
       _push(elem);
     } else if (size > 0 && proc(heap[1], elem)) {
       heap[1] = elem;
-      _down(pq);
+      _down();
     }
   }
 

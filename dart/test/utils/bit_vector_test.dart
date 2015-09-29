@@ -4,22 +4,21 @@ import 'dart:math' show Random;
 
 import 'package:test/test.dart';
 import 'package:ferret/ferret.dart';
+import 'package:quiver/iterables.dart' show range;
 
-class BitVectorTest {
-  //< Test::Unit::TestCase
+void bitVectorTest() {
+  final Random _r = new Random();
 
-  static final Random _r = new Random();
+  int rand(max) => _r.nextInt(max);
 
-  static int rand(max) => _r.nextInt(max);
-
-  test_bv_get_set() {
+  test('bv_get_set', () {
     var bv = new BitVector();
-    expect(0, equals(bv.count));
+    expect(bv.count(), equals(0));
 
     bv.set(10);
     expect(bv.get(10), isTrue);
     expect(bv[10], isTrue);
-    expect(1, equals(bv.count));
+    expect(bv.count(), equals(1));
 
     bv[10] = false;
     expect(bv[10], isFalse);
@@ -38,88 +37,86 @@ class BitVectorTest {
 
     bv[10] = true;
     expect(bv[10], isTrue);
-  }
+  });
 
-  test_bv_count() {
+  test('bv_count', () {
     var bv = new BitVector();
     bv.set(10);
-    expect(1, equals(bv.count));
+    expect(bv.count(), equals(1));
 
     bv.set(20);
     expect(bv.get(20), isTrue);
-    expect(2, equals(bv.count));
+    expect(bv.count(), equals(2));
 
     bv.set(21);
     expect(bv.get(21), isTrue);
-    expect(3, equals(bv.count));
+    expect(bv.count(), equals(3));
 
     bv.unset(21);
     expect(bv.get(21), isFalse);
-    expect(2, equals(bv.count));
+    expect(bv.count(), equals(2));
 
     bv[20] = null;
     expect(bv.get(20), isFalse);
-    expect(1, equals(bv.count));
+    expect(bv.count(), equals(1));
 
-    range(50, 100).each((i) => bv.set(i));
-    range(50, 100).each((i) => expect(bv[i], isTrue));
+    range(50, 101).forEach((i) => bv.set(i));
+    range(50, 101).forEach((i) => expect(bv[i], isTrue));
     expect(bv.get(10), isTrue);
-    expect(52, equals(bv.count));
+    expect(bv.count(), equals(52));
 
     bv.clear();
-    expect(0, equals(bv.count));
-    range(50, 100).each((i) => expect(bv[i], isFalse));
+    expect(0, equals(bv.count()));
+    range(50, 101).forEach((i) => expect(bv[i], isFalse));
     expect(bv.get(10), isFalse);
-  }
+  });
 
-  test_bv_eql_hash() {
+  test('bv_eql_hash', () {
     var bv1 = new BitVector();
     var bv2 = new BitVector();
     expect(bv1, equals(bv2));
-    expect(bv1.hash, equals(bv2.hash));
+    expect(bv1.hash(), equals(bv2.hash()));
 
     bv1.set(10);
     expect(bv1, isNot(equals(bv2)));
-    expect(bv1.hash, isNot(equals(bv2.hash)));
+    expect(bv1.hash(), isNot(equals(bv2.hash())));
 
     bv2.set(10);
     expect(bv1, equals(bv2));
-    expect(bv1.hash, equals(bv2.hash));
+    expect(bv1.hash(), equals(bv2.hash()));
 
-    repeat(10).times((i) => bv1.set(i * 31));
+    range(10).forEach((i) => bv1.set(i * 31));
     expect(bv1, isNot(equals(bv2)));
-    expect(bv1.hash, isNot(equals(bv2.hash)));
+    expect(bv1.hash(), isNot(equals(bv2.hash())));
 
-    repeat(10).times((i) => bv2.set(i * 31));
+    range(10).forEach((i) => bv2.set(i * 31));
     expect(bv1, equals(bv2));
-    expect(bv1.hash, equals(bv2.hash));
+    expect(bv1.hash(), equals(bv2.hash()));
 
     bv1.clear();
     expect(bv1, isNot(equals(bv2)));
-    expect(bv1.hash, isNot(equals(bv2.hash)));
+    expect(bv1.hash(), isNot(equals(bv2.hash())));
 
     bv2.clear();
     expect(bv1, equals(bv2));
-    expect(bv1.hash, equals(bv2.hash));
-  }
+    expect(bv1.hash(), equals(bv2.hash()));
+  });
 
-  static const BV_COUNT = 500;
-  static const BV_SIZE = 1000;
+  const BV_COUNT = 500;
+  const BV_SIZE = 1000;
 
-  test_bv_and() {
+  test('bv_and', () {
     var bv1 = new BitVector();
     var bv2 = new BitVector();
-    var set1 = 0,
-        set2 = 0,
-        count = 0;
+    var set1 = 0, set2 = 0, count = 0;
 
-    BV_COUNT.times((i) {
+    range(BV_COUNT).forEach((i) {
       var bit = rand(BV_SIZE);
       bv1.set(bit);
       set1 |= (1 << bit);
     });
 
-    BV_COUNT.times((i) {
+    range(BV_COUNT).forEach((i) {
       var bit = rand(BV_SIZE);
       bv2.set(bit);
       var bitmask = (1 << bit);
@@ -130,8 +127,8 @@ class BitVectorTest {
     });
 
     var and_bv = bv1 & bv2;
-    expect(count, equals(and_bv.count));
-    BV_SIZE.times((i) {
+    expect(count, equals(and_bv.count()));
+    range(BV_SIZE).forEach((i) {
       expect(((set2 & (1 << i)) > 0), equals(and_bv[i]));
     });
 
@@ -142,7 +139,7 @@ class BitVectorTest {
     and_bv = bv1 & bv2;
 
     expect(bv2, equals(and_bv), reason: "and_bv should be empty");
-    expect(0, equals(and_bv.count));
+    expect(0, equals(and_bv.count()));
 
     bv1 = new BitVector();
     bv2 = new BitVector().not();
@@ -151,15 +148,14 @@ class BitVectorTest {
     bv1.set(20);
     expect(bv1, equals(bv1 & bv2),
         reason: "bv anded with empty not bv should be same");
-  }
+  });
 
-  test_bv_or() {
+  test('bv_or', () {
     var bv1 = new BitVector();
     var bv2 = new BitVector();
-    var set = 0,
-        count = 0;
+    var set = 0, count = 0;
 
-    BV_COUNT.times((i) {
+    range(BV_COUNT).forEach((i) {
       var bit = rand(BV_SIZE);
       bv1.set(bit);
       var bitmask = (1 << bit);
@@ -169,7 +165,7 @@ class BitVectorTest {
       }
     });
 
-    BV_COUNT.times((i) {
+    range(BV_COUNT).forEach((i) {
       var bit = rand(BV_SIZE);
       bv2.set(bit);
       var bitmask = (1 << bit);
@@ -180,8 +176,8 @@ class BitVectorTest {
     });
 
     var or_bv = bv1 | bv2;
-    expect(count, equals(or_bv.count));
-    BV_SIZE.times((i) {
+    expect(count, equals(or_bv.count()));
+    range(BV_SIZE).forEach((i) {
       expect(((set & (1 << i)) > 0), equals(or_bv[i]));
     });
 
@@ -192,22 +188,20 @@ class BitVectorTest {
     or_bv = bv1 | bv2;
 
     expect(bv1, equals(or_bv));
-  }
+  });
 
-  test_bv_xor() {
+  test('bv_xor', () {
     var bv1 = new BitVector();
     var bv2 = new BitVector();
-    var set1 = 0,
-        set2 = 0,
-        count = 0;
+    var set1 = 0, set2 = 0, count = 0;
 
-    BV_COUNT.times((i) {
+    range(BV_COUNT).forEach((i) {
       var bit = rand(BV_SIZE);
       bv1.set(bit);
       set1 |= (1 << bit);
     });
 
-    BV_COUNT.times((i) {
+    range(BV_COUNT).forEach((i) {
       var bit = rand(BV_SIZE);
       bv2.set(bit);
       set2 |= (1 << bit);
@@ -215,7 +209,7 @@ class BitVectorTest {
 
     var bitmask = 1;
     set1 ^= set2;
-    BV_SIZE.times((i) {
+    range(BV_SIZE).forEach((i) {
       if ((set1 & bitmask) > 0) {
         count += 1;
       }
@@ -223,10 +217,10 @@ class BitVectorTest {
     });
 
     var xor_bv = bv1 ^ bv2;
-    BV_SIZE.times((i) {
+    range(BV_SIZE).forEach((i) {
       expect(((set1 & (1 << i)) > 0), equals(xor_bv[i]));
     });
-    expect(count, equals(xor_bv.count));
+    expect(count, equals(xor_bv.count()));
 
     bv2.xorx(bv1);
     expect(bv2, equals(xor_bv));
@@ -235,35 +229,35 @@ class BitVectorTest {
     xor_bv = bv1 ^ bv2;
 
     expect(bv1, equals(xor_bv));
-  }
+  });
 
-  test_bv_not() {
+  test('bv_not', () {
     var bv = new BitVector();
     [1, 5, 25, 41, 97, 185].forEach((i) => bv.set(i));
     var not_bv = ~bv;
-    expect(bv.count, equals(not_bv.count));
-    200.times((i) => expect(bv[i], isNot(equals(not_bv[i]))));
+    expect(bv.count(), equals(not_bv.count()));
+    range(200).forEach((i) => expect(bv[i], isNot(equals(not_bv[i]))));
 
-    not_bv.notx;
+    not_bv.notx();
     expect(bv, equals(not_bv));
-  }
+  });
 
-  static const SCAN_SIZE = 200;
-  static const SCAN_INC = 97;
+  const SCAN_SIZE = 200;
+  const SCAN_INC = 97;
 
-  test_scan() {
+  test('scan', () {
     var bv = new BitVector();
 
-    SCAN_SIZE.times((i) => bv.set(i * SCAN_INC));
+    range(SCAN_SIZE).forEach((i) => bv.set(i * SCAN_INC));
     var not_bv = ~bv;
 
-    SCAN_SIZE.times((i) {
+    range(SCAN_SIZE).forEach((i) {
       expect(i * SCAN_INC, equals(bv.next_from((i - 1) * SCAN_INC + 1)));
       expect(
           i * SCAN_INC, equals(not_bv.next_unset_from((i - 1) * SCAN_INC + 1)));
     });
-    expect(-1, equals(bv.next_from((SCAN_SIZE - 1) * SCAN_INC + 1)));
-    expect(-1, equals(not_bv.next_unset_from((SCAN_SIZE - 1) * SCAN_INC + 1)));
+    expect(bv.next_from((SCAN_SIZE - 1) * SCAN_INC + 1), equals(-1));
+    expect(not_bv.next_unset_from((SCAN_SIZE - 1) * SCAN_INC + 1), equals(-1));
 
     var bit = 0;
     bv.each((i) {
@@ -281,23 +275,23 @@ class BitVectorTest {
 
     bv.reset_scan();
     not_bv.reset_scan();
-    SCAN_SIZE.times((i) {
-      expect(i * SCAN_INC, equals(bv.next));
-      expect(i * SCAN_INC, equals(not_bv.next_unset));
+    range(SCAN_SIZE).forEach((i) {
+      expect(i * SCAN_INC, equals(bv.next()));
+      expect(i * SCAN_INC, equals(not_bv.next_unset()));
     });
-    expect(-1, equals(bv.next));
-    expect(-1, equals(not_bv.next_unset));
+    expect(bv.next(), equals(-1));
+    expect(not_bv.next_unset(), equals(-1));
 
     bv.clear();
-    SCAN_SIZE.times((i) => bv.set(i));
+    range(SCAN_SIZE).forEach((i) => bv.set(i));
     not_bv = ~bv;
 
-    SCAN_SIZE.times((i) {
-      expect(i, equals(bv.next));
-      expect(i, equals(not_bv.next_unset));
+    range(SCAN_SIZE).forEach((i) {
+      expect(bv.next(), equals(i));
+      expect(not_bv.next_unset(), equals(i));
     });
-    expect(-1, equals(bv.next));
-    expect(-1, equals(not_bv.next_unset));
+    expect(bv.next(), equals(-1));
+    expect(not_bv.next_unset(), equals(-1));
 
     bit = 0;
     bv.each((i) {
@@ -312,12 +306,14 @@ class BitVectorTest {
       bit += 1;
     });
     expect(bit, equals(SCAN_SIZE));
-  }
+  });
 
-  test_to_a() {
+  test('to_a', () {
     var bv = new BitVector();
-    var ary = range(1, 100).collect(() => rand(1000)).sort.uniq;
-    ary.each((i) => bv.set(i));
-    expect(ary, equals(bv.to_a));
-  }
+    var ary = (range(1, 100).map((_) => rand(1000)).toList()..sort())
+        .toSet()
+        .toList();
+    ary.forEach((i) => bv.set(i));
+    expect(ary, equals(bv.to_a()));
+  });
 }
