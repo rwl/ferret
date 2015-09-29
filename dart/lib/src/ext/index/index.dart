@@ -12,20 +12,19 @@
 /// etc. They are also useful for index browsers.
 library ferret.ext.index;
 
-import 'dart:js' as js;
 import 'dart:collection' show MapBase, MapMixin;
-
-import '../store.dart' show Directory;
-import '../analysis/analysis.dart' as analysis;
-import '../search/search.dart' show SortField;
+import 'dart:js' as js;
 
 import '../../proxy.dart';
+import '../analysis/analysis.dart' as analysis;
+import '../search/search.dart' show SortField;
+import '../store.dart' show Directory;
 
-part 'writer.dart';
-part 'term.dart';
 part 'field_info.dart';
 part 'lazy_doc.dart';
 part 'reader.dart';
+part 'term.dart';
+part 'writer.dart';
 
 void initFerret({String moduleName: 'Ferret', js.JsObject context}) {
   js.JsObject module = (context == null ? js.context : context)[moduleName];

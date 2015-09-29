@@ -4,9 +4,9 @@ import 'dart:js' as js;
 import 'dart:typed_data' show Int32List, Uint8List;
 
 import '../../proxy.dart';
-import '../utils.dart' show BitVector;
 import '../index/index.dart' show IndexReader, LazyDoc;
 import '../store.dart' show Directory;
+import '../utils.dart' show BitVector;
 
 part 'filter.dart';
 part 'query.dart';
@@ -118,7 +118,7 @@ class Explanation extends JsProxy {
 
   /// Returns a string representation of the explanation in readable format.
   String to_s() {
-    int p_s = module.callMethod('_frt_expl_to_s', [handle]);
+    int p_s = module.callMethod('_frt_expl_to_s_depth', [handle, 0]);
     var s = stringify(p_s);
     free(p_s);
     return s;

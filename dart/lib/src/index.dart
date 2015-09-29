@@ -1,11 +1,10 @@
 library ferret.index;
 
-import 'ext/store.dart';
-import 'ext/index/index.dart';
 import 'ext/analysis/analysis.dart' as analysis;
-import 'ext/search/search.dart';
+import 'ext/index/index.dart';
 import 'ext/query_parser.dart';
-
+import 'ext/search/search.dart';
+import 'ext/store.dart';
 import 'field_infos_utils.dart';
 
 class Index {
@@ -83,10 +82,19 @@ class Index {
   ///     new Index.func((index) {
   ///       /// Do stuff with index. Most of your actions will be cached.
   ///     });
-  Index({dir, String default_input_field: 'id', String id_field: 'id',
-      String default_field, key, auto_flush: false, num lock_retry_time: 2,
-      close_dir: false, bool use_typed_range_query: true, field_infos,
-      bool create: false, bool create_if_missing: true,
+  Index(
+      {dir,
+      String default_input_field: 'id',
+      String id_field: 'id',
+      String default_field,
+      key,
+      auto_flush: false,
+      num lock_retry_time: 2,
+      close_dir: false,
+      bool use_typed_range_query: true,
+      field_infos,
+      bool create: false,
+      bool create_if_missing: true,
       analysis.Analyzer analyzer})
       : _auto_flush = auto_flush,
         _close_dir = close_dir {
@@ -192,8 +200,12 @@ class Index {
   /// excerpts (unless the excerpt hits the start or end of the field.
   /// Alternatively you may want to use the HTML entity `&#8230;` or the UTF-8
   /// string `\342\200\246`.
-  List<String> highlight(query, String doc_id, {field, int excerpt_length: 150,
-      int num_excerpts: 2, String pre_tag: '<b>', String post_tag: '</b>',
+  List<String> highlight(query, String doc_id,
+      {field,
+      int excerpt_length: 150,
+      int num_excerpts: 2,
+      String pre_tag: '<b>',
+      String post_tag: '</b>',
       String ellipsis: '...'}) {
     //@dir.synchronize do
     _ensure_searcher_open();
@@ -345,7 +357,11 @@ class Index {
   /// [filter_proc] is a [Proc] which takes the `doc_id`, the `score` and the
   /// [Searcher] object as its parameters and returns a [bool] value
   /// specifying whether the result should be included in the result set.
-  TopDocs search(query, {int offset: 0, int limit: 10, sort, Filter filter,
+  TopDocs search(query,
+      {int offset: 0,
+      int limit: 10,
+      sort,
+      Filter filter,
       Function filter_proc}) {
     //@dir.synchronize do
     return _do_search(query,
@@ -392,7 +408,11 @@ class Index {
   ///     index.search_each(query) do |doc, score|
   ///       print("hit document number #{doc} with a score of #{score}");
   ///     }
-  TopDocs search_each(query, {int offset: 0, int limit: 10, sort, Filter filter,
+  TopDocs search_each(query,
+      {int offset: 0,
+      int limit: 10,
+      sort,
+      Filter filter,
       Function filter_proc}) {
     //# :yield: doc, score
     //@dir.synchronize do
@@ -404,8 +424,7 @@ class Index {
         limit: limit,
         sort: sort,
         filter: filter,
-        filter_proc: filter_proc,
-        fn: (doc, score) {
+        filter_proc: filter_proc, fn: (doc, score) {
       //yield doc, score
     });
   }
@@ -924,6 +943,7 @@ class Index {
       if (_qp == null) {
         _qp = new QueryParser(_options);
       }
+
       /// we need to set this every time, in case a new field has been added
       if (_all_fields == false && _fields == null) {
         _qp.fields = _reader.fields;

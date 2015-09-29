@@ -3,8 +3,8 @@ library ferret.ext.query_parser;
 import 'dart:typed_data' show Int32List;
 
 import '../proxy.dart';
-import 'search/search.dart';
 import 'analysis/analysis.dart' show Analyzer;
+import 'search/search.dart';
 
 /// The [QueryParser] is used to transform user submitted query strings into
 /// QueryObjects. Ferret using its own Query Language known from now on as

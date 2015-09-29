@@ -1,6 +1,15 @@
 
 #include "internal.h"
 #include "search.h"
+#include "hashset.h"
+
+static void
+hs_safe_merge(HashSet *merger, HashSet *mergee) {
+    HashSetEntry *hse;
+    for (hse = mergee->first; hse; hse = hse->next) {
+        hs_add(merger, (char *)hse->elem);
+    }
+}
 
 QParser *
 frjs_qp_init(Analyzer *analyzer, HashSet *all_fields, HashSet *tkz_fields,
@@ -47,10 +56,10 @@ frjs_qp_init(Analyzer *analyzer, HashSet *all_fields, HashSet *tkz_fields,
 }
 
 Query *
-frjs_qp_parse(QParser *qp, char *str, char **msg) {
+frjs_qp_parse(QParser *qp, char *str, const char **msg) {
     Query *q;
     TRY
-        q = frb_get_q(qp_parse(qp, str));
+        q = qp_parse(qp, str);
         break;
     default:
         *msg = xcontext.msg;
@@ -61,7 +70,7 @@ frjs_qp_parse(QParser *qp, char *str, char **msg) {
     return q;
 }
 
-QueryType *
+QueryType
 frjs_q_get_query_type(Query *q) {
     return q->type;
 }

@@ -143,7 +143,7 @@ frjs_mapping_get_mapper(TokenStream *ts) {
 	return ((MappingFilter *)ts)->mapper;
 }
 
-TokenStream *
-frjs_stem_filter_get_stemmer(TokenStream *ts) {
-	return ((StemFilter *)ts)->stemmer;
+bool
+frjs_stem_filter_has_stemmer(TokenStream *ts) {
+	return ((StemFilter *)ts)->stemmer != NULL;
 }

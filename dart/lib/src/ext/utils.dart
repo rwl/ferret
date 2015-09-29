@@ -69,7 +69,7 @@ class BitVector extends JsProxy {
     if (i < 0) {
       throw new ArgumentError.value(i);
     }
-    module.callMethod('_frt_bv_unset', [handle, i]);
+    module.callMethod('_frjs_bv_unset', [handle, i]);
   }
 
   /// Set the bit and _i_ to *val* (`true` or `false`).
@@ -115,13 +115,13 @@ class BitVector extends JsProxy {
 
   /// Perform an inplace boolean _and_ operation.
   void andx(BitVector bv2) {
-    module.callMethod('_frt_bv_and_x', [handle, bv2]);
+    module.callMethod('_frjs_bv_and_x', [handle, bv2]);
   }
 
   /// Perform a boolean _and_ operation.
   BitVector and(BitVector bv2) {
-    int h = module.callMethod('_frt_bv_and', [handle, bv2]);
-    return new BitVector._handle(h);
+    int h = module.callMethod('_frjs_bv_and', [handle, bv2]);
+    return new BitVector.handle(h);
   }
 
   /// Alias for [and].
@@ -129,13 +129,13 @@ class BitVector extends JsProxy {
 
   /// Perform an inplace boolean _or_ operation.
   void orx(BitVector bv2) {
-    module.callMethod('_frt_bv_or_x', [handle, bv2]);
+    module.callMethod('_frjs_bv_or_x', [handle, bv2]);
   }
 
   /// Perform a boolean _or_ operation.
   BitVector or(BitVector bv2) {
-    int h = module.callMethod('_frt_bv_or', [handle, bv2]);
-    return new BitVector._handle(h);
+    int h = module.callMethod('_frjs_bv_or', [handle, bv2]);
+    return new BitVector.handle(h);
   }
 
   /// Alias for [or].
@@ -143,13 +143,13 @@ class BitVector extends JsProxy {
 
   /// Perform an inplace boolean _xor_ operation.
   void xorx(BitVector bv2) {
-    module.callMethod('_frt_bv_xor_x', [handle, bv2]);
+    module.callMethod('_frjs_bv_xor_x', [handle, bv2]);
   }
 
   /// Perform a boolean _or_ operation.
   BitVector xor(BitVector bv2) {
-    int h = module.callMethod('_frt_bv_xor', [handle, bv2]);
-    return new BitVector._handle(h);
+    int h = module.callMethod('_frjs_bv_xor', [handle, bv2]);
+    return new BitVector.handle(h);
   }
 
   /// Alias for [xor].
@@ -157,13 +157,13 @@ class BitVector extends JsProxy {
 
   /// Perform an inplace boolean _not_ operation.
   void notx() {
-    module.callMethod('_frt_bv_not_x', [handle]);
+    module.callMethod('_frjs_bv_not_x', [handle]);
   }
 
   /// Perform a boolean _not_ operation.
   BitVector not() {
-    int h = module.callMethod('_frt_bv_not', [handle]);
-    return new BitVector._handle(h);
+    int h = module.callMethod('_frjs_bv_not', [handle]);
+    return new BitVector.handle(h);
   }
 
   /// Alias for [not].
@@ -187,7 +187,7 @@ class BitVector extends JsProxy {
   /// been flipped (negated). You should call [reset_scan] before calling this
   /// method if you want to scan from the beginning. It is automatically reset
   /// when you first create the bit vector.
-  int next_unset() => module.callMethod('_frt_bv_scan_next_unset', [handle]);
+  int next_unset() => module.callMethod('_frjs_bv_scan_next_unset', [handle]);
 
   /// Returns the next set bit in the bit vector scanning from low order to
   /// high order and starting at [from]. The scan is inclusive so if [from] is
@@ -210,7 +210,7 @@ class BitVector extends JsProxy {
     if (from < 0) {
       from = 0;
     }
-    return module.callMethod('_frt_bv_scan_next_unset_from', [handle, from]);
+    return module.callMethod('_frjs_bv_scan_next_unset_from', [handle, from]);
   }
 
   /// Iterate through all the set bits in the bit vector yielding each one in

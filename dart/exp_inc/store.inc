@@ -6,7 +6,7 @@ EXP_STORE = \
 '_frjs_dir_delete',\
 '_frjs_dir_file_count',\
 '_frjs_dir_refresh',\
-'_frjs_dir_rename',
+'_frjs_dir_rename',\
 '_frt_open_lock',\
 '_frjs_lock_obtain',\
 '_frjs_lock_get_name',\

@@ -24,4 +24,4 @@ EXP_ANALYSIS = \
 '_frt_hyphen_filter_new',\
 '_frjs_mapping_get_mapper',\
 '_frt_mulmap_compile',\
-'_frjs_stem_filter_get_stemmer'
+'_frjs_stem_filter_has_stemmer'

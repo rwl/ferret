@@ -1,6 +1,7 @@
 
 #include "internal.h"
-#include "index.h"
+#include "search.h"
+#include "array.h"
 
 char *
 frjs_q_to_s(Query *q, char *field) {
@@ -32,7 +33,7 @@ frjs_q_get_terms(Query *q, Searcher *searcher) {
     HashSet *terms = hs_new((hash_ft)&term_hash,
                             (eq_ft)&term_eq,
                             (free_ft)term_destroy);
-    Query *rq = searcher->rewrite(sea, q);
+    Query *rq = searcher->rewrite(searcher, q);
     rq->extract_terms(rq, terms);
     q_deref(rq);
     return terms;
@@ -91,10 +92,10 @@ frjs_fq_min_sim(FuzzyQuery *q) {
 
 Query *
 frjs_fqq_init(Query *query, Filter *filter) {
-    Query *q = fq_new(query, f);
+    Query *q = fq_new(query, filter);
     REF(query);
     REF(filter);
-    return q
+    return q;
 }
 
 void
@@ -112,7 +113,7 @@ frjs_sf_is_reverse(SortField *sf) {
     return sf->reverse;
 }
 
-char *
+const char *
 frjs_sf_get_name(SortField *sf) {
     return sf->field ? S(sf->field) : NULL;
 }
@@ -168,32 +169,32 @@ frjs_searcher_set_close_ir(IndexSearcher *sea, bool val) {
 }
 
 void
-frjs_sea_close(IndexSearcher *sea) {
+frjs_sea_close(Searcher *sea) {
     sea->close(sea);
 }
 
-IndexSearcher *
+IndexReader *
 frjs_sea_get_reader(IndexSearcher *sea) {
     return sea->ir;
 }
 
 int
-frjs_sea_doc_freq(IndexSearcher *sea, char *field, char *term) {
+frjs_sea_doc_freq(Searcher *sea, char *field, char *term) {
     return sea->doc_freq(sea, I(field), term);
 }
 
 LazyDoc *
-frjs_sea_doc(IndexSearcher *sea, int doc_id) {
+frjs_sea_doc(Searcher *sea, int doc_id) {
     return sea->get_lazy_doc(sea, doc_id);
 }
 
 int
-frjs_sea_max_doc(IndexSearcher *sea) {
+frjs_sea_max_doc(Searcher *sea) {
     return sea->max_doc(sea);
 }
 
 TopDocs *
-frjs_sea_search(IndexSearcher *sea, Query *query, int offset, int limit,
+frjs_sea_search(Searcher *sea, Query *query, int offset, int limit,
         Filter *filter, Sort *sort) {
     PostFilter *post_filter = NULL;
     return sea->search(sea, query, offset, limit, filter, sort, post_filter, 0);
@@ -259,7 +260,7 @@ frjs_sea_highlight(Searcher *sea,
         int *size) {
     char **excerpts;
     if ((excerpts = searcher_highlight(sea, query, doc_num, I(field),
-            excerpt_length, num_excerpts, pre_tag, post_tag,
+            excerpt_len, num_excerpts, pre_tag, post_tag,
             ellipsis)) != NULL) {
         *size = ary_size(excerpts);
         return excerpts;

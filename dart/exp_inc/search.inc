@@ -54,8 +54,8 @@ EXP_SEARCH = \
 '_frjs_sort_field_doc_rev',\
 '_frjs_sort_field_score_rev',\
 '_frjs_sort_field_reverse',\
-'_frt_sort_add_sort_field',
-'_frt_sort_new',
+'_frt_sort_add_sort_field',\
+'_frt_sort_new',\
 '_frjs_sort_set_destroy_all',\
 '_frjs_sort_get_size',\
 '_frjs_sort_get_sort_field',\
@@ -73,7 +73,7 @@ EXP_SEARCH = \
 '_frjs_hit_get_score',\
 '_frjs_td_get_total_hits',\
 '_frjs_td_get_max_score',\
-'_frt_expl_to_s',\
+'_frt_expl_to_s_depth',\
 '_frt_expl_to_html',\
 '_frjs_expl_get_score',\
 '_frjs_sea_scan',\

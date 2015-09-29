@@ -202,9 +202,8 @@ class StemFilter extends TokenStream {
         '_frt_stem_filter_new', [token_stream.handle, p_algorithm, p_charenc]);
     free(p_algorithm);
     free(p_charenc);
-    int p_stemmer =
-        module.callMethod('_frjs_stem_filter_get_stemmer', [handle]);
-    if (p_stemmer == 0) {
+    int stemmer = module.callMethod('_frjs_stem_filter_has_stemmer', [handle]);
+    if (stemmer == 0) {
       throw new ArgumentError("No stemmer could be found with the encoding "
           "$encoding and the language $algorithm");
     }

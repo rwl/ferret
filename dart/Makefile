@@ -36,6 +36,19 @@ EXP_FUNC = -s EXPORTED_FUNCTIONS="[\
 '_frjs_hash_get_size',\
 '_frjs_hash_get_key',\
 '_frjs_hash_get_value',\
+'_frjs_bv_count',\
+'_frjs_bv_extends_as_ones',\
+'_frjs_bv_unset',\
+'_frjs_bv_and_x',\
+'_frjs_bv_and',\
+'_frjs_bv_or_x',\
+'_frjs_bv_or',\
+'_frjs_bv_xor_x',\
+'_frjs_bv_xor',\
+'_frjs_bv_not_x',\
+'_frjs_bv_not',\
+'_frjs_bv_scan_next_unset',\
+'_frjs_bv_scan_next_unset_from',\
 '_frt_h_destroy',\
 $(EXP_ANALYSIS),\
 $(EXP_DOCUMENT),\
@@ -63,7 +76,7 @@ $(JS_DIR)/index/term.o \
 $(JS_DIR)/index/reader.o \
 $(JS_DIR)/search/search.o \
 $(JS_DIR)/analysis/analysis.o \
-$(JS_DIR)/document.o
+$(JS_DIR)/document.o\
 $(JS_DIR)/query_parser.o
 
 all: module

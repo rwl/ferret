@@ -1,6 +1,8 @@
 #include "internal.h"
 #include "global.h"
 #include "hash.h"
+#include "hashset.h"
+#include "bitvector.h"
 
 void
 frjs_init(void) {
@@ -60,4 +62,59 @@ frjs_bv_count(BitVector *bv) {
 bool
 frjs_bv_extends_as_ones(BitVector *bv) {
 	return bv->extends_as_ones;
+}
+
+void
+frjs_bv_unset(BitVector *bv, int bit) {
+	bv_unset(bv, bit);
+}
+
+BitVector *
+frjs_bv_and_x(BitVector *bv1, BitVector *bv2) {
+	return bv_and_x(bv1, bv2);
+}
+
+BitVector *
+frjs_bv_and(BitVector *bv1, BitVector *bv2) {
+	return bv_and(bv1, bv2);
+}
+
+BitVector *
+frjs_bv_or_x(BitVector *bv1, BitVector *bv2) {
+	return bv_or_x(bv1, bv2);
+}
+
+BitVector *
+frjs_bv_or(BitVector *bv1, BitVector *bv2) {
+	return bv_or(bv1, bv2);
+}
+
+BitVector *
+frjs_bv_xor_x(BitVector *bv1, BitVector *bv2) {
+	return bv_xor_x(bv1, bv2);
+}
+
+BitVector *
+frjs_bv_xor(BitVector *bv1, BitVector *bv2) {
+	return bv_xor(bv1, bv2);
+}
+
+BitVector *
+frjs_bv_not_x(BitVector *bv) {
+	return bv_not_x(bv);
+}
+
+BitVector *
+frjs_bv_not(BitVector *bv) {
+	return bv_not(bv);
+}
+
+int
+frjs_bv_scan_next_unset(BitVector *bv) {
+	return bv_scan_next_unset(bv);
+}
+
+int
+frjs_bv_scan_next_unset_from(BitVector *bv, const int bit) {
+	return bv_scan_next_unset_from(bv, bit);
 }
