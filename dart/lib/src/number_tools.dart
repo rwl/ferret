@@ -70,7 +70,7 @@ class Date {
   }
 }
 
-class DateTime {
+class DateTimeTools {
   /// Convert the DateTime to a lexicographically sortable string with the
   /// required [precision]. The format used is `%Y%m%d %H:%M:%S`.
   ///
@@ -102,7 +102,7 @@ class Time {
   }
 }
 
-class String {
+class StringTools {
   /// Convert a string to an integer. This method will only work on strings
   /// that were previously created with [Integer.to_s_lex], otherwise the
   /// result will be unpredictable.

@@ -84,8 +84,8 @@ class Token extends JsProxy implements Comparable {
   /// [text] is the main text for the token. [start] is the start offset of
   /// the token in bytes. [end] is the end offset of the token in bytes.
   /// [pos_inc] is the position increment of a token.
-  /*Token(this._text, this._start, this._end, [this._pos_inc = 1]) : super() {
-    frb_token_init;
+  Token.test(this._text, this._start, this._end, [this._pos_inc = 1]) : super();
+  /*  frb_token_init;
   }*/
 
   Token._handle(int htk) : super() {

@@ -26,7 +26,11 @@ abstract class Analyzer extends JsProxy {
   /// Create a new [LetterAnalyzer] which downcases tokens by default but can
   /// optionally leave case as is. Lowercasing will be done based on the current
   /// locale.
-  Analyzer(/*{bool lower: true}*/) : super() {
+  factory Analyzer({bool lower: true}) {
+    return new LetterAnalyzer(lower: lower);
+  }
+
+  Analyzer._(/*{bool lower: true}*/) : super() {
 //    frb_letter_analyzer_init;
   }
 
@@ -74,7 +78,7 @@ class AsciiLetterAnalyzer extends Analyzer {
   /// Create a new [AsciiWhiteSpaceAnalyzer] which downcases tokens by default
   /// but can optionally leave case as is. Lowercasing will only be done to
   /// ASCII characters.
-  AsciiLetterAnalyzer({bool lower: true}) : super() {
+  AsciiLetterAnalyzer({bool lower: true}) : super._() {
     handle = module.callMethod('_frt_letter_analyzer_new', [lower ? 1 : 0]);
   }
 
@@ -102,7 +106,7 @@ class LetterAnalyzer extends Analyzer {
   /// Create a new [LetterAnalyzer] which downcases tokens by default but can
   /// optionally leave case as is. Lowercasing will be done based on the
   /// current locale.
-  LetterAnalyzer({bool lower: true}) : super() {
+  LetterAnalyzer({bool lower: true}) : super._() {
     handle = module.callMethod('_frjs_letter_analyzer_init', [lower ? 1 : 0]);
   }
 
@@ -136,7 +140,7 @@ class AsciiWhiteSpaceAnalyzer extends Analyzer {
   /// Create a new [AsciiWhiteSpaceAnalyzer] which downcases tokens by default
   /// but can optionally leave case as is. Lowercasing will only be done to
   /// ASCII characters.
-  AsciiWhiteSpaceAnalyzer({bool lower: true}) : super() {
+  AsciiWhiteSpaceAnalyzer({bool lower: true}) : super._() {
     handle = module.callMethod('_frt_whitespace_analyzer_new', [lower ? 1 : 0]);
   }
 
@@ -164,7 +168,7 @@ class WhiteSpaceAnalyzer extends Analyzer {
   /// Create a new [WhiteSpaceAnalyzer] which downcases tokens by default but
   /// can optionally leave case as is. Lowercasing will be done based on the
   /// current locale.
-  WhiteSpaceAnalyzer({bool lower: true}) : super() {
+  WhiteSpaceAnalyzer({bool lower: true}) : super._() {
     handle =
         module.callMethod('_frjs_white_space_analyzer_init', [lower ? 1 : 0]);
   }
@@ -203,7 +207,7 @@ class AsciiStandardAnalyzer extends Analyzer {
   /// the current locale. You can also set the list of stop-words to be used
   /// by the [StopFilter].
   AsciiStandardAnalyzer({lower: true, stop_words /*: FULL_ENGLISH_STOP_WORDS*/})
-      : super() {
+      : super._() {
     int p_stop_words = 0; // FIXME
     handle = module.callMethod(
         '_frjs_a_standard_analyzer_init', [lower ? 1 : 0, p_stop_words]);
@@ -240,7 +244,7 @@ class StandardAnalyzer extends Analyzer {
   /// current locale. You can also set the list of stop-words to be used by
   /// the [StopFilter].
   StandardAnalyzer({lower: true /*, stop_words : FULL_ENGLISH_STOP_WORDS*/})
-      : super() {
+      : super._() {
     int _lower = lower ? 1 : 0;
     int p_stop_words = 0; // FIXME
     handle = module.callMethod(
@@ -267,7 +271,7 @@ class StandardAnalyzer extends Analyzer {
 class PerFieldAnalyzer extends Analyzer {
   /// Create a new [PerFieldAnalyzer] specifying the default analyzer to use
   /// on all fields that are set specifically.
-  PerFieldAnalyzer(Analyzer default_analyzer) : super() {
+  PerFieldAnalyzer(Analyzer default_analyzer) : super._() {
     frb_per_field_analyzer_init;
   }
 
@@ -313,7 +317,7 @@ class PerFieldAnalyzer extends Analyzer {
 class RegExpAnalyzer extends Analyzer {
   /// Create a new [RegExpAnalyzer] which will create tokenizers based on the
   /// regular expression and lowercasing if required.
-  RegExpAnalyzer(RegExp reg_exp, {bool lower: true}) : super() {
+  RegExpAnalyzer(RegExp reg_exp, {bool lower: true}) : super._() {
     frb_re_analyzer_init;
   }
 

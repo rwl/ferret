@@ -3,6 +3,7 @@ library ferret.test.index.writer;
 import 'dart:math' show Random;
 import 'package:test/test.dart';
 import 'package:ferret/ferret.dart';
+import 'package:quiver/iterables.dart' show range;
 
 class IndexWriterTest {
   //< Test::Unit::TestCase
@@ -37,8 +38,10 @@ class IndexWriterTest {
   test_add_document() {
     var iw = new IndexWriter(
         dir: _dir, analyzer: new StandardAnalyzer(), create: true);
-    iw.add_document(
-        {'title': "first doc", 'content': ["contents of", "first doc"]});
+    iw.add_document({
+      'title': "first doc",
+      'content': ["contents of", "first doc"]
+    });
     expect(1, equals(iw.doc_count));
     iw.add_document(["contents of", "second doc"]);
     expect(2, equals(iw.doc_count));
@@ -53,7 +56,7 @@ class IndexWriterTest {
     iw.max_buffered_docs = 3;
 
     // add 100 documents
-    repeat(100).each(() {
+    range(100).forEach((_) {
       var doc = random_doc();
       iw.add_document(doc);
     });
@@ -2011,7 +2014,7 @@ class IndexWriterTest {
 
   String random_sentence(max_len) {
     var sentence = new StringBuffer();
-    (1 + _r.nextInt(max_len)).times(() {
+    range(1 + _r.nextInt(max_len)).forEach((_) {
       sentence.write(" " + _random_word());
     });
     return sentence.toString();
@@ -2019,14 +2022,15 @@ class IndexWriterTest {
 
   random_doc([max_fields = 10, max_elements = 10, max_len = 100]) {
     var doc = {};
-    (1 + _r.nextInt(max_fields)).times(() {
+    range(1 + _r.nextInt(max_fields)).forEach((_) {
       var field = _random_word();
       var elem_count = _r.nextInt(max_elements) + 1;
       if (elem_count == 1) {
         doc[field] = random_sentence(max_len);
       } else {
         doc[field] = [];
-        elem_count.times(() => doc[field] += random_sentence(max_len));
+        range(elem_count)
+            .forEach((_) => doc[field] += random_sentence(max_len));
       }
     });
     return doc;

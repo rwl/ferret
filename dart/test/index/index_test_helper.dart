@@ -1,6 +1,7 @@
 library ferret.test.index.document;
 
 import 'package:ferret/ferret.dart';
+import 'package:quiver/iterables.dart' show range;
 
 class IndexTestHelper {
   static make_binary(size) {
@@ -14,16 +15,22 @@ class IndexTestHelper {
 
   static prepare_document(dir) {
     var fis = new FieldInfos();
-    fis.add_field('text_field1', term_vector: 'no');
+    fis.add_field('text_field1', term_vector: TermVectorStorage.NO);
     fis.add_field('text_field2');
-    fis.add_field('key_field', index: 'untokenized');
-    fis.add_field('unindexed_field', index: 'no');
-    fis.add_field('unstored_field1', store: 'no', term_vector: 'no');
-    fis.add_field('unstored_field2', store: 'no', term_vector: 'yes');
-    fis.add_field('compressed_field', store: 'compressed', term_vector: 'yes');
-    fis.add_field('binary_field', index: 'no', term_vector: 'no');
+    fis.add_field('key_field', index: FieldIndexing.UNTOKENIZED);
+    fis.add_field('unindexed_field', index: FieldIndexing.NO);
+    fis.add_field('unstored_field1',
+        store: FieldStorage.NO, term_vector: TermVectorStorage.NO);
+    fis.add_field('unstored_field2',
+        store: FieldStorage.NO, term_vector: TermVectorStorage.YES);
+    fis.add_field('compressed_field',
+        store: FieldStorage.COMPRESS, term_vector: TermVectorStorage.YES);
+    fis.add_field('binary_field',
+        index: FieldIndexing.NO, term_vector: TermVectorStorage.NO);
     fis.add_field('compressed_binary_field',
-        store: 'compressed', index: 'no', term_vector: 'no');
+        store: FieldStorage.COMPRESS,
+        index: FieldIndexing.NO,
+        term_vector: TermVectorStorage.NO);
     var doc = {
       'text_field1': "field one text",
       'text_field2': "field field field two text",
@@ -156,11 +163,15 @@ class IndexTestHelper {
   static prepare_ir_test_fis() {
     var fis = new FieldInfos();
     fis.add_field('body');
-    fis.add_field('changing_field', term_vector: 'no');
-    fis.add_field('title', index: 'untokenized', term_vector: 'with_offsets');
-    fis.add_field('author', term_vector: 'with_positions');
-    fis.add_field('year', index: 'no', term_vector: 'no');
-    fis.add_field('text', store: 'no', term_vector: 'no');
+    fis.add_field('changing_field', term_vector: TermVectorStorage.NO);
+    fis.add_field('title',
+        index: FieldIndexing.UNTOKENIZED,
+        term_vector: TermVectorStorage.WITH_OFFSETS);
+    fis.add_field('author', term_vector: TermVectorStorage.WITH_POSITIONS);
+    fis.add_field('year',
+        index: FieldIndexing.NO, term_vector: TermVectorStorage.NO);
+    fis.add_field('text',
+        store: FieldStorage.NO, term_vector: TermVectorStorage.NO);
   }
 
   static const INDEX_TEST_DOC_COUNT = 64;
@@ -226,8 +237,8 @@ class IndexTestHelper {
     };
 
     var buf = new StringBuffer();
-    21.times(() => buf.write("skip "));
-    22.upto(INDEX_TEST_DOC_COUNT - 1).each((i) {
+    range(21).forEach((_) => buf.write("skip "));
+    range(22, INDEX_TEST_DOC_COUNT - 1).forEach((i) {
       buf.write("skip ");
       docs[i] = {'text': buf.toString()};
     });

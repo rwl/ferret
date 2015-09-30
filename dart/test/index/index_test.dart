@@ -2,6 +2,7 @@ library ferret.test.index;
 
 import 'package:test/test.dart';
 import 'package:ferret/ferret.dart';
+import 'package:quiver/iterables.dart' show range;
 
 check_results(index, query, expected) {
   var cnt = 0;
@@ -9,7 +10,8 @@ check_results(index, query, expected) {
   print(index.size);
   index.search_each(query).forEach((doc, score) {
     print("doc-${doc} score=${score}");
-    expect(expected.index(doc), isNotNull, "doc ${doc} found but not expected");
+    expect(expected.index(doc), isNotNull,
+        reason: "doc ${doc} found but not expected");
     cnt += 1;
   });
   expect(expected.length, cnt);
@@ -240,7 +242,7 @@ test_merging_indexes() {
   ].forEach((doc) => index3.add_document(doc));
 
   var index = new Index(default_field: 'f');
-  index.add_indexes(index1);
+  index.add_indexes([index1]);
   expect(3, equals(index.size));
   expect("zero", equals(index[0]['f']));
   index.add_indexes([index2, index3]);
@@ -251,23 +253,35 @@ test_merging_indexes() {
   index2.close();
   index3.close();
   expect("seven", equals(index[7]['f']));
-  var data = [{'f': "alpha"}, {'f': "beta"}, {'f': "charlie"}];
+  var data = [
+    {'f': "alpha"},
+    {'f': "beta"},
+    {'f': "charlie"}
+  ];
   var dir1 = new RAMDirectory();
   index1 = new Index(dir: dir1, default_field: 'f');
   data.forEach((doc) => index1.add_document(doc));
   index1.flush();
-  data = [{'f': "delta"}, {'f': "echo"}, {'f': "foxtrot"}];
+  data = [
+    {'f': "delta"},
+    {'f': "echo"},
+    {'f': "foxtrot"}
+  ];
   var dir2 = new RAMDirectory();
   index2 = new Index(dir: dir2, default_field: 'f');
   data.forEach((doc) => index2.add_document(doc));
   index2.flush();
-  data = [{'f': "golf"}, {'f': "india"}, {'f': "juliet"}];
+  data = [
+    {'f': "golf"},
+    {'f': "india"},
+    {'f': "juliet"}
+  ];
   var dir3 = new RAMDirectory();
   index3 = new Index(dir: dir3, default_field: 'f');
   data.forEach((doc) => index3.add_document(doc));
   index3.flush();
 
-  index.add_indexes(dir1);
+  index.add_indexes([dir1]);
   expect(12, equals(index.size));
   expect("alpha", equals(index[9]['f']));
   index.add_indexes([dir2, dir3]);
@@ -284,7 +298,11 @@ test_merging_indexes() {
 }
 
 test_persist_index() {
-  var data = [{'f': "zero"}, {'f': "one"}, {'f': "two"}];
+  var data = [
+    {'f': "zero"},
+    {'f': "one"},
+    {'f': "two"}
+  ];
   var index = new Index(default_field: 'f');
   data.forEach((doc) => index.add_document(doc));
   var fs_path =
@@ -300,7 +318,11 @@ test_persist_index() {
   expect("zero", equals(index[0]['f']));
   index.close();
 
-  data = [{'f': "romeo"}, {'f': "sierra"}, {'f': "tango"}];
+  data = [
+    {'f': "romeo"},
+    {'f': "sierra"},
+    {'f': "tango"}
+  ];
   index = new Index(default_field: 'f');
   data.forEach((doc) => index.add_document(doc));
   expect(3, equals(index.size));
@@ -333,14 +355,14 @@ test_auto_update_when_externally_modified() {
   expect(2, equals(index.size));
   var top_docs = index.search("content3");
 
-  expect(0, equals(top_docs.hits.size));
+  expect(0, equals(top_docs.hits.length));
 
   var iw = new IndexWriter(path: fs_path, analyzer: new WhiteSpaceAnalyzer());
   iw.add_document({'f': "content3"});
   iw.close();
 
   top_docs = index.search("content3");
-  expect(1, equals(top_docs.hits.size));
+  expect(1, equals(top_docs.hits.length));
   expect(3, equals(index.size));
   expect("content3", equals(index[2]['f']));
   index2.close();
@@ -511,7 +533,7 @@ test_index_key_delete_batch0() {
 
 test_index_key_delete_batch1() {
   var index = new Index(analyzer: new WhiteSpaceAnalyzer());
-  repeat(1000).forEach(
+  range(1000).forEach(
       (i) => index.add_document({'id': "${i}", 'content': "content ${i}"}));
   expect(1000, equals(index.size));
   expect("content 876", equals(index['876']['content']));
@@ -529,8 +551,8 @@ test_index_key_delete_batch1() {
   expect("_(287)_", equals(index['287']['content']));
 
   new_docs = {};
-  repeat(1000)
-      .forEach((i) => new_docs[i.to_s] = {'id': i, 'content': "Hash(${i})"});
+  range(1000).forEach(
+      (i) => new_docs[i.toString()] = {'id': i, 'content': "Hash(${i})"});
   index.batch_update(new_docs);
   expect(1000, equals(index.size));
   expect("Hash(78)", equals(index['78']['content']));
@@ -560,9 +582,9 @@ test_index_multi_key() {
 }
 
 test_index_multi_key_untokenized() {
-  var field_infos = new FieldInfos(term_vector: 'no');
-  field_infos.add_field('id', index: 'untokenized');
-  field_infos.add_field('table', index: 'untokenized');
+  var field_infos = new FieldInfos(term_vector: TermVectorStorage.NO);
+  field_infos.add_field('id', index: FieldIndexing.UNTOKENIZED);
+  field_infos.add_field('table', index: FieldIndexing.UNTOKENIZED);
 
   var index = new Index(
       analyzer: new Analyzer(), key: ['id', 'table'], field_infos: field_infos);
@@ -602,7 +624,7 @@ test_sortby_date() {
     {'content': "four", 'date': "19390912"}
   ].forEach((doc) => index.add_document(doc));
 
-  var sf_date = new SortField("date", {'type': 'integer'});
+  var sf_date = new SortField("date", type: SortType.INTEGER);
   //top_docs = index.search("one", sort: [sf_date, SortField::SCORE]);
   var top_docs = index.search("one", sort: new Sort("date"));
   expect(3, equals(top_docs.total_hits));
@@ -651,7 +673,7 @@ test_auto_flush() {
       index2.add_document({'id': n, 'content': datum});
       n += 1;
     });
-    repeat(5).forEach((i) {
+    range(5).forEach((i) {
       index1.delete(i);
       index2.delete(i + 5);
     });
@@ -671,7 +693,8 @@ test_doc_specific_analyzer() {
 }
 
 test_adding_empty_term_vectors() {
-  var index = new Index(field_infos: new FieldInfos(term_vector: 'no'));
+  var index =
+      new Index(field_infos: new FieldInfos(term_vector: TermVectorStorage.NO));
 
   // Note: Adding keywords to either field1 or field2 gets rid of the error
 
@@ -684,8 +707,10 @@ test_adding_empty_term_vectors() {
 }
 
 test_stopwords() {
-  var field_infos = new FieldInfos(store: 'no', term_vector: 'no');
-  field_infos.add_field('id', store: 'yes', index: 'untokenized');
+  var field_infos =
+      new FieldInfos(store: FieldStorage.NO, term_vector: TermVectorStorage.NO);
+  field_infos.add_field('id',
+      store: FieldStorage.YES, index: FieldIndexing.UNTOKENIZED);
 
   var i = new Index(or_default: false, default_search_field: '*');
 
@@ -706,7 +731,7 @@ test_threading() {
       File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'));
   var index = new Index(path: path, create: true);
 
-  repeat(100).forEach((i) {
+  range(100).forEach((i) {
     var buf = '';
     var doc = {};
     doc['id'] = i;
@@ -716,7 +741,7 @@ test_threading() {
 
   var threads = [];
 
-  repeat(4).each(() {
+  range(4).forEach((_) {
     threads.add(new Thread(index, (index) {
       var result = index.search('id:42');
       expect(1, equals(result.total_hits));
@@ -730,26 +755,26 @@ test_wildcard() {
   j = null;
   new Index((Index i) {
     i.add_document("one");
-    expect(1, equals(i.search("*").total_hits));
+    expect(i.search("*").total_hits, equals(1));
     i.add_document("two");
-    expect(2, equals(i.search("*").total_hits));
+    expect(i.search("*").total_hits, equals(2));
     i.add_document({'content': "three"});
-    expect(3, equals(i.search("*").total_hits));
-    expect(3, equals(i.search("id:*").total_hits));
-    expect(2, equals(i.search('id:?*').total_hits));
+    expect(i.search("*").total_hits, equals(3));
+    expect(i.search("id:*").total_hits, equals(3));
+    expect(i.search('id:?*').total_hits, equals(2));
     j = i;
   });
-  assert_raise(StandardError, () => j.close());
+  expect(StandardError, () => j.close());
 }
 
 check_highlight(index, q, excerpt_length, num_excerpts, expected,
     [field = 'field']) {
   var highlights = index.highlight(q, 0,
       excerpt_length: excerpt_length, num_excerpts: num_excerpts, field: field);
-  expect(expected, equals(highlights));
+  expect(highlights, equals(expected));
   highlights = index.highlight(q, 1,
       excerpt_length: excerpt_length, num_excerpts: num_excerpts, field: field);
-  expect(expected, equals(highlights));
+  expect(highlights, equals(expected));
 }
 
 test_highlighter() {
@@ -777,11 +802,8 @@ test_highlighter() {
   check_highlight(index, "one", 10, 1, ["...are <b>one</b>..."]);
   check_highlight(
       index, "one", 10, 2, ["...are <b>one</b>...", "...this; <b>one</b>..."]);
-  check_highlight(index, "one", 10, 3, [
-    "the words...",
-    "...are <b>one</b>...",
-    "...this; <b>one</b>..."
-  ]);
+  check_highlight(index, "one", 10, 3,
+      ["the words...", "...are <b>one</b>...", "...this; <b>one</b>..."]);
   check_highlight(index, "one", 10, 4, [
     "the words we are...",
     "...are <b>one</b>...",
@@ -801,14 +823,10 @@ test_highlighter() {
         "sometimes looking for them as a phrase like this; <b>one</b> " +
         "two lets see how it goes"
   ]);
-  check_highlight(index, "(one two)", 15, 2, [
-    "...<b>one</b> and <b>two</b>...",
-    "...this; <b>one</b> <b>two</b>..."
-  ]);
-  check_highlight(index, 'one two "one two"', 15, 2, [
-    "...<b>one</b> and <b>two</b>...",
-    "...this; <b>one two</b>..."
-  ]);
+  check_highlight(index, "(one two)", 15, 2,
+      ["...<b>one</b> and <b>two</b>...", "...this; <b>one</b> <b>two</b>..."]);
+  check_highlight(index, 'one two "one two"', 15, 2,
+      ["...<b>one</b> and <b>two</b>...", "...this; <b>one two</b>..."]);
   check_highlight(
       index, 'one two "one two"', 15, 1, ["...this; <b>one two</b>..."]);
   check_highlight(index, '"one two"', 15, 1, null, 'not_a_field');
@@ -825,7 +843,7 @@ test_changing_analyzer() {
   var a = new WhiteSpaceAnalyzer(lower: false);
   index.add_document({'content': "Content With Capitals"}, a);
   var tv = index.reader.term_vector(0, 'content');
-  expect("Capitals", equals(tv.terms[0].text));
+  expect(tv.terms[0].text, equals("Capitals"));
   index.close();
 }
 
@@ -833,7 +851,9 @@ test_top_doc_to_json() {
   var index = new Index();
   [
     {'f1': "one"},
-    {'f2': ["two", 2, 2.0]},
+    {
+      'f2': ["two", 2, 2.0]
+    },
     {'f3': 3},
     {'f4': 4.0},
     {'f5': "five", 'funny': '"' * 10000}
@@ -842,28 +862,28 @@ test_top_doc_to_json() {
       index.search("one two 3 4.0 five", sort: Sort.INDEX_ORDER).to_json();
 //    assert(json_str == '[{"f1":"one"},{"f2":["two","2","2.0"]},{"f3":"3"},{"f4":"4.0"},{"f5":"five","funny":"' + '\'"\'' * 10_000 + '"}]' ||
 //           json_str == '[{"f1":"one"},{"f2":["two","2","2.0"]},{"f3":"3"},{"f4":"4.0"},{"funny":"' + '\'"\'' * 10_000 + '","f5":"five"}]');
-  expect('[]', equals(index.search("xxx").to_json));
+  expect(index.search("xxx").to_json(), equals('[]'));
   index.close();
 }
 
 test_large_query_delete() {
   var index = new Index();
-  repeat(20).each(() {
+  range(20).forEach((_) {
     index.add_document({'id': 'one'});
     index.add_document({'id': 'two'});
   });
   index.query_delete('id:one');
-  expect(20, equals(index.size()));
+  expect(index.size(), equals(20));
 }
 
 test_query_update_delete_more_than_ten() {
   var index = new Index();
-  repeat(20).each(
+  range(20).forEach(
       (i) => index.add_document({'id': i, 'find': 'match', 'change': 'one'}));
 
-  expect(20, equals(index.search('find:match').total_hits));
+  expect(index.search('find:match').total_hits, equals(20));
   index.query_update('find:match', {'change': 'two'});
-  expect(20, equals(index.search('find:match AND change:two').total_hits));
+  expect(index.search('find:match AND change:two').total_hits, equals(20));
   index.query_delete('find:match');
-  expect(0, equals(index.size));
+  expect(index.size, equals(0));
 }
