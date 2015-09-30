@@ -206,7 +206,7 @@ class QueryParser extends JsProxy {
   /// [wild_card_downcase] specifies whether wild-card queries and range
   /// queries should be downcased or not since they are not passed through
   /// the parser.
-  /// [fields] lets the query parser know what fields are available for
+  /// [all_fields] lets the query parser know what fields are available for
   /// searching, particularly when the "*" is specified as the search field.
   /// [tokenized_fields] lets the query parser know which fields are tokenized
   /// so it knows which fields to run the analyzer over.
@@ -240,8 +240,8 @@ class QueryParser extends JsProxy {
   QueryParser(
       {default_field: "*",
       Analyzer analyzer,
-      List fields: const [],
-      tokenized_fields,
+      List<String> all_fields: const [],
+      List<String> tokenized_fields,
       bool handle_parse_errors: true,
       bool validate_fields: false,
       bool wild_card_downcase: true,
@@ -253,35 +253,44 @@ class QueryParser extends JsProxy {
       bool use_typed_range_query: false})
       : super() {
     int p_analyzer = analyzer != null ? analyzer.handle : 0;
+
     int p_all_fields = 0;
-    if (fields != null) {
+    int p_tkz_fields = 0;
+    int p_def_fields = 0;
+
+    if (default_field != null) {
+      if (default_field is List) {
+        p_def_fields = module.callMethod('_frt_hs_new_ptr', [0]);
+        for (var field in default_field) {
+          int p_field = allocString(field.toString());
+          module.callMethod('_frt_hs_add', [p_def_fields, p_field]);
+        }
+      } else {
+        var field = default_field.toString();
+        if (field != '*') {
+          p_def_fields = module.callMethod('_frt_hs_new_ptr', [0]);
+          int p_field = allocString(field);
+          module.callMethod('_frt_hs_add', [p_def_fields, p_field]);
+        }
+      }
+    }
+
+    if (all_fields != null) {
       p_all_fields = module.callMethod('_frt_hs_new_ptr', [0]);
-      for (String field in fields) {
+      for (String field in all_fields) {
         int p_field = allocString(field);
         module.callMethod('_frt_hs_add', [p_all_fields, p_field]);
       }
     }
-    int p_tkz_fields = 0;
+
     if (tokenized_fields != null) {
       p_tkz_fields = module.callMethod('_frt_hs_new_ptr', [0]);
-      for (String field in fields) {
+      for (String field in tokenized_fields) {
         int p_field = allocString(field);
         module.callMethod('_frt_hs_add', [p_tkz_fields, p_field]);
       }
     }
-    int p_def_fields = 0;
-    if (default_field != null) {
-      p_def_fields = module.callMethod('_frt_hs_new_ptr', [0]);
-      if (fields is List) {
-        for (String field in fields) {
-          int p_field = allocString(field);
-          module.callMethod('_frt_hs_add', [p_def_fields, p_field]);
-        }
-      } else {
-        int p_field = allocString(default_field.toString());
-        module.callMethod('_frt_hs_add', [p_def_fields, p_field]);
-      }
-    }
+
     handle = module.callMethod('_frjs_qp_init', [
       p_analyzer,
       p_all_fields,

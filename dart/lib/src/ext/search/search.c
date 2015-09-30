@@ -4,7 +4,7 @@
 #include "array.h"
 
 char *
-frjs_q_to_s(Query *q, char *field) {
+frjs_q_to_s(Query *q, const char *field) {
     return q->to_s(q, I(field));
 }
 

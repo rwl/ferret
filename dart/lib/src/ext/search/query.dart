@@ -273,7 +273,7 @@ class BooleanClause extends JsProxy {
 /// illustrated with an example.
 ///
 /// Lets say we wanted to find all documents with the term "Ruby" in the
-/// title` and the term "Ferret" in the `content` field or the `title`
+/// `title` and the term "Ferret" in the `content` field or the `title`
 /// field written before January 2006. You could build the query like this.
 ///
 ///     var tq1 = new TermQuery('title', "ruby");

@@ -34,6 +34,6 @@ abstract class JsProxy {
     if (len != null) {
       args.add(len);
     }
-    return module.callMethod('_Pointer_stringify', args);
+    return module.callMethod('Pointer_stringify', args);
   }
 }

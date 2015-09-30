@@ -33,8 +33,12 @@ void initFerret({String moduleName: 'Ferret', js.JsObject context}) {
   }
   module.callMethod('_frjs_init');
 
-  SortField.SCORE = module.callMethod('_frjs_sort_field_score');
-  SortField.SCORE_REV = module.callMethod('_frjs_sort_field_score_rev');
-  SortField.DOC = module.callMethod('_frjs_sort_field_doc');
-  SortField.DOC_REV = module.callMethod('_frjs_sort_field_doc_rev');
+  SortField.SCORE =
+      new SortField.handle(module.callMethod('_frjs_sort_field_score'));
+  SortField.SCORE_REV =
+      new SortField.handle(module.callMethod('_frjs_sort_field_score_rev'));
+  SortField.DOC =
+      new SortField.handle(module.callMethod('_frjs_sort_field_doc'));
+  SortField.DOC_REV =
+      new SortField.handle(module.callMethod('_frjs_sort_field_doc_rev'));
 }

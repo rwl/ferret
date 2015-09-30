@@ -31,7 +31,7 @@ enum SortType { SCORE, DOC, BYTE, INTEGER, FLOAT, STRING, AUTO }
 /// Note 2: When sorting by integer, integers are only 4 bytes so anything
 /// larger will cause strange sorting behaviour.
 class SortField extends JsProxy {
-  SortField._handle(int p_sf) : super() {
+  SortField.handle(int p_sf) : super() {
     handle = p_sf;
   }
 
@@ -132,7 +132,7 @@ class Sort extends JsProxy {
     var a = new List<SortField>(size);
     for (int i = 0; i < size; i++) {
       int p_sf = module.callMethod('_frjs_sort_get_sort_field', [handle, i]);
-      a[i] = new SortField._handle(p_sf);
+      a[i] = new SortField.handle(p_sf);
     }
     return a;
   }
