@@ -2,26 +2,24 @@ library ferret.test.search.multi_searcher;
 
 import 'package:test/test.dart';
 import 'package:ferret/ferret.dart';
+import 'index_searcher_test.dart';
 
-// make sure a MultiSearcher searching only one index
-// passes all the Searcher tests
-class SimpleMultiSearcherTest {
+/// Make sure a [MultiSearcher] searching only one index
+/// passes all the [Searcher] tests.
+class SimpleMultiSearcherTest extends SearcherTest {
   Searcher _searcher;
-  //extends SearcherTest {
-  //alias :old_setup :setup
-  setup() {
-    old_setup();
-    _searcher = new MultiSearcher([new Searcher(_dir)]);
+
+  setUp() {
+    super.setUp();
+    _searcher = new MultiSearcher([new Searcher.store(dir)]);
   }
 }
 
-// checks query results of a multisearcher searching two indexes
-// against those of a single indexsearcher searching the same
-// set of documents
-class MultiSearcherTest {
-  //< Test::Unit::TestCase
-
-  static final List DOCUMENTS1 = [
+/// Checks query results of a [MultiSearcher] searching two indexes
+/// against those of a single [Searcher] searching the same
+/// set of documents.
+multiSearcherTest() {
+  final List DOCUMENTS1 = [
     {"date": "20050930", 'field': "word1", "cat": "cat1/"},
     {
       "date": "20051001",
@@ -41,7 +39,7 @@ class MultiSearcherTest {
     }
   ];
 
-  static final List DOCUMENTS2 = [
+  final List DOCUMENTS2 = [
     {"date": "20051009", 'field': "word1", "cat": "cat3/sub1"},
     {"date": "20051010", 'field': "word1", "cat": "cat3/sub1"},
     {
@@ -69,9 +67,10 @@ class MultiSearcherTest {
     }
   ];
 
-  Searcher _searcher, _single;
+  MultiSearcher _searcher;
+  Searcher _single;
 
-  setup() {
+  setUp(() {
     // create MultiSearcher from two seperate searchers
     var dir1 = new RAMDirectory();
     var iw1 = new IndexWriter(
@@ -84,7 +83,8 @@ class MultiSearcherTest {
         dir: dir2, analyzer: new WhiteSpaceAnalyzer(), create: true);
     DOCUMENTS2.forEach((doc) => iw2.add_document(doc));
     iw2.close();
-    _searcher = new MultiSearcher([new Searcher(dir1), new Searcher(dir2)]);
+    _searcher =
+        new MultiSearcher([new Searcher.store(dir1), new Searcher.store(dir2)]);
 
     // create single searcher
     var dir = new RAMDirectory();
@@ -93,39 +93,41 @@ class MultiSearcherTest {
     DOCUMENTS1.forEach((doc) => iw.add_document(doc));
     DOCUMENTS2.forEach((doc) => iw.add_document(doc));
     iw.close();
-    _single = new Searcher(dir);
+    _single = new Searcher.store(dir);
 
     //_query_parser = new QueryParser(['date', 'field', 'cat'], analyzer: new WhiteSpaceAnalyzer());
-  }
+  });
 
-  teardown() {
+  tearDown(() {
     _searcher.close();
     _single.close();
-  }
+  });
 
-  check_hits(query, ignore1, [ignore2 = null, ignore3 = null]) {
+  check_hits(Query query, ignore1, [ignore2 = null, ignore3 = null]) {
     var multi_docs = _searcher.search(query);
     var single_docs = _single.search(query);
-    expect(single_docs.hits.size, equals(multi_docs.hits.size),
+    expect(single_docs.hits.length, equals(multi_docs.hits.length),
         reason: 'hit count');
     expect(single_docs.total_hits, equals(multi_docs.total_hits),
         reason: 'hit count');
 
-    multi_docs.hits.each_with_index((sd, id) {
-      expect(single_docs.hits[id].doc, equals(sd.doc));
-      expect(single_docs.hits[id].score.approx_eql(sd.score), isTrue,
+    int id = 0;
+    multi_docs.hits.forEach((sd) {
+      expect(sd.doc, equals(single_docs.hits[id].doc));
+      expect(sd.score, closeTo(single_docs.hits[id].score, 0.0001),
           reason: "${single_docs.hits[id]} != ${sd.score}");
+      id++;
     });
   }
 
-  test_get_doc() {
-    expect(18, equals(_searcher.max_doc));
-    expect("20050930", equals(_searcher.get_document(0)['date']));
-    expect("cat1/sub2/subsub2", equals(_searcher[4]['cat']));
-    expect("20051012", equals(_searcher.get_document(12)['date']));
-    expect(18, equals(_single.max_doc));
-    expect("20050930", equals(_single.get_document(0)['date']));
-    expect("cat1/sub2/subsub2", equals(_single[4]['cat']));
-    expect("20051012", equals(_single.get_document(12)['date']));
-  }
+  test('get_doc', () {
+    expect(_searcher.max_doc, equals(18));
+    expect(_searcher.get_document(0)['date'], equals("20050930"));
+    expect(_searcher[4]['cat'], equals("cat1/sub2/subsub2"));
+    expect(_searcher.get_document(12)['date'], equals("20051012"));
+    expect(_single.max_doc, equals(18));
+    expect(_single.get_document(0)['date'], equals("20050930"));
+    expect(_single[4]['cat'], equals("cat1/sub2/subsub2"));
+    expect(_single.get_document(12)['date'], equals("20051012"));
+  });
 }

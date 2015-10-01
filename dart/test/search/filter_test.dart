@@ -3,12 +3,12 @@ library ferret.test.search.filter;
 import 'dart:math' show pow;
 import 'package:test/test.dart';
 import 'package:ferret/ferret.dart';
+import 'package:quiver/iterables.dart' show range;
 
-class FilterTest {
-  //< Test::Unit::TestCase
+void filterTest() {
   Directory _dir;
 
-  setup() {
+  setUp(() {
     _dir = new RAMDirectory();
     var iw = new IndexWriter(
         dir: _dir, analyzer: new WhiteSpaceAnalyzer(), create: true);
@@ -25,23 +25,24 @@ class FilterTest {
       {'int': "9", 'date': "20050401", 'switch': "off"}
     ].forEach((doc) => iw.add_document(doc));
     iw.close();
-  }
+  });
 
-  teardown() {
+  tearDown(() {
     _dir.close();
-  }
+  });
 
-  do_test_top_docs(searcher, query, expected, filter) {
-    var top_docs = searcher.search(query, {'filter': filter});
+  do_test_top_docs(
+      Searcher searcher, Query query, List expected, Filter filter) {
+    var top_docs = searcher.search(query, filter: filter);
     print(top_docs);
-    expect(expected.size, equals(top_docs.hits.size));
-    top_docs.total_hits.times((i) {
-      expect(expected[i], equals(top_docs.hits[i].doc));
+    expect(top_docs.hits.length, equals(expected.length));
+    range(top_docs.total_hits).forEach((i) {
+      expect(top_docs.hits[i].doc, equals(expected[i]));
     });
   }
 
-  test_range_filter() {
-    var searcher = new Searcher(_dir);
+  test('range_filter', () {
+    var searcher = new Searcher.store(_dir);
     var q = new MatchAllQuery();
     var rf = new RangeFilter('int', geq: "2", leq: "6");
     do_test_top_docs(searcher, q, [2, 3, 4, 5, 6], rf);
@@ -66,22 +67,22 @@ class FilterTest {
     expect(bits[2], isFalse);
     expect(bits[3], isFalse);
     expect(bits[4], isFalse);
-  }
+  });
 
-  test_range_filter_errors() {
+  test('range_filter_errors', () {
     expect(() {
       new RangeFilter('f', ge: "b", le: "a");
-    }, ArgumentError);
+    }, throwsArgumentError);
     expect(() {
       new RangeFilter('f', include_lower: true);
-    }, ArgumentError);
+    }, throwsArgumentError);
     expect(() {
       new RangeFilter('f', include_upper: true);
-    }, ArgumentError);
-  }
+    }, throwsArgumentError);
+  });
 
-  test_query_filter() {
-    var searcher = new Searcher(_dir);
+  test('query_filter', () {
+    var searcher = new Searcher.store(_dir);
     var q = new MatchAllQuery();
     var qf = new QueryFilter(new TermQuery('switch', "on"));
     do_test_top_docs(searcher, q, [0, 2, 4, 6, 8], qf);
@@ -101,10 +102,10 @@ class FilterTest {
     expect(bits[4], isFalse);
     expect(bits[6], isFalse);
     expect(bits[8], isFalse);
-  }
+  });
 
-  test_filtered_query() {
-    var searcher = new Searcher(_dir);
+  test('filtered_query', () {
+    var searcher = new Searcher.store(_dir);
     var q = new MatchAllQuery();
     var rf = new RangeFilter('int', geq: "2", leq: "6");
     var rq = new FilteredQuery(q, rf);
@@ -113,27 +114,27 @@ class FilterTest {
     var query = new FilteredQuery(rq, qf);
     var rf2 = new RangeFilter('int', geq: "3");
     do_test_top_docs(searcher, query, [4, 6], rf2);
-  }
+  });
 
-  test_custom_filter() {
-    var searcher = new Searcher(_dir);
+  test('custom_filter', () {
+    var searcher = new Searcher.store(_dir);
     var q = new MatchAllQuery();
     var filt = new CustomFilter();
     do_test_top_docs(searcher, q, [0, 2, 4], filt);
-  }
+  });
 
-  test_filter_proc() {
-    var searcher = new Searcher(_dir);
+  /*test('filter_proc', () {
+    var searcher = new Searcher.store(_dir);
     var q = new MatchAllQuery();
     filter_proc(doc, score, s) => (s[doc]['int'] % 2) == 0;
     var top_docs = searcher.search(q, filter_proc: filter_proc);
-    top_docs.hits.each((hit) {
+    top_docs.hits.forEach((hit) {
       expect(0, equals(searcher[hit.doc]['int'] % 2));
     });
-  }
+  });
 
-  test_score_modifying_filter_proc() {
-    var searcher = new Searcher(_dir);
+  test('score_modifying_filter_proc', () {
+    var searcher = new Searcher.store(_dir);
     var q = new MatchAllQuery();
     var start_date = DateTime.parse('2008-02-08');
     date_half_life_50(doc, score, s) {
@@ -141,20 +142,20 @@ class FilterTest {
       1.0 / (pow(2.0, (days.to_f / 50.0)));
     }
     var top_docs = searcher.search(q, filter_proc: date_half_life_50);
-    var docs = top_docs.hits.collect((hit) => hit.doc);
+    var docs = top_docs.hits.map((hit) => hit.doc);
     expect(docs, equals([2, 4, 9, 8, 6, 3, 5, 1, 7, 0]));
     rev_date_half_life_50(doc, score, s) {
       var days = (start_date - DateTime.parse(s[doc]['date'], '%Y%m%d')).to_i();
       1.0 - 1.0 / (pow(2.0, (days.to_f / 50.0)));
     }
     top_docs = searcher.search(q, filter_proc: rev_date_half_life_50);
-    docs = top_docs.hits.collect((hit) => hit.doc);
+    docs = top_docs.hits.map((hit) => hit.doc);
     expect(docs, equals([0, 7, 1, 3, 5, 6, 8, 9, 2, 4]));
-  }
+  });*/
 }
 
-class CustomFilter {
-  bits(ir) {
+class CustomFilter extends Filter {
+  BitVector bits(IndexReader index_reader) {
     var bv = new BitVector();
     bv[0] = true;
     bv[2] = true;

@@ -2,6 +2,7 @@ library ferret.test.search.searcher;
 
 import 'package:test/test.dart';
 import 'package:ferret/ferret.dart';
+import 'package:quiver/iterables.dart' show range;
 
 abstract class SearcherTests {
 //  include Ferret::Search
@@ -26,19 +27,19 @@ abstract class SearcherTests {
     tq = new TermQuery('field', "word1");
     var top_docs = _searcher.search(tq);
     expect(_searcher.max_doc, equals(top_docs.total_hits));
-    expect(10, equals(top_docs.hits.size));
+    expect(10, equals(top_docs.hits.length));
     top_docs = _searcher.search(tq, limit: 20);
-    expect(_searcher.max_doc, equals(top_docs.hits.size));
+    expect(_searcher.max_doc, equals(top_docs.hits.length));
 
-    expect([new Term('field', "word1")], equals(tq.terms(_searcher)));
+    expect(tq.terms(_searcher), equals([new Term('field', "word1")]));
   }
 
-  check_docs(query, options, [expected = const []]) {
+  check_docs(Query query, Map options, [List expected = const []]) {
     var top_docs = _searcher.search(query, options);
     var docs = top_docs.hits;
     expect(expected.length, equals(docs.length));
-    docs.length.times((i) {
-      expect(expected[i], equals(docs[i].doc));
+    range(docs.length).forEach((i) {
+      expect(docs[i].doc, equals(expected[i]));
     });
     if (options['limit'] == 'all' && options['offset'] == null) {
       expect(expected.sort, equals(_searcher.scan(query)));
@@ -50,13 +51,13 @@ abstract class SearcherTests {
     tq.boost = 100;
     var top_docs = _searcher.search(tq, limit: 100);
     var expected = [];
-    top_docs.hits.each((sd) {
+    top_docs.hits.forEach((sd) {
       expected.add(sd.doc);
     });
 
-    expect(() => _searcher.search(tq, offset: -1), ArgumentError);
-    expect(() => _searcher.search(tq, limit: 0), ArgumentError);
-    expect(() => _searcher.search(tq, limit: -1), ArgumentError);
+    expect(() => _searcher.search(tq, offset: -1), throwsArgumentError);
+    expect(() => _searcher.search(tq, limit: 0), throwsArgumentError);
+    expect(() => _searcher.search(tq, limit: -1), throwsArgumentError);
 
 //    check_docs(tq, limit: 8, offset: 0, expected[0,8]);
 //    check_docs(tq, limit: 3, offset: 1, expected[1,3]);
@@ -79,9 +80,7 @@ abstract class SearcherTests {
       ["fox", 0.6, '"fox^0.6|brown"'],
       ["fast", 50.0, '"fox^0.6|brown|fast^50.0"']
     ].forEach((row) {
-      var term = row[0],
-          boost = row[1],
-          str = row[2];
+      var term = row[0], boost = row[1], str = row[2];
       mtq.add_term(term, boost);
       expect(str, equals(mtq.to_s('field')));
       expect("field:#{str}", equals(mtq.to_s()));
@@ -107,31 +106,31 @@ abstract class SearcherTests {
     var bq = new BooleanQuery();
     var tq1 = new TermQuery('field', "word1");
     var tq2 = new TermQuery('field', "word3");
-    bq.add_query(tq1, occur: 'must');
-    bq.add_query(tq2, occur: 'must');
+    bq.add_query(tq1, occur: BCType.MUST);
+    bq.add_query(tq2, occur: BCType.MUST);
     check_hits(bq, [2, 3, 6, 8, 11, 14], 14);
 
     var tq3 = new TermQuery('field', "word2");
-    bq.add_query(tq3, occur: 'should');
+    bq.add_query(tq3, occur: BCType.SHOULD);
     check_hits(bq, [2, 3, 6, 8, 11, 14], 8);
 
     bq = new BooleanQuery();
-    bq.add_query(tq2, occur: 'must');
-    bq.add_query(tq3, occur: 'must_not');
+    bq.add_query(tq2, occur: BCType.MUST);
+    bq.add_query(tq3, occur: BCType.MUST_NOT);
     check_hits(bq, [2, 3, 6, 11, 14]);
 
     bq = new BooleanQuery();
-    bq.add_query(tq2, occur: 'must_not');
+    bq.add_query(tq2, occur: BCType.MUST_NOT);
     check_hits(bq, [0, 1, 4, 5, 7, 9, 10, 12, 13, 15, 16, 17]);
 
     bq = new BooleanQuery();
-    bq.add_query(tq2, occur: 'should');
-    bq.add_query(tq3, occur: 'should');
+    bq.add_query(tq2, occur: BCType.SHOULD);
+    bq.add_query(tq3, occur: BCType.SHOULD);
     check_hits(bq, [1, 2, 3, 4, 6, 8, 11, 14]);
 
     bq = new BooleanQuery();
-    var bc1 = new BooleanClause(tq2, occur: 'should');
-    var bc2 = new BooleanClause(tq3, occur: 'should');
+    var bc1 = new BooleanClause(tq2, occur: BCType.SHOULD);
+    var bc2 = new BooleanClause(tq3, occur: BCType.SHOULD);
     bq.add_query(bc1);
     bq.add_query(bc2);
     check_hits(bq, [1, 2, 3, 4, 6, 8, 11, 14]);
@@ -291,54 +290,58 @@ abstract class SearcherTests {
     ].forEach((doc) => iw.add_document(doc));
     iw.close();
 
-    var searcher = new Searcher(dir);
+    var searcher = new Searcher.store(dir);
 
     var q = new TermQuery('field', "one");
     var highlights =
         searcher.highlight(q, 0, 'field', excerpt_length: 10, num_excerpts: 1);
-    expect(1, equals(highlights.length));
-    expect("...are <b>one</b>...", equals(highlights[0]));
+    expect(highlights.length, equals(1));
+    expect(highlights[0], equals("...are <b>one</b>..."));
 
     highlights =
         searcher.highlight(q, 0, 'field', excerpt_length: 10, num_excerpts: 2);
-    expect(2, equals(highlights.length));
-    expect("...are <b>one</b>...", equals(highlights[0]));
-    expect("...this; <b>one</b>...", equals(highlights[1]));
+    expect(highlights.length, equals(2));
+    expect(highlights[0], equals("...are <b>one</b>..."));
+    expect(highlights[1], equals("...this; <b>one</b>..."));
 
     highlights =
         searcher.highlight(q, 0, 'field', excerpt_length: 10, num_excerpts: 3);
-    expect(3, equals(highlights.length));
-    expect("the words...", equals(highlights[0]));
-    expect("...are <b>one</b>...", equals(highlights[1]));
-    expect("...this; <b>one</b>...", equals(highlights[2]));
+    expect(highlights.length, equals(3));
+    expect(highlights[0], equals("the words..."));
+    expect(highlights[1], equals("...are <b>one</b>..."));
+    expect(highlights[2], equals("...this; <b>one</b>..."));
 
     highlights =
         searcher.highlight(q, 0, 'field', excerpt_length: 10, num_excerpts: 4);
-    expect(3, equals(highlights.length));
-    expect("the words we are...", equals(highlights[0]));
-    expect("...are <b>one</b>...", equals(highlights[1]));
-    expect("...this; <b>one</b>...", equals(highlights[2]));
+    expect(highlights.length, equals(3));
+    expect(highlights[0], equals("the words we are..."));
+    expect(highlights[1], equals("...are <b>one</b>..."));
+    expect(highlights[2], equals("...this; <b>one</b>..."));
 
     highlights =
         searcher.highlight(q, 0, 'field', excerpt_length: 10, num_excerpts: 5);
-    expect(2, equals(highlights.length));
-    expect("the words we are searching for are <b>one</b>...",
-        equals(highlights[0]));
-    expect("...this; <b>one</b>...", equals(highlights[1]));
+    expect(highlights.length, equals(2));
+    expect(highlights[0],
+        equals("the words we are searching for are <b>one</b>..."));
+    expect(highlights[1], equals("...this; <b>one</b>..."));
 
     highlights =
         searcher.highlight(q, 0, 'field', excerpt_length: 10, num_excerpts: 20);
-    expect(1, equals(highlights.length));
-    expect("the words we are searching for are <b>one</b> and two also " +
-        "sometimes looking for them as a phrase like this; <b>one</b> " +
-        "two lets see how it goes", equals(highlights[0]));
+    expect(highlights.length, equals(1));
+    expect(
+        highlights[0],
+        equals("the words we are searching for are <b>one</b> and two also " +
+            "sometimes looking for them as a phrase like this; <b>one</b> " +
+            "two lets see how it goes"));
 
     highlights = searcher.highlight(q, 0, 'field',
         excerpt_length: 1000, num_excerpts: 1);
-    expect(1, equals(highlights.length));
-    expect("the words we are searching for are <b>one</b> and two also " +
-        "sometimes looking for them as a phrase like this; <b>one</b> " +
-        "two lets see how it goes", equals(highlights[0]));
+    expect(highlights.length, equals(1));
+    expect(
+        highlights[0],
+        equals("the words we are searching for are <b>one</b> and two also " +
+            "sometimes looking for them as a phrase like this; <b>one</b> " +
+            "two lets see how it goes"));
 
     q = new BooleanQuery(coord_disable: false);
     q.add_query(new TermQuery('field', "one"));
@@ -346,23 +349,23 @@ abstract class SearcherTests {
 
     highlights =
         searcher.highlight(q, 0, 'field', excerpt_length: 15, num_excerpts: 2);
-    expect(2, equals(highlights.length));
-    expect("...<b>one</b> and <b>two</b>...", equals(highlights[0]));
-    expect("...this; <b>one</b> <b>two</b>...", equals(highlights[1]));
+    expect(highlights.length, equals(2));
+    expect(highlights[0], equals("...<b>one</b> and <b>two</b>..."));
+    expect(highlights[1], equals("...this; <b>one</b> <b>two</b>..."));
 
     q.add_query(new PhraseQuery('field')..add_term("one")..add_term("two"));
 
     highlights =
         searcher.highlight(q, 0, 'field', excerpt_length: 15, num_excerpts: 2);
-    expect(2, equals(highlights.length));
-    expect("...<b>one</b> and <b>two</b>...", equals(highlights[0]));
-    expect("...this; <b>one two</b>...", equals(highlights[1]));
+    expect(highlights.length, equals(2));
+    expect(highlights[0], equals("...<b>one</b> and <b>two</b>..."));
+    expect(highlights[1], equals("...this; <b>one two</b>..."));
 
     highlights =
         searcher.highlight(q, 0, 'field', excerpt_length: 15, num_excerpts: 1);
-    expect(1, equals(highlights.length));
+    expect(highlights.length, equals(1));
     // should have a higher priority since it the merger of three matches
-    expect("...this; <b>one two</b>...", equals(highlights[0]));
+    expect(highlights[0], equals("...this; <b>one two</b>..."));
 
     highlights = searcher.highlight(q, 0, 'not_a_field',
         excerpt_length: 15, num_excerpts: 1);
@@ -387,14 +390,14 @@ abstract class SearcherTests {
 
     highlights =
         searcher.highlight(q, 0, 'field', excerpt_length: 10, num_excerpts: 1);
-    expect(1, equals(highlights.length));
-    expect("<b>the words</b>...", equals(highlights[0]));
+    expect(highlights.length, equals(1));
+    expect(highlights[0], equals("<b>the words</b>..."));
 
     highlights =
         searcher.highlight(q, 0, 'field', excerpt_length: 10, num_excerpts: 2);
-    expect(2, equals(highlights.length));
-    expect("<b>the words</b>...", equals(highlights[0]));
-    expect("...<b>one</b> <b>two</b>...", equals(highlights[1]));
+    expect(highlights.length, equals(2));
+    expect(highlights[0], equals("<b>the words</b>..."));
+    expect(highlights[1], equals("...<b>one</b> <b>two</b>..."));
 
     [
       [
@@ -410,9 +413,8 @@ abstract class SearcherTests {
         '<b>20070505</b> <b>20071230</b> 20060920 20081111'
       ],
     ].forEach((row) {
-      var query = row[0],
-          expected = row[1];
-      expect([expected], equals(searcher.highlight(query, 2, 'dates')));
+      var query = row[0], expected = row[1];
+      expect(searcher.highlight(query, 2, 'dates'), equals([expected]));
     });
 
     //q = new PhraseQuery('long')..add('big')..add('house');
@@ -429,17 +431,20 @@ abstract class SearcherTests {
   test_highlighter_with_standard_analyzer() {
     var dir = new RAMDirectory();
     var iw = new IndexWriter(dir: dir, analyzer: new StandardAnalyzer());
-    [{'field': "field has a url http://ferret.davebalmain.com/trac/ end"},]
-        .forEach((doc) => iw.add_document(doc));
+    [
+      {'field': "field has a url http://ferret.davebalmain.com/trac/ end"},
+    ].forEach((doc) => iw.add_document(doc));
     iw.close();
 
-    var searcher = new Searcher(dir);
+    var searcher = new Searcher.store(dir);
 
     var q = new TermQuery('field', "ferret.davebalmain.com/trac");
     var highlights = searcher.highlight(q, 0, 'field',
         excerpt_length: 1000, num_excerpts: 1);
-    expect(1, equals(highlights.length));
-    expect("field has a url <b>http://ferret.davebalmain.com/trac/</b> end",
-        equals(highlights[0]));
+    expect(highlights.length, equals(1));
+    expect(
+        highlights[0],
+        equals(
+            "field has a url <b>http://ferret.davebalmain.com/trac/</b> end"));
   }
 }
