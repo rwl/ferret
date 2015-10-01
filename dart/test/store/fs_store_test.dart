@@ -3,51 +3,67 @@ library ferret.test.store.fs_store;
 import 'package:test/test.dart';
 import 'package:ferret/ferret.dart';
 
-class FSStoreTest {
-  //< Test::Unit::TestCase
-  String _dpath;
-  Directory _dir;
+import 'store_test.dart';
+import 'store_lock_test.dart';
 
-  setUp() {
-    _dpath =
-        File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'));
-    _dir = FSDirectory.create(_dpath, create: true);
-  }
+fsStoreTest() {
+  const dpath = '/temp/fsdir';
 
-  tearDown() {
-    _dir.close();
-    Dir[File.join(_dpath, "*")].each((path) {
+  Directory makeDir() => FSDirectory.create(dpath, create: true);
+
+  void closeDir(Directory dir) {
+    dir.close();
+    Dir[File.join(dpath, "*")].each((path) {
       try {
         File.delete(path);
       } catch (_) {}
     });
   }
 
-  test_fslock() {
-    var lock_name = "_file.f1";
-    var lock_file_path = make_lock_file_path(lock_name);
-    expect(File.exists(lock_file_path), isFalse,
-        reason: "There should be no lock file");
-    var lock = _dir.make_lock(lock_name);
-    expect(File.exists(lock_file_path), isFalse,
-        reason: "There should still be no lock file");
-    expect(lock.locked(), isFalse, reason: "lock shouldn't be locked yet");
+  storeTest(makeDir, closeDir);
+  storeLockTest(makeDir, closeDir);
 
-    lock.obtain();
+  String lfname(String name) => "ferret-${name}.lck";
 
-    expect(lock.locked(), isTrue, reason: "lock should now be locked");
-
-    expect(File.exists(lock_file_path), isTrue,
-        reason: "A lock file should have been created");
-
-    expect(_dir.exists(lfname(lock_name)), "The lock should exist");
-
-    lock.release();
-
-    expect(lock.locked(), isFalse, reason: "lock should be freed again");
-    expect(File.exists(lock_file_path), isFalse,
-        reason: "The lock file should have been deleted");
+  make_lock_file_path(name) {
+    var lock_file_path = File.join(dpath, lfname(name));
+    if (File.exists(lock_file_path)) {
+      File.delete(lock_file_path);
+    }
+    return lock_file_path;
   }
+
+  group('fsdir', () {
+    Directory dir;
+
+    setUp(() => dir = makeDir());
+    tearDown(() => closeDir(dir));
+
+    test('lock', () {
+      var lock_name = "_file.f1";
+      var lock_file_path = make_lock_file_path(lock_name);
+      expect(File.exists(lock_file_path), isFalse,
+          reason: "There should be no lock file");
+      var lock = dir.make_lock(lock_name);
+      expect(File.exists(lock_file_path), isFalse,
+          reason: "There should still be no lock file");
+      expect(lock.locked(), isFalse, reason: "lock shouldn't be locked yet");
+
+      lock.obtain();
+
+      expect(lock.locked(), isTrue, reason: "lock should now be locked");
+
+      expect(File.exists(lock_file_path), isTrue,
+          reason: "A lock file should have been created");
+
+      expect(dir.exists(lfname(lock_name)), "The lock should exist");
+
+      lock.release();
+
+      expect(lock.locked(), isFalse, reason: "lock should be freed again");
+      expect(File.exists(lock_file_path), isFalse,
+          reason: "The lock file should have been deleted");
+    });
 
 //  make_and_loose_lock() {
 //    var lock = _dir.make_lock("finalizer_lock");
@@ -76,49 +92,40 @@ class FSStoreTest {
 //        reason: "The lock file should have been deleted");
 //  }
 
-  test_permissions() {
-    var _S_IRGRP = 0040;
-    var _S_IWGRP = 0020;
+    test('permissions', () {
+      var _S_IRGRP = 0040;
+      var _S_IWGRP = 0020;
 
-    var dpath = File.expand_path(
-        File.join(File.dirname(__FILE__), '../../temp/fsdir_permissions'));
+      var dpath2 = File.expand_path(
+          File.join(File.dirname(__FILE__), '../../temp/fsdir_permissions'));
 
-    FileUtils.mkdir_p(dpath);
-    var dstat = File.stat(dpath);
+      FileUtils.mkdir_p(dpath2);
+      var dstat = File.stat(dpath2);
 
-    File.chown(null, 'id -G'.split.last.to_i, dpath);
-    File.chmod(dstat.mode | _S_IRGRP | _S_IWGRP, dpath);
+      File.chown(null, 'id -G'.split.last.to_i, dpath2);
+      File.chmod(dstat.mode | _S_IRGRP | _S_IWGRP, dpath2);
 
-    var dir = FSDirectory.create(dpath, create: true);
+      var dir2 = FSDirectory.create(dpath2, create: true);
 
-    var file_name = 'test_permissions';
-    var file_path = File.join(dpath, file_name);
+      var file_name = 'test_permissions';
+      var file_path = File.join(dpath2, file_name);
 
-    dir.touch(file_name);
+      dir2.touch(file_name);
 
-    var mode = File.stat(file_path).mode;
+      var mode = File.stat(file_path).mode;
 
-    expect(mode & _S_IRGRP == _S_IRGRP, "file should be group-readable");
-    expect(mode & _S_IWGRP == _S_IWGRP, "file should be group-writable");
-    //ensure
-    if (dstat) {
-      File.chown(null, dstat.gid, dpath);
-      File.chmod(dstat.mode, dpath);
-    }
+      expect(mode & _S_IRGRP == _S_IRGRP, "file should be group-readable");
+      expect(mode & _S_IWGRP == _S_IWGRP, "file should be group-writable");
+      //ensure
+      if (dstat) {
+        File.chown(null, dstat.gid, dpath2);
+        File.chmod(dstat.mode, dpath2);
+      }
 
-    if (dir) {
-      dir.refresh();
-      dir.close();
-    }
-  }
-
-  make_lock_file_path(name) {
-    var lock_file_path = File.join(_dpath, lfname(name));
-    if (File.exists(lock_file_path)) {
-      File.delete(lock_file_path);
-    }
-    return lock_file_path;
-  }
-
-  lfname(name) => "ferret-${name}.lck";
+      if (dir2 != null) {
+        dir2.refresh();
+        dir2.close();
+      }
+    });
+  });
 }

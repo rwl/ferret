@@ -118,13 +118,14 @@ class Lock extends JsProxy {
   ///
   /// Returns `true` if lock was successfully obtained. Raises a [LockError]
   /// otherwise.
-  bool obtain({int timeout: 1}) {
+  bool obtain({double timeout: 1.0}) {
     int success = module.callMethod('_frjs_lock_obtain', [handle]);
     if (success == 0) {
       int p_name = module.callMethod('_frjs_lock_get_name', [handle]);
       var name = stringify(p_name);
       throw new LockError._("could not obtain lock: $name");
     }
+    return success != 0;
   }
 
   /// Run the code in a block while a lock is obtained, automatically
@@ -132,7 +133,7 @@ class Lock extends JsProxy {
   ///
   /// Returns `true` if lock was successfully obtained. Raises a [LockError]
   /// otherwise.
-  bool while_locked(fn(), {int timeout: 1}) {
+  bool while_locked(fn(), {double timeout: 1.0}) {
     obtain(timeout: timeout);
     fn();
     release();
