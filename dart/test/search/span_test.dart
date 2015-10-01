@@ -2,13 +2,13 @@ library ferret.test.search.span;
 
 import 'package:test/test.dart';
 import 'package:ferret/ferret.dart';
+import 'package:quiver/iterables.dart' show range;
 
-class SpansBasicTest {
-  //< Test::Unit::TestCase
+void spansBasicTest() {
   Directory _dir;
   Searcher _searcher;
 
-  setup() {
+  setUp(() {
     _dir = new RAMDirectory();
     var iw = new IndexWriter(
         dir: _dir, analyzer: new WhiteSpaceAnalyzer(), create: true);
@@ -48,15 +48,15 @@ class SpansBasicTest {
 
     iw.close();
 
-    _searcher = new Searcher(_dir);
-  }
+    _searcher = new Searcher.store(_dir);
+  });
 
-  teardown() {
+  tearDown(() {
     _searcher.close();
     _dir.close();
-  }
+  });
 
-  number_split(i) {
+  String number_split(num i) {
     if (i < 10) {
       return "<${i}>";
     } else if (i < 100) {
@@ -66,45 +66,45 @@ class SpansBasicTest {
     }
   }
 
-  check_hits(query, expected, [test_explain = false, top = null]) {
+  check_hits(Query query, List expected, [bool test_explain = false, int top]) {
     var top_docs = _searcher.search(query, limit: expected.length + 1);
-    expect(expected.length, equals(top_docs.hits.size));
-    if (top) {
-      expect(top, equals(top_docs.hits[0].doc));
+    expect(top_docs.hits.length, equals(expected.length));
+    if (top != null) {
+      expect(top_docs.hits[0].doc, equals(top));
     }
-    expect(expected.length, equals(top_docs.total_hits));
-    top_docs.hits.each((hit) {
-      expect(expected.include(hit.doc), isTrue,
+    expect(top_docs.total_hits, equals(expected.length));
+    top_docs.hits.forEach((hit) {
+      expect(expected.contains(hit.doc), isTrue,
           reason: "${hit.doc} was found unexpectedly");
       if (test_explain) {
-        expect(hit.score.approx_eql(_searcher.explain(query, hit.doc).score),
-            isTrue,
+        expect(
+            _searcher.explain(query, hit.doc).score, closeTo(hit.score, 0.0001),
             reason: "Scores(${hit.score} != " +
                 "${_searcher.explain(query, hit.doc).score})");
       }
     });
   }
 
-  test_span_term_query() {
+  test('span_term_query', () {
     var tq = new SpanTermQuery('field', "nine");
     check_hits(tq, [7, 23], true);
     tq = new SpanTermQuery('field', "eight");
     check_hits(tq, [6, 7, 8, 22, 23, 24]);
-  }
+  });
 
-  test_span_multi_term_query() {
+  test('span_multi_term_query', () {
     var tq = new SpanMultiTermQuery('field', ["eight", "nine"]);
     check_hits(tq, [6, 7, 8, 22, 23, 24], true);
     tq = new SpanMultiTermQuery('field', ["flip", "flop", "toot", "nine"]);
     check_hits(tq, [2, 7, 12, 17, 23]);
-  }
+  });
 
-  test_span_prefix_query() {
+  test('span_prefix_query', () {
     var tq = new SpanPrefixQuery('field', "fl");
     check_hits(tq, [2, 12], true);
-  }
+  });
 
-  test_span_near_query() {
+  test('span_near_query', () {
     var tq1 = new SpanTermQuery('field', "start");
     var tq2 = new SpanTermQuery('field', "finish");
     var q = new SpanNearQuery(clauses: [tq1, tq2], in_order: true);
@@ -142,16 +142,14 @@ class SpansBasicTest {
       29,
       30
     ]);
-    q = new SpanNearQuery(
-        clauses: [
+    q = new SpanNearQuery(clauses: [
       new SpanPrefixQuery('field', 'se'),
       new SpanPrefixQuery('field', 'fl')
-    ],
-        slop: 0);
+    ], slop: 0);
     check_hits(q, [2, 12], true);
-  }
+  });
 
-  test_span_not_query() {
+  test('span_not_query', () {
     var tq1 = new SpanTermQuery('field', "start");
     var tq2 = new SpanTermQuery('field', "finish");
     var tq3 = new SpanTermQuery('field', "two");
@@ -169,9 +167,9 @@ class SpansBasicTest {
     nearq2 = new SpanNearQuery(clauses: [tq2, tq4], slop: 8);
     q = new SpanNotQuery(nearq1, nearq2);
     check_hits(q, [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15]);
-  }
+  });
 
-  test_span_first_query() {
+  test('span_first_query', () {
     var finish_first = [
       16,
       17,
@@ -194,9 +192,9 @@ class SpansBasicTest {
     check_hits(q, finish_first, true);
     q = new SpanFirstQuery(tq, 5);
     check_hits(q, [0, 1, 2, 3, 11, 12, 13, 14]..addAll(finish_first), false);
-  }
+  });
 
-  test_span_or_query_query() {
+  test('span_or_query_query', () {
     var tq1 = new SpanTermQuery('field', "start");
     var tq2 = new SpanTermQuery('field', "finish");
     var tq3 = new SpanTermQuery('field', "five");
@@ -209,15 +207,15 @@ class SpansBasicTest {
     nearq2 = new SpanNearQuery(clauses: [tq2, tq3], slop: 1);
     q = new SpanOrQuery([nearq1, nearq2]);
     check_hits(q, [0, 3, 4, 5, 6, 8, 9, 10, 11, 14, 16, 30], false);
-  }
+  });
 
-  test_span_prefix_query_max_terms() {
+  test('span_prefix_query_max_terms', () {
     _dir = new RAMDirectory();
     var iw = new IndexWriter(dir: _dir, analyzer: new WhiteSpaceAnalyzer());
-    repeat(2000)
-        .times((i) => iw.add_document({'field': "prefix${i} term${i}"}));
+    range(2000)
+        .forEach((i) => iw.add_document({'field': "prefix${i} term${i}"}));
     iw.close();
-    _searcher = new Searcher(_dir);
+    _searcher = new Searcher.store(_dir);
 
     var pq = new SpanPrefixQuery('field', "prefix");
     var tq = new SpanTermQuery('field', "term1500");
@@ -226,5 +224,5 @@ class SpansBasicTest {
     pq = new SpanPrefixQuery('field', "prefix", max_terms: 2000);
     q = new SpanNearQuery(clauses: [pq, tq], in_order: true);
     check_hits(q, [1500], false);
-  }
+  });
 }

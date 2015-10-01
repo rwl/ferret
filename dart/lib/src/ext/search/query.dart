@@ -100,6 +100,8 @@ class Term {
   Term._(this.field, this.text);
 }
 
+Term newTerm(String field, String text) => new Term._(field, text);
+
 /// [TermQuery] is the most basic query and it is the building block for most
 /// other queries. It basically matches documents that contain a specific term
 /// in a specific field.

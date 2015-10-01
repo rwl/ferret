@@ -3,28 +3,26 @@ library ferret.test.search.sort;
 import 'package:test/test.dart';
 import 'package:ferret/ferret.dart';
 
-class SortFieldTest {
-  //< Test::Unit::TestCase
-
-  test_field_score() {
+void sortFieldTest() {
+  test('field_score', () {
     var fs = SortField.SCORE;
     expect('score', fs.type);
     expect(fs.name, isNull);
     expect(fs.reverse, isFalse, reason: "SCORE_ID should not be reverse");
     expect(fs.comparator, isNull);
-  }
+  });
 
-  test_field_doc() {
-    var fs = SortField.DOC_ID;
+  test('field_doc', () {
+    var fs = SortField.DOC;
     expect('doc_id', fs.type);
     expect(fs.name, isNull);
     expect(fs.reverse, isFalse, reason: "DOC_ID should be reverse");
     expect(fs.comparator, isNull);
-  }
+  });
 
-  test_error_raised() {
+  test('error_raised', () {
     expect(() {
-      new SortField(null, type: 'integer');
-    }, ArgumentError);
-  }
+      new SortField(null, type: SortType.INTEGER);
+    }, throwsArgumentError);
+  });
 }

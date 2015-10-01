@@ -31,7 +31,7 @@ abstract class SearcherTests {
     top_docs = _searcher.search(tq, limit: 20);
     expect(_searcher.max_doc, equals(top_docs.hits.length));
 
-    expect(tq.terms(_searcher), equals([new Term('field', "word1")]));
+    expect(tq.terms(_searcher), equals([newTerm('field', "word1")]));
   }
 
   check_docs(Query query, Map options, [List expected = const []]) {
@@ -96,10 +96,10 @@ abstract class SearcherTests {
     expect('field:"brown|word1|word2|fast^50.0"^80.1', equals(mtq.to_s()));
 
     var terms = mtq.terms(_searcher);
-    expect(terms.index(new Term('field', "brown")), isTrue);
-    expect(terms.index(new Term('field', "word1")), isTrue);
-    expect(terms.index(new Term('field', "word2")), isTrue);
-    expect(terms.index(new Term('field', "fast")), isTrue);
+    expect(terms.index(newTerm('field', "brown")), isTrue);
+    expect(terms.index(newTerm('field', "word1")), isTrue);
+    expect(terms.index(newTerm('field', "word2")), isTrue);
+    expect(terms.index(newTerm('field', "fast")), isTrue);
   }
 
   test_boolean_query() {
