@@ -22,22 +22,22 @@ part of ferret.ext.index;
 ///     doc.keys     //=> ['title', 'content']
 ///     doc.values   //=> ["the title", "the content"]
 ///     doc.fields   //=> ['title', 'content']
-class LazyDoc extends JsProxy /*MapBase*/ with MapMixin<String, dynamic> {
-  final Map<String, dynamic> _map;
+class LazyDoc extends MapBase<String, dynamic> {
+  final Ferret _ferret;
+  final int handle;
+
+  final Map<String, dynamic> _map = {};
 
   List<String> _fields;
 
-  LazyDoc.handle(int h_lzd)
-      : super.mixin(),
-        _map = new Map<String, dynamic>() {
-    handle = h_lzd;
-    int size = module.callMethod('_frjs_lzd_size', [handle]);
+  LazyDoc.wrap(this._ferret, this.handle) {
+    int size = _ferret.callMethod('_frjs_lzd_size', [handle]);
     _fields = new List<String>(size);
     for (int i = 0; i < size; i++) {
-      int p_lazy_df = module.callMethod('_frjs_lzd_field', [handle, i]);
+      int p_lazy_df = _ferret.callMethod('_frjs_lzd_field', [handle, i]);
 
-      int p_name = module.callMethod('_frjs_lzd_field_name', [p_lazy_df]);
-      _fields[i] = stringify(p_name);
+      int p_name = _ferret.callMethod('_frjs_lzd_field_name', [p_lazy_df]);
+      _fields[i] = _ferret.stringify(p_name);
     }
   }
 
@@ -54,19 +54,20 @@ class LazyDoc extends JsProxy /*MapBase*/ with MapMixin<String, dynamic> {
   String _df_load(String key, int p_lazy_df) {
     var value;
     if (p_lazy_df != 0) {
-      int size = module.callMethod('_frjs_lzd_field_size', [p_lazy_df]);
+      int size = _ferret.callMethod('_frjs_lzd_field_size', [p_lazy_df]);
       if (size == 1) {
-        int p_data = module.callMethod('_frt_lazy_df_get_data', [p_lazy_df, 0]);
-        int len = module.callMethod('_frjs_lzd_field_length', [p_lazy_df]);
-        value = stringify(p_data, len);
+        int p_data =
+            _ferret.callMethod('_frt_lazy_df_get_data', [p_lazy_df, 0]);
+        int len = _ferret.callMethod('_frjs_lzd_field_length', [p_lazy_df]);
+        value = _ferret.stringify(p_data, len);
       } else {
         value = new List<String>(size);
         for (int i = 0; i < size; i++) {
           int p_data =
-              module.callMethod('_frt_lazy_df_get_data', [p_lazy_df, i]);
+              _ferret.callMethod('_frt_lazy_df_get_data', [p_lazy_df, i]);
           int len =
-              module.callMethod('_frjs_lzd_field_data_length', [p_lazy_df, i]);
-          value[i] = stringify(p_data, len);
+              _ferret.callMethod('_frjs_lzd_field_data_length', [p_lazy_df, i]);
+          value[i] = _ferret.stringify(p_data, len);
         }
       }
     }
@@ -76,22 +77,22 @@ class LazyDoc extends JsProxy /*MapBase*/ with MapMixin<String, dynamic> {
   /// This method is used internally to lazily load fields. You should never
   /// really need to call it yourself.
   String loadField(String key) {
-    int p_field = allocString(key);
-    int symbol = module.callMethod('_frt_intern', [p_field]);
-    free(p_field);
+    int p_field = _ferret.allocString(key);
+    int symbol = _ferret.callMethod('_frt_intern', [p_field]);
+    _ferret.free(p_field);
 
-    int p_lazy_df = module.callMethod('_frt_lazy_doc_get', [handle, symbol]);
+    int p_lazy_df = _ferret.callMethod('_frt_lazy_doc_get', [handle, symbol]);
     return _df_load(key, p_lazy_df);
   }
 
   /// Load all unloaded fields in the document from the index.
   LazyDoc load() {
-    int size = module.callMethod('_frjs_lzd_size', [handle]);
+    int size = _ferret.callMethod('_frjs_lzd_size', [handle]);
     for (int i = 0; i < size; i++) {
-      int p_lazy_df = module.callMethod('_frjs_lzd_field', [handle, i]);
+      int p_lazy_df = _ferret.callMethod('_frjs_lzd_field', [handle, i]);
 
-      int p_name = module.callMethod('_frjs_lzd_field_name', [p_lazy_df]);
-      var key = stringify(p_name);
+      int p_name = _ferret.callMethod('_frjs_lzd_field_name', [p_lazy_df]);
+      var key = _ferret.stringify(p_name);
       var value = _df_load(key, p_lazy_df);
       _map[key] = value;
     }

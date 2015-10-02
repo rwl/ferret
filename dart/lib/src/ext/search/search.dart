@@ -3,7 +3,7 @@ library ferret.ext.search;
 import 'dart:js' as js;
 import 'dart:typed_data' show Int32List, Uint8List;
 
-import '../../proxy.dart';
+import '../../ferret.dart';
 import '../index/index.dart' show IndexReader, LazyDoc;
 import '../store.dart' show Directory;
 import '../utils.dart' show BitVector;
@@ -111,24 +111,25 @@ class TopDocs {
 /// method.
 ///
 ///     print(searcher.explain(query, doc_id).to_s);
-class Explanation extends JsProxy {
-  Explanation._handle(int p_expl) : super() {
-    handle = p_expl;
-  }
+class Explanation {
+  final Ferret _ferret;
+  final int handle;
+
+  Explanation._handle(this._ferret, this.handle);
 
   /// Returns a string representation of the explanation in readable format.
   String to_s() {
-    int p_s = module.callMethod('_frt_expl_to_s_depth', [handle, 0]);
-    var s = stringify(p_s);
-    free(p_s);
+    int p_s = _ferret.callMethod('_frt_expl_to_s_depth', [handle, 0]);
+    var s = _ferret.stringify(p_s);
+    _ferret.free(p_s);
     return s;
   }
 
   /// Returns an html representation of the explanation in readable format.
   String to_html() {
-    int p_html = module.callMethod('_frt_expl_to_html', [handle]);
-    var html = stringify(p_html);
-    free(p_html);
+    int p_html = _ferret.callMethod('_frt_expl_to_html', [handle]);
+    var html = _ferret.stringify(p_html);
+    _ferret.free(p_html);
     return html;
   }
 
@@ -136,5 +137,5 @@ class Explanation extends JsProxy {
   /// debugging purposes mainly to check that the score returned by the
   /// explanation matches that of the score for the document in the original
   /// query.
-  double score() => module.callMethod('_frjs_expl_get_score', [handle]);
+  double score() => _ferret.callMethod('_frjs_expl_get_score', [handle]);
 }

@@ -22,43 +22,50 @@ part of ferret.ext.search;
 ///         sort: "date DESC, title", (doc_id, score) {
 ///       print("${searcher[doc_id][title] scored ${score}");
 ///     });
-class Searcher extends JsProxy {
+class Searcher {
+  final Ferret _ferret;
+  final int handle;
+
   /// Create a new [Searcher] object. [dir] can either be a string path to an
   /// index directory on the file-system, an actual [Directory] object or a
   /// [IndexReader]. You should use the [IndexReader] for searching multiple
   /// indexes. Just open the [IndexReader] on multiple directories.
 //  Searcher.dir(String path) {}
 
-  Searcher.store(Directory dir) {
-    int p_ir = module.callMethod('_frt_ir_open', [dir.handle]);
-    handle = module.callMethod('_frt_isea_new', [p_ir]);
-    module.callMethod('_frjs_searcher_set_close_ir', [handle, 0]);
+  factory Searcher.store(Ferret ferret, Directory dir) {
+    int p_ir = ferret.callMethod('_frt_ir_open', [dir.handle]);
+    return new Searcher._(ferret, p_ir);
   }
 
-  Searcher(IndexReader ir) {
-    handle = module.callMethod('_frt_isea_new', [ir.handle]);
-    module.callMethod('_frjs_searcher_set_close_ir', [handle, 0]);
+  factory Searcher(Ferret ferret, IndexReader ir) {
+    return new Searcher._(ferret, ir.handle);
+  }
+
+  Searcher._(Ferret ferret, int p_ir)
+      : _ferret = ferret,
+        handle = ferret.callMethod('_frt_isea_new', [p_ir]) {
+    ferret.callMethod('_frjs_searcher_set_close_ir', [handle, 0]);
   }
 
   /// Close the searcher. The garbage collector will do this for you or you can
   /// call this method explicitly.
-  void close() => module.callMethod('_frjs_sea_close', [handle]);
+  void close() => _ferret.callMethod('_frjs_sea_close', [handle]);
 
   /// Return the [IndexReader] wrapped by this searcher.
   IndexReader get reader {
-    int p_ir = module.callMethod('_frjs_sea_get_reader', [handle]);
+    int p_ir = _ferret.callMethod('_frjs_sea_get_reader', [handle]);
     return new IndexReader.handle(p_ir);
   }
 
   /// Return the number of documents in which the term [term] appears in the
   /// field [field].
   int doc_freq(String field, String term) {
-    int p_field = allocString(field);
-    int p_term = allocString(term);
+    int p_field = _ferret.allocString(field);
+    int p_term = _ferret.allocString(term);
     int freq =
-        module.callMethod('_frjs_sea_doc_freq', [handle, p_field, p_term]);
-    free(p_field);
-    free(p_term);
+        _ferret.callMethod('_frjs_sea_doc_freq', [handle, p_field, p_term]);
+    _ferret.free(p_field);
+    _ferret.free(p_term);
     return freq;
   }
 
@@ -66,7 +73,7 @@ class Searcher extends JsProxy {
   /// the document returned. Documents are referenced internally by document
   /// ids which are returned by the Searchers search methods.
   LazyDoc get_document(int doc_id) {
-    int p_ld = module.callMethod('_frjs_sea_doc', [handle, doc_id]);
+    int p_ld = _ferret.callMethod('_frjs_sea_doc', [handle, doc_id]);
     return new LazyDoc.handle(p_ld);
   }
 
@@ -77,7 +84,7 @@ class Searcher extends JsProxy {
   /// document_id that will be used by the next document added to the index.
   /// If there are no deletions, this number also refers to the number of
   /// documents in the index.
-  int max_doc() => module.callMethod('_frjs_sea_max_doc', [handle]);
+  int max_doc() => _ferret.callMethod('_frjs_sea_max_doc', [handle]);
 
   /// Run a query through the [Searcher] on the index. A [TopDocs] object is
   /// returned with the relevant results. The [query] is a built in [Query]
@@ -117,9 +124,9 @@ class Searcher extends JsProxy {
     if (limit == 0 || limit < -1) {
       throw new ArgumentError.value(limit, 'limit');
     }
-    int p_td = module.callMethod('_frjs_sea_search',
+    int p_td = _ferret.callMethod('_frjs_sea_search',
         [handle, query.handle, offset, limit, filter.handle, sort.handle]);
-    return new TopDocs._module(module, p_td, this);
+    return new TopDocs._module(_ferret, p_td, this);
   }
 
   /// Run a query through the [Searcher] on the index. A [TopDocs] object is
@@ -205,18 +212,18 @@ class Searcher extends JsProxy {
     if (limit <= 0) {
       throw new ArgumentError("limit must be > 0");
     }
-    int p_count = module.callMethod('_malloc', [Int32List.BYTES_PER_ELEMENT]);
-    module.callMethod('setValue', [p_count, 0, 'i32']);
+    int p_count = _ferret.callMethod('_malloc', [Int32List.BYTES_PER_ELEMENT]);
+    _ferret.callMethod('setValue', [p_count, 0, 'i32']);
 
-    int p_array = module.callMethod(
+    int p_array = _ferret.callMethod(
         '_frjs_sea_scan', [handle, query.handle, start_doc, limit, p_count]);
 
-    int count = module.callMethod('getValue', [p_count, 'i32']);
-    free(p_count);
+    int count = _ferret.callMethod('getValue', [p_count, 'i32']);
+    _ferret.free(p_count);
 
     var array = new List<int>.from(
-        module.callMethod('getInt32Array', [p_array, count]));
-    free(p_array);
+        _ferret.callMethod('getInt32Array', [p_array, count]));
+    _ferret.free(p_array);
     return array;
   }
 
@@ -226,8 +233,8 @@ class Searcher extends JsProxy {
   ///     print(searcher.explain(query, doc_id).to_s());
   Explanation explain(Query query, int doc_id) {
     int p_expl =
-        module.callMethod('_frjs_sea_explain', [handle, query.handle, doc_id]);
-    return new Explanation._handle(p_expl);
+        _ferret.callMethod('_frjs_sea_explain', [handle, query.handle, doc_id]);
+    return new Explanation._handle(_ferret, p_expl);
   }
 
   /// Returns an array of strings with the matches highlighted.
@@ -253,15 +260,15 @@ class Searcher extends JsProxy {
     if (excerpt_length == -1) {
       excerpt_length = 65536 ~/ 2;
     }
-    int p_field = allocString(field);
-    int p_pre_tag = allocString(pre_tag);
-    int p_post_tag = allocString(post_tag);
-    int p_ellipsis = allocString(ellipsis);
+    int p_field = _ferret.allocString(field);
+    int p_pre_tag = _ferret.allocString(pre_tag);
+    int p_post_tag = _ferret.allocString(post_tag);
+    int p_ellipsis = _ferret.allocString(ellipsis);
 
-    int p_size = module.callMethod('_malloc', [Int32List.BYTES_PER_ELEMENT]);
-    module.callMethod('setValue', [p_size, 0, 'i32']);
+    int p_size = _ferret.callMethod('_malloc', [Int32List.BYTES_PER_ELEMENT]);
+    _ferret.callMethod('setValue', [p_size, 0, 'i32']);
 
-    int pp_high = module.callMethod('_frjs_sea_highlight', [
+    int pp_high = _ferret.callMethod('_frjs_sea_highlight', [
       handle,
       query.handle,
       doc_id,
@@ -274,19 +281,19 @@ class Searcher extends JsProxy {
       p_size
     ]);
 
-    int size = module.callMethod('getValue', [p_size, 'i32']);
-    free(p_size);
+    int size = _ferret.callMethod('getValue', [p_size, 'i32']);
+    _ferret.free(p_size);
 
     if (pp_high == 0) {
       return null;
     }
-    var p_high = module.callMethod('getUint8List', [pp_high, size]);
+    var p_high = _ferret.callMethod('getUint8List', [pp_high, size]);
     var high = new List<String>(size);
     for (var i = 0; i < size; i++) {
-      high[i] = stringify(p_high[i]);
-      free(p_high[i]);
+      high[i] = _ferret.stringify(p_high[i]);
+      _ferret.free(p_high[i]);
     }
-    free(pp_high);
+    _ferret.free(pp_high);
     return high;
   }
 }
@@ -300,18 +307,21 @@ class Searcher extends JsProxy {
 class MultiSearcher extends Searcher {
   /// Create a new [MultiSearcher] by passing a list of subsearchers to the
   /// constructor.
-  MultiSearcher(List<Searcher> searchers) : super(null) {
+  factory MultiSearcher(Ferret ferret, List<Searcher> searchers) {
     int top = searchers.length;
     int p_seas =
-        module.callMethod('_malloc', [Uint8List.BYTES_PER_ELEMENT * top]);
+        ferret.callMethod('_malloc', [Uint8List.BYTES_PER_ELEMENT * top]);
     for (int i = 0; i < top; i++) {
-      module.callMethod('setValue', [
+      ferret.callMethod('setValue', [
         p_seas + (i * Uint8List.BYTES_PER_ELEMENT),
         searchers[i].handle,
         'i8'
       ]);
     }
-    handle = module.callMethod('_frt_msea_new', [p_seas, top, 0]);
-    free(p_seas);
+    int h = ferret.callMethod('_frt_msea_new', [p_seas, top, 0]);
+    ferret.free(p_seas);
+    return new MultiSearcher._(ferret, h);
   }
+
+  MultiSearcher._(Ferret ferret, int h) : super._(ferret, h);
 }

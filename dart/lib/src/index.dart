@@ -6,8 +6,11 @@ import 'ext/query_parser.dart';
 import 'ext/search/search.dart';
 import 'ext/store.dart';
 import 'field_infos_utils.dart';
+import 'ferret.dart';
 
 class Index {
+  final Ferret _ferret;
+
   var _key;
   FieldInfos _field_infos;
   bool _close_dir;
@@ -82,7 +85,7 @@ class Index {
   ///     new Index.func((index) {
   ///       /// Do stuff with index. Most of your actions will be cached.
   ///     });
-  Index(
+  Index(this._ferret,
       {dir,
       String default_input_field: 'id',
       String id_field: 'id',

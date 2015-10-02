@@ -2,7 +2,7 @@ library ferret.ext.query_parser;
 
 import 'dart:typed_data' show Int32List;
 
-import '../proxy.dart';
+import '../ferret.dart';
 import 'analysis/analysis.dart' show Analyzer;
 import 'search/search.dart';
 
@@ -195,7 +195,10 @@ import 'search/search.dart';
 /// query, you may want to set a minimum prefix length in the [FuzzyQuery]
 /// class. This can substantially reduce the number of terms that the query
 /// will iterate over.
-class QueryParser extends JsProxy {
+class QueryParser {
+  final Ferret _ferret;
+  final int handle;
+
   /// Create a new [QueryParser]. The [QueryParser] is used to convert string
   /// queries into [Query] objects.
   ///
@@ -237,7 +240,7 @@ class QueryParser extends JsProxy {
   /// won't need to pad or normalize the data in the field in anyway to get
   /// correct results. However, performance will be a lot slower for large
   /// indexes, hence the default.
-  QueryParser(
+  factory QueryParser(Ferret ferret,
       {default_field: "*",
       Analyzer analyzer,
       List<String> all_fields: const [],
@@ -250,8 +253,7 @@ class QueryParser extends JsProxy {
       bool clean_string: true,
       int max_clauses: 512,
       bool use_keywords: true,
-      bool use_typed_range_query: false})
-      : super() {
+      bool use_typed_range_query: false}) {
     int p_analyzer = analyzer != null ? analyzer.handle : 0;
 
     int p_all_fields = 0;
@@ -260,38 +262,38 @@ class QueryParser extends JsProxy {
 
     if (default_field != null) {
       if (default_field is List) {
-        p_def_fields = module.callMethod('_frt_hs_new_ptr', [0]);
+        p_def_fields = ferret.callMethod('_frt_hs_new_ptr', [0]);
         for (var field in default_field) {
-          int p_field = allocString(field.toString());
-          module.callMethod('_frt_hs_add', [p_def_fields, p_field]);
+          int p_field = ferret.allocString(field.toString());
+          ferret.callMethod('_frt_hs_add', [p_def_fields, p_field]);
         }
       } else {
         var field = default_field.toString();
         if (field != '*') {
-          p_def_fields = module.callMethod('_frt_hs_new_ptr', [0]);
-          int p_field = allocString(field);
-          module.callMethod('_frt_hs_add', [p_def_fields, p_field]);
+          p_def_fields = ferret.callMethod('_frt_hs_new_ptr', [0]);
+          int p_field = ferret.allocString(field);
+          ferret.callMethod('_frt_hs_add', [p_def_fields, p_field]);
         }
       }
     }
 
     if (all_fields != null) {
-      p_all_fields = module.callMethod('_frt_hs_new_ptr', [0]);
+      p_all_fields = ferret.callMethod('_frt_hs_new_ptr', [0]);
       for (String field in all_fields) {
-        int p_field = allocString(field);
-        module.callMethod('_frt_hs_add', [p_all_fields, p_field]);
+        int p_field = ferret.allocString(field);
+        ferret.callMethod('_frt_hs_add', [p_all_fields, p_field]);
       }
     }
 
     if (tokenized_fields != null) {
-      p_tkz_fields = module.callMethod('_frt_hs_new_ptr', [0]);
+      p_tkz_fields = ferret.callMethod('_frt_hs_new_ptr', [0]);
       for (String field in tokenized_fields) {
-        int p_field = allocString(field);
-        module.callMethod('_frt_hs_add', [p_tkz_fields, p_field]);
+        int p_field = ferret.allocString(field);
+        ferret.callMethod('_frt_hs_add', [p_tkz_fields, p_field]);
       }
     }
 
-    handle = module.callMethod('_frjs_qp_init', [
+    int h = ferret.callMethod('_frjs_qp_init', [
       p_analyzer,
       p_all_fields,
       p_tkz_fields,
@@ -306,86 +308,89 @@ class QueryParser extends JsProxy {
       use_keywords ? 1 : 0,
       use_typed_range_query ? 1 : 0
     ]);
+    return new QueryParser._(ferret, h);
   }
+
+  QueryParser._(this._ferret, this.handle);
 
   /// Parse a query string returning a [Query] object if parsing was
   /// successful. Will raise a [QueryParseException] if unsuccessful.
   Query parse(String query_string) {
-    int p_str = allocString(query_string);
+    int p_str = _ferret.allocString(query_string);
 
-    int pp_msg = module.callMethod('_malloc', [Int32List.BYTES_PER_ELEMENT]);
-    module.callMethod('setValue', [pp_msg, 0, 'i32']);
+    int pp_msg = _ferret.callMethod('_malloc', [Int32List.BYTES_PER_ELEMENT]);
+    _ferret.callMethod('setValue', [pp_msg, 0, 'i32']);
 
-    int p_q = module.callMethod('_frjs_qp_parse', [handle, p_str, pp_msg]);
-    free(p_str);
+    int p_q = _ferret.callMethod('_frjs_qp_parse', [handle, p_str, pp_msg]);
+    _ferret.free(p_str);
     if (p_q == 0) {
-      int p_msg = module.callMethod('getValue', [pp_msg, 'i32']);
-      var msg = stringify(p_msg);
-      free(pp_msg);
+      int p_msg = _ferret.callMethod('getValue', [pp_msg, 'i32']);
+      var msg = _ferret.stringify(p_msg);
+      _ferret.free(pp_msg);
       throw new QueryParseException(msg);
     }
-    free(pp_msg);
+    _ferret.free(pp_msg);
 
-    int qt_index = module.callMethod('_frjs_q_get_query_type', [p_q]);
+    int qt_index = _ferret.callMethod('_frjs_q_get_query_type', [p_q]);
     var qt = QueryType.values[qt_index];
     Query query;
     switch (qt) {
       case QueryType.TERM_QUERY:
-        query = new TermQuery.handle(p_q);
+        query = new TermQuery.handle(_ferret, p_q);
         break;
       case QueryType.MULTI_TERM_QUERY:
-        query = new MultiTermQuery.handle(p_q);
+        query = new MultiTermQuery.handle(_ferret, p_q);
         break;
       case QueryType.BOOLEAN_QUERY:
-        query = new BooleanQuery.handle(p_q);
+        query = new BooleanQuery.handle(_ferret, p_q);
         break;
       case QueryType.PHRASE_QUERY:
-        query = new PhraseQuery.handle(p_q);
+        query = new PhraseQuery.handle(_ferret, p_q);
         break;
       case QueryType.CONSTANT_QUERY:
-        query = new ConstantScoreQuery.handle(p_q);
+        query = new ConstantScoreQuery.handle(_ferret, p_q);
         break;
       case QueryType.FILTERED_QUERY:
-        query = new FilteredQuery.handle(p_q);
+        query = new FilteredQuery.handle(_ferret, p_q);
         break;
       case QueryType.MATCH_ALL_QUERY:
-        query = new MatchAllQuery.handle(p_q);
+        query = new MatchAllQuery.handle(_ferret, p_q);
         break;
       case QueryType.RANGE_QUERY:
-        query = new RangeQuery.handle(p_q);
+        query = new RangeQuery.handle(_ferret, p_q);
         break;
       case QueryType.TYPED_RANGE_QUERY:
-        query = new TypedRangeQuery.handle(p_q);
+        query = new TypedRangeQuery.handle(_ferret, p_q);
         break;
       case QueryType.WILD_CARD_QUERY:
-        query = new WildcardQuery.handle(p_q);
+        query = new WildcardQuery.handle(_ferret, p_q);
         break;
       case QueryType.FUZZY_QUERY:
-        query = new FuzzyQuery.handle(p_q);
+        query = new FuzzyQuery.handle(_ferret, p_q);
         break;
       case QueryType.PREFIX_QUERY:
-        query = new PrefixQuery.handle(p_q);
+        query = new PrefixQuery.handle(_ferret, p_q);
         break;
       case QueryType.SPAN_TERM_QUERY:
-        query = new SpanMultiTermQuery.handle(p_q);
+        query = new SpanMultiTermQuery.handle(_ferret, p_q);
         break;
       case QueryType.SPAN_MULTI_TERM_QUERY:
-        query = new SpanPrefixQuery.handle(p_q);
+        query = new SpanPrefixQuery.handle(_ferret, p_q);
         break;
       case QueryType.SPAN_PREFIX_QUERY:
-        query = new SpanTermQuery.handle(p_q);
+        query = new SpanTermQuery.handle(_ferret, p_q);
         break;
       case QueryType.SPAN_FIRST_QUERY:
-        query = new SpanFirstQuery.handle(p_q);
+        query = new SpanFirstQuery.handle(_ferret, p_q);
         break;
       case QueryType.SPAN_OR_QUERY:
-        query = new SpanOrQuery.handle(p_q);
+        query = new SpanOrQuery.handle(_ferret, p_q);
         break;
       case QueryType.SPAN_NOT_QUERY:
-        query = new SpanNotQuery.handle(p_q);
+        query = new SpanNotQuery.handle(_ferret, p_q);
         break;
       case QueryType.SPAN_NEAR_QUERY:
-        query = new SpanNearQuery.handle(p_q);
+        query = new SpanNearQuery.handle(_ferret, p_q);
         break;
       default:
         throw new ArgumentError.value(qt_index, 'qt', "Unknown query type");
@@ -396,38 +401,38 @@ class QueryParser extends JsProxy {
 
   /// Returns the list of all fields that the [QueryParser] knows about.
   List get fields {
-    int p_fields = module.callMethod('_frjs_qp_all_fields', [handle]);
+    int p_fields = _ferret.callMethod('_frjs_qp_all_fields', [handle]);
     var a = [];
-    int p_hse = module.callMethod('_frjs_hash_get_first', [p_fields]);
+    int p_hse = _ferret.callMethod('_frjs_hash_get_first', [p_fields]);
     while (p_hse != 0) {
-      int p_elem = module.callMethod('_frjs_hash_get_entry_elem', [p_hse]);
-      a.add(stringify(p_elem));
-      p_hse = module.callMethod('_frjs_hash_get_entry_next', [p_hse]);
+      int p_elem = _ferret.callMethod('_frjs_hash_get_entry_elem', [p_hse]);
+      a.add(_ferret.stringify(p_elem));
+      p_hse = _ferret.callMethod('_frjs_hash_get_entry_next', [p_hse]);
     }
     return a;
   }
 
   /// Set the list of fields. These fields are expanded for searches on "*".
   void set fields(List flds) {
-    int p_fields = module.callMethod('_frt_hs_new_ptr', [0]);
+    int p_fields = _ferret.callMethod('_frt_hs_new_ptr', [0]);
     for (String field in flds) {
-      int p_field = allocString(field);
-      module.callMethod('_frt_hs_add', [p_fields, p_field]);
+      int p_field = _ferret.allocString(field);
+      _ferret.callMethod('_frt_hs_add', [p_fields, p_field]);
     }
-    module.callMethod('_frjs_qp_set_fields', [handle, p_fields]);
+    _ferret.callMethod('_frjs_qp_set_fields', [handle, p_fields]);
   }
 
   /// Returns the list of all tokenized_fields that the [QueryParser] knows
   /// about.
   List get tokenized_fields {
-    int p_fields = module.callMethod('_frjs_qp_tokenized_fields', [handle]);
+    int p_fields = _ferret.callMethod('_frjs_qp_tokenized_fields', [handle]);
     var a = [];
     if (p_fields != 0) {
-      int p_hse = module.callMethod('_frjs_hash_get_first', [p_fields]);
+      int p_hse = _ferret.callMethod('_frjs_hash_get_first', [p_fields]);
       while (p_hse != 0) {
-        int p_elem = module.callMethod('_frjs_hash_get_entry_elem', [p_hse]);
-        a.add(stringify(p_elem));
-        p_hse = module.callMethod('_frjs_hash_get_entry_next', [p_hse]);
+        int p_elem = _ferret.callMethod('_frjs_hash_get_entry_elem', [p_hse]);
+        a.add(_ferret.stringify(p_elem));
+        p_hse = _ferret.callMethod('_frjs_hash_get_entry_next', [p_hse]);
       }
     }
     return a;
@@ -437,12 +442,12 @@ class QueryParser extends JsProxy {
   /// in the queries. If this is set to null then all fields will be
   /// tokenized.
   set tokenized_fields(List flds) {
-    int p_fields = module.callMethod('_frt_hs_new_ptr', [0]);
+    int p_fields = _ferret.callMethod('_frt_hs_new_ptr', [0]);
     for (String field in flds) {
-      int p_field = allocString(field);
-      module.callMethod('_frt_hs_add', [p_fields, p_field]);
+      int p_field = _ferret.allocString(field);
+      _ferret.callMethod('_frt_hs_add', [p_fields, p_field]);
     }
-    module.callMethod('_frjs_qp_set_tkz_fields', [handle, p_fields]);
+    _ferret.callMethod('_frjs_qp_set_tkz_fields', [handle, p_fields]);
   }
 }
 

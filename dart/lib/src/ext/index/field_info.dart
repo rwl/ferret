@@ -107,22 +107,32 @@ class TermVectorStorage {
 /// it is possible to continue to dynamically add fields as indexing goes
 /// along. If you add a document to the index which has fields that the index
 /// doesn't know about then the default properties are used for the new field.
-class FieldInfos extends JsProxy {
+class FieldInfos {
+  final Ferret _ferret;
+  final int handle;
+
   final FieldStorage store;
   final FieldIndexing index;
   final TermVectorStorage term_vector;
 
+  FieldInfos._wrap(this._ferret, this.handle)
+      : store = FieldStorage.YES,
+        index = FieldIndexing.YES,
+        term_vector = TermVectorStorage.WITH_POSITIONS_OFFSETS;
+
   /// Create a new [FieldInfos] object which uses the default values for
   /// fields specified in the [default_values] hash parameter. See [FieldInfo]
   /// for available property values.
-  FieldInfos(
-      {this.store: FieldStorage.YES,
-      this.index: FieldIndexing.YES,
-      this.term_vector: TermVectorStorage.WITH_POSITIONS_OFFSETS})
-      : super() {
-    handle = module.callMethod(
-        '_frt_fis_new', [store._value, index._value, term_vector._value]);
-  }
+  FieldInfos(Ferret ferret,
+      {store: FieldStorage.YES,
+      index: FieldIndexing.YES,
+      term_vector: TermVectorStorage.WITH_POSITIONS_OFFSETS})
+      : _ferret = ferret,
+        store = store,
+        index = index,
+        term_vector = term_vector,
+        handle = ferret.callMethod(
+            '_frt_fis_new', [store._value, index._value, term_vector._value]);
 
   /// Return an array of the [FieldInfo] objects contained but this
   /// [FieldInfos] object.
@@ -130,8 +140,8 @@ class FieldInfos extends JsProxy {
     var n = size();
     var a = new List<FieldInfo>(n);
     for (int i = 0; i < n; i++) {
-      var p_fi = module.callMethod('_frjs_fis_get_field_info', [handle, i]);
-      a[i] = new FieldInfo._handle(p_fi);
+      var p_fi = _ferret.callMethod('_frjs_fis_get_field_info', [handle, i]);
+      a[i] = new FieldInfo._handle(_ferret, p_fi);
     }
     return a;
   }
@@ -146,21 +156,21 @@ class FieldInfos extends JsProxy {
     int p_fi;
     if (name_or_num is num) {
       int i = name_or_num.toInt();
-      p_fi = module.callMethod('_frjs_fis_get_field_info', [handle, i]);
+      p_fi = _ferret.callMethod('_frjs_fis_get_field_info', [handle, i]);
     } else if (name_or_num is String) {
-      var p_name = allocString(name_or_num);
-      p_fi = module.callMethod('_frjs_fis_get_field', [handle, p_name]);
-      free(p_name);
+      var p_name = _ferret.allocString(name_or_num);
+      p_fi = _ferret.callMethod('_frjs_fis_get_field', [handle, p_name]);
+      _ferret.free(p_name);
     } else {
       throw new ArgumentError.value(
           name_or_num, 'name_or_num', 'must be num or String');
     }
-    return new FieldInfo._handle(p_fi);
+    return new FieldInfo._handle(_ferret, p_fi);
   }
 
   /// Add a [FieldInfo] object. Use the [add_field] method where possible.
   void add(FieldInfo fi) {
-    module.callMethod('_frjs_fis_add', [handle, fi.handle]);
+    _ferret.callMethod('_frjs_fis_add', [handle, fi.handle]);
   }
 
   /// Alias for [add].
@@ -186,8 +196,8 @@ class FieldInfos extends JsProxy {
     if (term_vector == null) {
       term_vector = this.term_vector;
     }
-    int p_field = allocString(field);
-    module.callMethod('_frjs_fis_add_field', [
+    int p_field = _ferret.allocString(field);
+    _ferret.callMethod('_frjs_fis_add_field', [
       handle,
       p_field,
       store._value,
@@ -195,28 +205,28 @@ class FieldInfos extends JsProxy {
       term_vector._value,
       boost
     ]);
-    free(p_field);
+    _ferret.free(p_field);
   }
 
   /// Iterate through the [FieldInfo] objects.
   void each(fn(FieldInfo fi)) {
     var n = size();
     for (int i = 0; i < n; i++) {
-      var p_fi = module.callMethod('_frjs_fis_get_field_info', [handle, i]);
-      fn(new FieldInfo._handle(p_fi));
+      var p_fi = _ferret.callMethod('_frjs_fis_get_field_info', [handle, i]);
+      fn(new FieldInfo._handle(_ferret, p_fi));
     }
   }
 
   /// Return a string representation of the [FieldInfos] object.
   String to_s() {
-    int p_s = module.callMethod('_frt_fis_to_s', [handle]);
-    var s = stringify(p_s);
-    free(p_s);
+    int p_s = _ferret.callMethod('_frt_fis_to_s', [handle]);
+    var s = _ferret.stringify(p_s);
+    _ferret.free(p_s);
     return s;
   }
 
   /// Return the number of fields in the [FieldInfos] object.
-  int size() => module.callMethod('_frjs_fis_size', [handle]);
+  int size() => _ferret.callMethod('_frjs_fis_size', [handle]);
 
   /// Create a new index in the directory specified. The directory [dir] can
   /// either be a string path representing a directory on the file-system or
@@ -227,14 +237,14 @@ class FieldInfos extends JsProxy {
     int p_store, p_dir;
     if (dir is String) {
       p_store = 0;
-      p_dir = allocString(dir);
+      p_dir = _ferret.allocString(dir);
     } else if (dir is Directory) {
       p_store = dir.handle;
       p_dir = 0;
     }
-    module.callMethod('_frjs_fis_create_index', [handle, p_store, p_dir]);
+    _ferret.callMethod('_frjs_fis_create_index', [handle, p_store, p_dir]);
     if (dir is String) {
-      free(p_dir);
+      _ferret.free(p_dir);
     }
   }
 
@@ -255,7 +265,7 @@ class FieldInfos extends JsProxy {
     var tf = new List<String>();
     for (int i = 0; i < size(); i++) {
       var fi = this[i];
-      var tokd = module.callMethod('_frjs_fi_is_tokenized', [fi.handle]) != 0;
+      var tokd = _ferret.callMethod('_frjs_fi_is_tokenized', [fi.handle]) != 0;
       if (tokd) {
         tf.add(fi.name);
       }
@@ -320,41 +330,43 @@ class FieldInfos extends JsProxy {
 ///       store: FieldStorage.COMPRESSED,
 ///       index: FieldIndexing.NO,
 ///       term_vector: TermVectorStorage.NO);
-class FieldInfo extends JsProxy {
-  FieldInfo._handle(int hfi) : super() {
-    handle = hfi;
-  }
+class FieldInfo {
+  final Ferret _ferret;
+  final int handle;
+
+  FieldInfo._handle(this._ferret, this.handle);
 
   /// Create a new [FieldInfo] object with the name [name] and the properties
   /// specified in [options]. The available options are [`store`, `index`,
   /// `term_vector`, `boost`]. See the description of [FieldInfo] for more
   /// information on these properties.
-  FieldInfo(name,
-      {store: FieldStorage.YES,
-      index: FieldIndexing.YES,
-      term_vector: TermVectorStorage.WITH_POSITIONS_OFFSETS,
+  factory FieldInfo(Ferret ferret, String name,
+      {FieldStorage store: FieldStorage.YES,
+      FieldIndexing index: FieldIndexing.YES,
+      TermVectorStorage term_vector: TermVectorStorage.WITH_POSITIONS_OFFSETS,
       double boost: 1.0}) {
-    int p_name = allocString(name);
-    handle = module.callMethod('_frjs_fi_init',
+    int p_name = ferret.allocString(name);
+    int h = ferret.callMethod('_frjs_fi_init',
         [p_name, store._value, index._value, term_vector._value, boost]);
-    free(p_name);
+    ferret.free(p_name);
+    return new FieldInfo._handle(ferret, h);
   }
 
   /// Return the name of the field.
   String get name {
-    int p_name = module.callMethod('_frjs_fi_name', [handle]);
-    return stringify(p_name);
+    int p_name = _ferret.callMethod('_frjs_fi_name', [handle]);
+    return _ferret.stringify(p_name);
   }
 
   /// Return `true` if the field is stored in the index.
-  bool stored() => module.callMethod('_frjs_fi_is_stored', [handle]) != 0;
+  bool stored() => _ferret.callMethod('_frjs_fi_is_stored', [handle]) != 0;
 
   /// Return `true` if the field is stored in the index in compressed format.
   bool compressed() =>
-      module.callMethod('_frjs_fi_is_compressed', [handle]) != 0;
+      _ferret.callMethod('_frjs_fi_is_compressed', [handle]) != 0;
 
   /// Return `true` if the field is indexed, ie searchable in the index.
-  bool indexed() => module.callMethod('_frjs_fi_is_indexed', [handle]) != 0;
+  bool indexed() => _ferret.callMethod('_frjs_fi_is_indexed', [handle]) != 0;
 
   /// Return true if the field is tokenized. Tokenizing is the process of
   /// breaking the field up into tokens. That is "the quick brown fox"
@@ -363,7 +375,8 @@ class FieldInfo extends JsProxy {
   ///     ["the", "quick", "brown", "fox"]
   ///
   /// A field can only be tokenized if it is indexed.
-  bool tokenized() => module.callMethod('_frjs_fi_is_tokenized', [handle]) != 0;
+  bool tokenized() =>
+      _ferret.callMethod('_frjs_fi_is_tokenized', [handle]) != 0;
 
   /// Return true if the field omits the norm file. The norm file is the file
   /// used to store the field boosts for an indexed field. If you do not boost
@@ -371,36 +384,36 @@ class FieldInfo extends JsProxy {
   /// you can omit the norms file. This will give the index a slight
   /// performance boost and it will use less memory, especially for indexes
   /// which have a large number of documents.
-  bool omit_norms() => module.callMethod('_frjs_fi_omit_norms', [handle]) != 0;
+  bool omit_norms() => _ferret.callMethod('_frjs_fi_omit_norms', [handle]) != 0;
 
   /// Return `true` if the term-vectors are stored for this field.
   bool store_term_vector() =>
-      module.callMethod('_frjs_fi_store_term_vector', [handle]) != 0;
+      _ferret.callMethod('_frjs_fi_store_term_vector', [handle]) != 0;
 
   /// Return `true` if positions are stored with the term-vectors for this
   /// field.
   bool store_positions() =>
-      module.callMethod('_frjs_fi_store_positions', [handle]) != 0;
+      _ferret.callMethod('_frjs_fi_store_positions', [handle]) != 0;
 
   /// Return `true` if offsets are stored with the term-vectors for this
   /// field.
   bool store_offsets() =>
-      module.callMethod('_frjs_fi_store_offsets', [handle]) != 0;
+      _ferret.callMethod('_frjs_fi_store_offsets', [handle]) != 0;
 
   /// Return `true` if this field has a norms file. This is the same as
   /// calling:
   ///
   ///     fi.indexed() && !fi.omit_norms();
-  bool has_norms() => module.callMethod('_frjs_fi_has_norms', [handle]) != 0;
+  bool has_norms() => _ferret.callMethod('_frjs_fi_has_norms', [handle]) != 0;
 
   /// Return the default boost for this field.
-  double boost() => module.callMethod('_frjs_fi_boost', [handle]);
+  double boost() => _ferret.callMethod('_frjs_fi_boost', [handle]);
 
   /// Return a string representation of the [FieldInfo] object.
   String to_s() {
-    int p_fi_s = module.callMethod('_frt_fi_to_s', [handle]);
-    var fi_s = stringify(p_fi_s);
-    free(p_fi_s);
+    int p_fi_s = _ferret.callMethod('_frt_fi_to_s', [handle]);
+    var fi_s = _ferret.stringify(p_fi_s);
+    _ferret.free(p_fi_s);
     return fi_s;
   }
 }

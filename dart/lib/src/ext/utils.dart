@@ -9,7 +9,7 @@
 /// one day find themselves in their own separate library.
 library ferret.ext.utils;
 
-import '../proxy.dart';
+import '../ferret.dart';
 
 /// A [BitVector] is pretty easy to implement in Dart using Dart's BigNum class.
 /// This [BitVector] however allows you to count the set bits with the
@@ -46,22 +46,23 @@ import '../proxy.dart';
 /// Alternatively you could use the lower level [next] or [next_unset]
 /// methods. Note that the [each] method will automatically scan unset bits
 /// if the [BitVector] has been flipped (using [not]).
-class BitVector extends JsProxy {
-  BitVector.handle(int handle) : super() {
-    this.handle = handle;
-  }
+class BitVector {
+  final Ferret _ferret;
+  final int handle;
+
+  BitVector.wrap(this._ferret, this.handle);
 
   /// Returns a new empty bit vector object.
-  BitVector() : super() {
-    handle = module.callMethod('_frt_bv_new');
-  }
+  BitVector(Ferret ferret)
+      : _ferret = ferret,
+        handle = ferret.callMethod('_frt_bv_new');
 
   /// Set the bit at _i_ to *on* (`true`).
   void set(int i) {
     if (i < 0) {
       throw new ArgumentError.value(i);
     }
-    module.callMethod('_frt_bv_set', [handle, i]);
+    _ferret.callMethod('_frt_bv_set', [handle, i]);
   }
 
   /// Set the bit at _i_ to *off* (`false`).
@@ -69,7 +70,7 @@ class BitVector extends JsProxy {
     if (i < 0) {
       throw new ArgumentError.value(i);
     }
-    module.callMethod('_frjs_bv_unset', [handle, i]);
+    _ferret.callMethod('_frjs_bv_unset', [handle, i]);
   }
 
   /// Set the bit and _i_ to *val* (`true` or `false`).
@@ -85,43 +86,43 @@ class BitVector extends JsProxy {
   }
 
   /// Get the bit value at _i_.
-  bool get(int i) => module.callMethod('_frt_bv_get', [handle, i]) != 0;
+  bool get(int i) => _ferret.callMethod('_frt_bv_get', [handle, i]) != 0;
 
   /// Alias for [get].
   bool operator [](int i) => this.get(i);
 
   /// Count the number of bits set in the bit vector. If the bit vector has
   /// been negated using [not] then count the number of unset bits instead.
-  int count() => module.callMethod('_frjs_bv_count', [handle]);
+  int count() => _ferret.callMethod('_frjs_bv_count', [handle]);
 
   /// Clears all set bits in the bit vector. Negated bit vectors will still
   /// have all bits set to *off*.
   void clear() {
-    module.callMethod('_frt_bv_clear', [handle]);
-    module.callMethod('_frt_bv_scan_reset', [handle]);
+    _ferret.callMethod('_frt_bv_clear', [handle]);
+    _ferret.callMethod('_frt_bv_scan_reset', [handle]);
   }
 
   /// Compares two bit vectors and returns true if both bit vectors have the
   /// same bits set.
   bool eql(BitVector bv2) =>
-      module.callMethod('_frt_bv_eq', [handle, bv2.handle]) != 0;
+      _ferret.callMethod('_frt_bv_eq', [handle, bv2.handle]) != 0;
 
   /// Alias for [eql].
   bool operator ==(BitVector bv2) => eql(bv2);
 
   /// Used to store bit vectors in Hashes. Especially useful if you want to
   /// cache them.
-  int hash() => module.callMethod('_frt_bv_hash', [handle]);
+  int hash() => _ferret.callMethod('_frt_bv_hash', [handle]);
 
   /// Perform an inplace boolean _and_ operation.
   void andx(BitVector bv2) {
-    module.callMethod('_frjs_bv_and_x', [handle, bv2.handle]);
+    _ferret.callMethod('_frjs_bv_and_x', [handle, bv2.handle]);
   }
 
   /// Perform a boolean _and_ operation.
   BitVector and(BitVector bv2) {
-    int h = module.callMethod('_frjs_bv_and', [handle, bv2.handle]);
-    return new BitVector.handle(h);
+    int h = _ferret.callMethod('_frjs_bv_and', [handle, bv2.handle]);
+    return new BitVector.wrap(_ferret, h);
   }
 
   /// Alias for [and].
@@ -129,13 +130,13 @@ class BitVector extends JsProxy {
 
   /// Perform an inplace boolean _or_ operation.
   void orx(BitVector bv2) {
-    module.callMethod('_frjs_bv_or_x', [handle, bv2.handle]);
+    _ferret.callMethod('_frjs_bv_or_x', [handle, bv2.handle]);
   }
 
   /// Perform a boolean _or_ operation.
   BitVector or(BitVector bv2) {
-    int h = module.callMethod('_frjs_bv_or', [handle, bv2.handle]);
-    return new BitVector.handle(h);
+    int h = _ferret.callMethod('_frjs_bv_or', [handle, bv2.handle]);
+    return new BitVector.wrap(_ferret, h);
   }
 
   /// Alias for [or].
@@ -143,13 +144,13 @@ class BitVector extends JsProxy {
 
   /// Perform an inplace boolean _xor_ operation.
   void xorx(BitVector bv2) {
-    module.callMethod('_frjs_bv_xor_x', [handle, bv2.handle]);
+    _ferret.callMethod('_frjs_bv_xor_x', [handle, bv2.handle]);
   }
 
   /// Perform a boolean _or_ operation.
   BitVector xor(BitVector bv2) {
-    int h = module.callMethod('_frjs_bv_xor', [handle, bv2.handle]);
-    return new BitVector.handle(h);
+    int h = _ferret.callMethod('_frjs_bv_xor', [handle, bv2.handle]);
+    return new BitVector.wrap(_ferret, h);
   }
 
   /// Alias for [xor].
@@ -157,13 +158,13 @@ class BitVector extends JsProxy {
 
   /// Perform an inplace boolean _not_ operation.
   void notx() {
-    module.callMethod('_frjs_bv_not_x', [handle]);
+    _ferret.callMethod('_frjs_bv_not_x', [handle]);
   }
 
   /// Perform a boolean _not_ operation.
   BitVector not() {
-    int h = module.callMethod('_frjs_bv_not', [handle]);
-    return new BitVector.handle(h);
+    int h = _ferret.callMethod('_frjs_bv_not', [handle]);
+    return new BitVector.wrap(_ferret, h);
   }
 
   /// Alias for [not].
@@ -173,21 +174,21 @@ class BitVector extends JsProxy {
   /// before calling [next] or [next_unset]. It isn't necessary for the other
   /// scan methods or for the [each] method.
   void reset_scan() {
-    module.callMethod('_frt_bv_scan_reset', [handle]);
+    _ferret.callMethod('_frt_bv_scan_reset', [handle]);
   }
 
   /// Returns the next set bit in the bit vector scanning from low order to
   /// high order. You should call [reset_scan] before calling this method if
   /// you want to scan from the beginning. It is automatically reset when you
   /// first create the bit vector.
-  int next() => module.callMethod('_frt_bv_scan_next', [handle]);
+  int next() => _ferret.callMethod('_frt_bv_scan_next', [handle]);
 
   /// Returns the next unset bit in the bit vector scanning from low order to
   /// high order. This method should only be called on bit vectors which have
   /// been flipped (negated). You should call [reset_scan] before calling this
   /// method if you want to scan from the beginning. It is automatically reset
   /// when you first create the bit vector.
-  int next_unset() => module.callMethod('_frjs_bv_scan_next_unset', [handle]);
+  int next_unset() => _ferret.callMethod('_frjs_bv_scan_next_unset', [handle]);
 
   /// Returns the next set bit in the bit vector scanning from low order to
   /// high order and starting at [from]. The scan is inclusive so if [from] is
@@ -198,7 +199,7 @@ class BitVector extends JsProxy {
     if (from < 0) {
       from = 0;
     }
-    return module.callMethod('_frt_bv_scan_next_from', [handle, from]);
+    return _ferret.callMethod('_frt_bv_scan_next_from', [handle, from]);
   }
 
   /// Returns the next unset bit in the bit vector scanning from low order to
@@ -210,7 +211,7 @@ class BitVector extends JsProxy {
     if (from < 0) {
       from = 0;
     }
-    return module.callMethod('_frjs_bv_scan_next_unset_from', [handle, from]);
+    return _ferret.callMethod('_frjs_bv_scan_next_unset_from', [handle, from]);
   }
 
   /// Iterate through all the set bits in the bit vector yielding each one in
@@ -219,7 +220,7 @@ class BitVector extends JsProxy {
     var bit;
     reset_scan();
     bool extends_as_ones =
-        module.callMethod('_frjs_bv_extends_as_ones', [handle]) != 0;
+        _ferret.callMethod('_frjs_bv_extends_as_ones', [handle]) != 0;
     if (extends_as_ones) {
       while ((bit = next_unset()) >= 0) {
         fn(bit);
@@ -239,7 +240,7 @@ class BitVector extends JsProxy {
     var a = <int>[];
     reset_scan();
     bool extends_as_ones =
-        module.callMethod('_frjs_bv_extends_as_ones', [handle]) != 0;
+        _ferret.callMethod('_frjs_bv_extends_as_ones', [handle]) != 0;
     if (extends_as_ones) {
       while ((bit = next_unset()) >= 0) {
         a.add(bit);
@@ -285,31 +286,35 @@ class BitVector extends JsProxy {
 ///       ['ž','ż','ź']                             => 'z'
 ///     var mapper = new MultiMapper(mapping);
 ///     var mapped_string = mapper.map(string);
-class MultiMapper extends JsProxy {
+class MultiMapper {
+  final Ferret _ferret;
+  final int handle;
+
   /// Returns a new multi-mapper object and compiles it for optimization.
   ///
   /// Note that MultiMapper is immutable.
-  MultiMapper(Map<List<String>, String> mappings) : super() {
-    handle = module.callMethod('_frt_mulmap_new');
+  MultiMapper(Ferret ferret, Map<List<String>, String> mappings)
+      : _ferret = ferret,
+        handle = ferret.callMethod('_frt_mulmap_new') {
     mappings.forEach((from, to) {
       from.forEach((fr) {
-        int p_pattern = allocString(fr);
-        int p_rep = allocString(to);
-        module.callMethod(
+        int p_pattern = _ferret.allocString(fr);
+        int p_rep = _ferret.allocString(to);
+        _ferret.callMethod(
             '_frt_mulmap_add_mapping', [handle, p_pattern, p_rep]);
-        free(p_pattern);
-        free(p_rep);
+        _ferret.free(p_pattern);
+        _ferret.free(p_rep);
       });
     });
-    module.callMethod('_frt_mulmap_compile', [handle]);
+    _ferret.callMethod('_frt_mulmap_compile', [handle]);
   }
 
   /// Performs all the mappings on the string.
   String map(String from) {
-    int p_from = allocString(from);
-    int p_to = module.callMethod('_frt_mulmap_dynamic_map', [handle, p_from]);
-    var to = stringify(p_to);
-    free(p_to);
+    int p_from = _ferret.allocString(from);
+    int p_to = _ferret.callMethod('_frt_mulmap_dynamic_map', [handle, p_from]);
+    var to = _ferret.stringify(p_to);
+    _ferret.free(p_to);
     return to;
   }
 }
@@ -348,7 +353,7 @@ class MultiMapper extends JsProxy {
 ///      word = q.pop();    //=> "xxxxxx"
 ///      word = q.pop();    //=> "xxxyyyy"
 ///      word = q.pop();    //=> null
-class PriorityQueue extends JsProxy {
+class PriorityQueue {
   int size = 0;
   int capa;
   int mem_capa = 32;
@@ -359,7 +364,7 @@ class PriorityQueue extends JsProxy {
   /// Once the capacity is filled, the lowest valued elements will be
   /// automatically popped off the top of the queue as more elements are
   /// inserted into the queue.
-  PriorityQueue({int capacity: 32, Function less_than_proc}) : super() {
+  PriorityQueue({int capacity: 32, Function less_than_proc}) {
     if (less_than_proc == null) {
       less_than_proc = (a, b) => a.compareTo(b) < 0;
     }

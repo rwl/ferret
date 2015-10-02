@@ -8,7 +8,7 @@ library ferret.ext.store;
 
 import 'dart:js' as js;
 
-import '../proxy.dart';
+import '../ferret.dart';
 
 /// A Directory is an object which is used to access the index storage.
 /// Dart's IO API is not used so that we can use different storage
@@ -24,10 +24,13 @@ import '../proxy.dart';
 /// called `create_output`, while the method to open a file for reading is
 /// called `open_input`. If there is a risk of simultaneous modifications of
 /// the files then locks should be used. See [Lock] to find out how.
-abstract class Directory extends JsProxy {
+abstract class Directory {
   static const LOCK_PREFIX = '';
 
-  Directory() : super();
+  final Ferret _ferret;
+  final int handle;
+
+  Directory(this._ferret, this.handle);
 
   /// It is a good idea to close a directory when you have finished using it.
   /// Although the garbage collector will currently handle this for you, this
@@ -36,39 +39,39 @@ abstract class Directory extends JsProxy {
 
   /// Return true if a file with the name [file_name] exists in the directory.
   bool exists(String file_name) {
-    int p_fname = allocString(file_name);
-    int retval = module.callMethod('_frjs_dir_exists', [handle, p_fname]);
-    free(p_fname);
+    int p_fname = _ferret.allocString(file_name);
+    int retval = _ferret.callMethod('_frjs_dir_exists', [handle, p_fname]);
+    _ferret.free(p_fname);
     return 0 != retval;
   }
 
   /// Create an empty file in the directory with the name [file_name].
   void touch(String file_name) {
-    int p_fname = allocString(file_name);
-    module.callMethod('_frjs_dir_touch', [handle, p_fname]);
-    free(p_fname);
+    int p_fname = _ferret.allocString(file_name);
+    _ferret.callMethod('_frjs_dir_touch', [handle, p_fname]);
+    _ferret.free(p_fname);
   }
 
   /// Remove file [file_name] from the directory. Returns true if successful.
   bool delete(String file_name) {
-    int p_fname = allocString(file_name);
-    return module.callMethod('_frjs_dir_delete', [handle, p_fname]) != 0;
+    int p_fname = _ferret.allocString(file_name);
+    return _ferret.callMethod('_frjs_dir_delete', [handle, p_fname]) != 0;
   }
 
   /// Return a count of the number of files in the directory.
-  int file_count() => module.callMethod('_frjs_dir_file_count', [handle]);
+  int file_count() => _ferret.callMethod('_frjs_dir_file_count', [handle]);
 
   /// Delete all files in the directory. It gives you a clean slate.
-  void refresh() => module.callMethod('_frjs_dir_refresh', [handle]);
+  void refresh() => _ferret.callMethod('_frjs_dir_refresh', [handle]);
 
   /// Rename a file from [from] to [to]. An error will be raised if the file
   /// doesn't exist or there is some other type of IOError.
   void rename(String from, String to) {
-    int p_from = allocString(from);
-    int p_to = allocString(to);
-    module.callMethod('_frjs_dir_rename', [handle, p_from, p_to]);
-    free(p_from);
-    free(p_to);
+    int p_from = _ferret.allocString(from);
+    int p_to = _ferret.allocString(to);
+    _ferret.callMethod('_frjs_dir_rename', [handle, p_from, p_to]);
+    _ferret.free(p_from);
+    _ferret.free(p_to);
   }
 
   /// Make a lock with the name [lock_name]. Note that lockfiles will be
@@ -76,9 +79,9 @@ abstract class Directory extends JsProxy {
   /// you. You should avoid using files with a `.lck` extension as this
   /// extension is reserved for lock files.
   Lock make_lock(String lock_name) {
-    int p_name = allocString(lock_name);
-    int p_lock = module.callMethod('_frt_open_lock', [handle]);
-    free(p_name);
+    int p_name = _ferret.allocString(lock_name);
+    int p_lock = _ferret.callMethod('_frt_open_lock', [handle]);
+    _ferret.free(p_name);
     return new Lock._handle(p_lock);
   }
 }
@@ -102,10 +105,11 @@ abstract class Directory extends JsProxy {
 ///     write_lock.while_locked(WRITE_LOCK_TIME_OUT, () {
 ///       ... # Do your file modifications # ...
 ///     });
-class Lock extends JsProxy {
-  Lock._handle(int p_lock) : super() {
-    handle = p_lock;
-  }
+class Lock {
+  final Ferret _ferret;
+  final int handle;
+
+  Lock._handle(this._ferret, this.handle);
 
   /// Obtain a lock. Returns true if lock was successfully obtained. Make sure
   /// the lock is released using [Lock.release]. Otherwise you'll be left with
@@ -119,10 +123,10 @@ class Lock extends JsProxy {
   /// Returns `true` if lock was successfully obtained. Raises a [LockError]
   /// otherwise.
   bool obtain({double timeout: 1.0}) {
-    int success = module.callMethod('_frjs_lock_obtain', [handle]);
+    int success = _ferret.callMethod('_frjs_lock_obtain', [handle]);
     if (success == 0) {
-      int p_name = module.callMethod('_frjs_lock_get_name', [handle]);
-      var name = stringify(p_name);
+      int p_name = _ferret.callMethod('_frjs_lock_get_name', [handle]);
+      var name = _ferret.stringify(p_name);
       throw new LockError._("could not obtain lock: $name");
     }
     return success != 0;
@@ -142,10 +146,10 @@ class Lock extends JsProxy {
 
   /// Release the lock. This should only be called by the process which
   /// obtains the lock.
-  void release() => module.callMethod('_frjs_lock_release', [handle]);
+  void release() => _ferret.callMethod('_frjs_lock_release', [handle]);
 
   /// Returns `true` if the lock has been obtained.
-  bool locked() => module.callMethod('_frjs_lock_is_locked', [handle]) != 0;
+  bool locked() => _ferret.callMethod('_frjs_lock_is_locked', [handle]) != 0;
 }
 
 class LockError implements Exception {
@@ -165,15 +169,18 @@ class RAMDirectory extends Directory {
   /// You can optionally load another [Directory] (usually a [FSDirectory])
   /// into memory. This may be useful to speed up search performance but
   /// usually the speedup won't be worth the trouble. Be sure to benchmark.
-  RAMDirectory({Directory dir: null}) : super() {
-    //handle = module.callMethod('_frjs_ramdir_init');
+  factory RAMDirectory(Ferret ferret, {Directory dir: null}) {
+    //handle = _ferret.callMethod('_frjs_ramdir_init');
+    int h;
     if (dir != null) {
-      handle =
-          module.callMethod('_frt_open_ram_store_and_copy', [dir.handle, 0]);
+      h = ferret.callMethod('_frt_open_ram_store_and_copy', [dir.handle, 0]);
     } else {
-      handle = module.callMethod('_frt_open_ram_store');
+      h = ferret.callMethod('_frt_open_ram_store');
     }
+    return new RAMDirectory._(ferret, h);
   }
+
+  RAMDirectory._(Ferret ferret, int h) : super(ferret, h);
 }
 
 /// File-system resident [Directory] implementation. The [FSDirectory] will
@@ -187,7 +194,10 @@ class FSDirectory extends Directory {
   /// specify the [create] parameter. If [create] is true the [FSDirectory]
   /// will be refreshed as new. That is to say, any existing files in the
   /// directory will be deleted.
-  static FSDirectory create(String path, {bool create: false}) {
+  factory FSDirectory(Ferret ferret, String path, {bool create: false}) {
     frb_fsdir_new;
+    return new FSDirectory._(ferret, h);
   }
+
+  FSDirectory._(Ferret ferret, int h) : super(ferret, h);
 }

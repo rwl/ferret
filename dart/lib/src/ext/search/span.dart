@@ -9,19 +9,18 @@ part of ferret.ext.search;
 /// being that it returns the start and end offset of all of its matches for
 /// use by enclosing SpanQueries.
 class SpanTermQuery extends Query {
-  SpanTermQuery.handle(int hquery) : super() {
-    handle = hquery;
-  }
+  SpanTermQuery.handle(Ferret ferret, int h) : super._(ferret, h);
 
   /// Create a new [SpanTermQuery] which matches all documents with the term
   /// [term] in the field [field].
-  SpanTermQuery(field, term) : super() {
-    int p_field = allocString(field);
-    int symbol = module.callMethod('_frt_intern', [p_field]);
-    int p_term = allocString(term);
-    handle = module.callMethod('_frt_spantq_new', [symbol, p_term]);
-    free(p_field);
-    free(p_term);
+  factory SpanTermQuery(Ferret ferret, field, term) {
+    int p_field = ferret.allocString(field);
+    int symbol = ferret.callMethod('_frt_intern', [p_field]);
+    int p_term = ferret.allocString(term);
+    int h = ferret.callMethod('_frt_spantq_new', [symbol, p_term]);
+    ferret.free(p_field);
+    ferret.free(p_term);
+    return new SpanTermQuery.handle(ferret, h);
   }
 }
 
@@ -29,22 +28,21 @@ class SpanTermQuery extends Query {
 /// difference being that it returns the start and end offset of all of its
 /// matches for use by enclosing SpanQueries.
 class SpanMultiTermQuery extends Query {
-  SpanMultiTermQuery.handle(int hquery) : super() {
-    handle = hquery;
-  }
+  SpanMultiTermQuery.handle(Ferret ferret, int h) : super._(ferret, h);
 
   /// Create a new [SpanMultiTermQuery] which matches all documents with the
   /// terms [terms] in the field [field].
-  SpanMultiTermQuery(field, List<String> terms) : super() {
-    int p_field = allocString(field);
-    int symbol = module.callMethod('_frt_intern', [p_field]);
-    handle = module.callMethod('_frt_spanmtq_new', [symbol]);
-    free(p_field);
+  factory SpanMultiTermQuery(Ferret ferret, field, List<String> terms) {
+    int p_field = ferret.allocString(field);
+    int symbol = ferret.callMethod('_frt_intern', [p_field]);
+    int h = ferret.callMethod('_frt_spanmtq_new', [symbol]);
+    ferret.free(p_field);
     for (var term in terms) {
-      int p_term = allocString(term);
-      module.callMethod('_frt_spanmtq_add_term', [handle, p_term]);
-      free(p_term);
+      int p_term = ferret.allocString(term);
+      ferret.callMethod('_frt_spanmtq_add_term', [h, p_term]);
+      ferret.free(p_term);
     }
+    return new SpanMultiTermQuery.handle(ferret, h);
   }
 }
 
@@ -52,20 +50,20 @@ class SpanMultiTermQuery extends Query {
 /// difference being that it returns the start and end offset of all of its
 /// matches for use by enclosing SpanQueries.
 class SpanPrefixQuery extends Query {
-  SpanPrefixQuery.handle(int hquery) : super() {
-    handle = hquery;
-  }
+  SpanPrefixQuery.handle(Ferret ferret, int h) : super._(ferret, h);
 
   /// Create a new [SpanPrefixQuery] which matches all documents with the
   /// prefix [prefix] in the field [field].
-  SpanPrefixQuery(String field, String prefix, {int max_terms: 256}) : super() {
-    int p_field = allocString(field);
-    int symbol = module.callMethod('_frt_intern', [p_field]);
-    int p_prefix = allocString(prefix);
-    handle = module.callMethod('_frt_spanprq_new', [symbol, p_prefix]);
-    module.callMethod('_frjs_spq_set_max_terms', [handle, max_terms]);
-    free(p_field);
-    free(p_prefix);
+  factory SpanPrefixQuery(Ferret ferret, String field, String prefix,
+      {int max_terms: 256}) {
+    int p_field = ferret.allocString(field);
+    int symbol = ferret.callMethod('_frt_intern', [p_field]);
+    int p_prefix = ferret.allocString(prefix);
+    int h = ferret.callMethod('_frt_spanprq_new', [symbol, p_prefix]);
+    ferret.callMethod('_frjs_spq_set_max_terms', [h, max_terms]);
+    ferret.free(p_field);
+    ferret.free(p_prefix);
+    return new SpanPrefixQuery.handle(ferret, h);
   }
 }
 
@@ -80,16 +78,14 @@ class SpanPrefixQuery extends Query {
 ///
 /// NOTE: [SpanFirstQuery] only works with other SpanQueries.
 class SpanFirstQuery extends Query {
-  SpanFirstQuery.handle(int hquery) : super() {
-    handle = hquery;
-  }
+  SpanFirstQuery.handle(Ferret ferret, int h) : super._(ferret, h);
 
   /// Create a new [SpanFirstQuery] which matches all documents where
   /// [span_query] matches before [end] where [end] is a byte-offset from the
   /// start of the field.
-  SpanFirstQuery(Query span_query, int end) : super() {
-    handle = module.callMethod('_frt_spanfq_new', [span_query.handle, end]);
-  }
+  SpanFirstQuery(Ferret ferret, Query span_query, int end)
+      : super._(ferret,
+            ferret.callMethod('_frt_spanfq_new', [span_query.handle, end]));
 }
 
 /// A [SpanNearQuery] is like a combination between a [PhraseQuery] and a
@@ -123,9 +119,7 @@ class SpanFirstQuery extends Query {
 class SpanNearQuery extends Query {
   // var _slop, _in_order, _clauses;
 
-  SpanNearQuery.handle(int hquery) : super() {
-    handle = hquery;
-  }
+  SpanNearQuery.handle(Ferret ferret, int h) : super._(ferret, h);
 
   /// Create a new [SpanNearQuery]. You can add an array of clauses with the
   /// [clause] parameter or you can add clauses individually using the
@@ -143,9 +137,10 @@ class SpanNearQuery extends Query {
   /// [in_order] specifies whether or not the matches have to occur in the
   /// order they were added to the query. When slop is set to 0, this
   /// parameter will make no difference.
-  SpanNearQuery({List<Query> clauses, int slop: 0, bool in_order: false})
-      : super() {
-    handle = module.callMethod('_frt_spannq_new', [slop, in_order ? 1 : 0]);
+  SpanNearQuery(Ferret ferret,
+      {List<Query> clauses, int slop: 0, bool in_order: false})
+      : super._(ferret,
+            ferret.callMethod('_frt_spannq_new', [slop, in_order ? 1 : 0])) {
     for (var clause in clauses) {
       this.add(clause);
     }
@@ -155,7 +150,7 @@ class SpanNearQuery extends Query {
   /// they are added to the query which is important for matching. Note that
   /// clauses must be SpanQueries, not other types of query.
   void add(Query span_query) {
-    module.callMethod('_frt_spannq_add_clause', [handle, span_query.handle]);
+    _ferret.callMethod('_frt_spannq_add_clause', [handle, span_query.handle]);
   }
 
   /// Alias for [add].
@@ -191,15 +186,13 @@ class SpanNearQuery extends Query {
 ///
 /// NOTE: [SpanOrQuery] only works with other SpanQueries.
 class SpanOrQuery extends Query {
-  SpanOrQuery.handle(int hquery) : super() {
-    handle = hquery;
-  }
+  SpanOrQuery.handle(Ferret ferret, int h) : super._(ferret, h);
 
   /// Create a new [SpanOrQuery]. This is just like a [BooleanQuery] with all
   /// clauses with the occur value of `should`. The difference is that it can
   /// be passed to other SpanQuerys like [SpanNearQuery].
-  SpanOrQuery([List<Query> clauses]) : super() {
-    handle = module.callMethod('_frt_spanoq_new');
+  SpanOrQuery(Ferret ferret, [List<Query> clauses])
+      : super._(ferret, ferret.callMethod('_frt_spanoq_new')) {
     for (var clause in clauses) {
       this.add(clause);
     }
@@ -208,7 +201,7 @@ class SpanOrQuery extends Query {
   /// Add a clause to the [SpanOrQuery]. Note that clauses must be SpanQueries,
   /// not other types of query.
   void add(Query span_query) {
-    module.callMethod('_frt_spanoq_add_clause', [handle, span_query.handle]);
+    _ferret.callMethod('_frt_spanoq_add_clause', [handle, span_query.handle]);
   }
 
   /// Alias for [add].
@@ -229,14 +222,13 @@ class SpanOrQuery extends Query {
 ///
 /// NOTE: [SpanOrQuery] only works with other SpanQueries.
 class SpanNotQuery extends Query {
-  SpanNotQuery.handle(int hquery) : super() {
-    handle = hquery;
-  }
+  SpanNotQuery.handle(Ferret ferret, int h) : super._(ferret, h);
 
   /// Create a new [SpanNotQuery] which matches all documents which match
   /// [include_query] and don't match [exclude_query].
-  SpanNotQuery(Query include_query, Query exclude_query) : super() {
-    handle = module.callMethod(
-        '_frt_spanxq_new', [include_query.handle, exclude_query.handle]);
-  }
+  SpanNotQuery(Ferret ferret, Query include_query, Query exclude_query)
+      : super._(
+            ferret,
+            ferret.callMethod('_frt_spanxq_new',
+                [include_query.handle, exclude_query.handle]));
 }

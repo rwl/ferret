@@ -155,6 +155,7 @@ void filterTest() {
 }
 
 class CustomFilter extends Filter {
+  CustomFilter() : super.wrap(ferret, h);
   BitVector bits(IndexReader index_reader) {
     var bv = new BitVector();
     bv[0] = true;

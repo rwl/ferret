@@ -1,9 +1,9 @@
 import 'package:ferret/ferret.dart';
 
 main() {
-  initFerret();
+  var F = new Ferret();
 
-  var index = new Index(key: 'id');
+  var index = new Index(F, key: 'id');
 
   [
     {'id': '1', 'text': 'one'},

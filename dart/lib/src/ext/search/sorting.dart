@@ -30,10 +30,11 @@ enum SortType { SCORE, DOC, BYTE, INTEGER, FLOAT, STRING, AUTO }
 ///
 /// Note 2: When sorting by integer, integers are only 4 bytes so anything
 /// larger will cause strange sorting behaviour.
-class SortField extends JsProxy {
-  SortField.handle(int p_sf) : super() {
-    handle = p_sf;
-  }
+class SortField {
+  final Ferret _ferret;
+  final int handle;
+
+  SortField.wrap(this._ferret, this.handle);
 
   /// Create a new [SortField] which can be used to sort the result-set by the
   /// value in field [field].
@@ -45,33 +46,34 @@ class SortField extends JsProxy {
   /// is locale dependent and works for multibyte character sets like UTF-8 if
   /// you have your locale set correctly.
   /// Set [reverse] to `true` if you want to reverse the sort.
-  SortField(String field, {SortType type: SortType.AUTO, bool reverse: false})
-      : super() {
-    int p_field = allocString(field);
-    int symbol = module.callMethod('_frt_internal', [p_field]);
-    free(p_field);
-    handle = module.callMethod(
+  factory SortField(Ferret ferret, String field,
+      {SortType type: SortType.AUTO, bool reverse: false}) {
+    int p_field = ferret.allocString(field);
+    int symbol = ferret.callMethod('_frt_internal', [p_field]);
+    ferret.free(p_field);
+    int h = ferret.callMethod(
         '_frt_sort_field_new', [symbol, type.index, reverse ? 1 : 0]);
+    return new SortField.handle(ferret, h);
   }
 
   /// Return `true` if the field is to be reverse sorted. This attribute is
   /// set when you create the sort_field.
-  bool get reverse => module.callMethod('_frjs_sf_is_reverse', [handle]) != 0;
+  bool get reverse => _ferret.callMethod('_frjs_sf_is_reverse', [handle]) != 0;
 
   void _reverse() {
-    module.callMethod('_frjs_sort_field_reverse', [handle]);
+    _ferret.callMethod('_frjs_sort_field_reverse', [handle]);
   }
 
   /// Returns the name of the field to be sorted.
   String get name {
-    int p_name = module.callMethod('_frjs_sf_get_name', [handle]);
-    return stringify(p_name);
+    int p_name = _ferret.callMethod('_frjs_sf_get_name', [handle]);
+    return _ferret.stringify(p_name);
   }
 
   /// Return the type of sort. Should be one of; `auto`, `integer`, `float`,
   /// `string`, `byte`, `doc_id` or `score`.
   SortType type() {
-    int t = module.callMethod('_frjs_sf_get_type', [handle]);
+    int t = _ferret.callMethod('_frjs_sf_get_type', [handle]);
     return SortType.values[t];
   }
 
@@ -80,9 +82,9 @@ class SortField extends JsProxy {
 
   /// Return a human readable string describing this sort_field.
   String to_s() {
-    int p_s = module.callMethod('_sort_field_to_s', [handle]);
-    var s = stringify(p_s);
-    free(p_s);
+    int p_s = _ferret.callMethod('_sort_field_to_s', [handle]);
+    var s = _ferret.stringify(p_s);
+    _ferret.free(p_s);
     return s;
   }
 
@@ -104,47 +106,53 @@ class SortField extends JsProxy {
 ///
 /// Remember that the [type] parameter for [SortField] is set to `auto` be
 /// default be I strongly recommend you specify a `type` value.
-class Sort extends JsProxy {
+class Sort {
+  final Ferret _ferret;
+  final int handle;
+
+  Sort._(this._ferret, this.handle);
+
   /// Create a new Sort object. If [reverse] is true, all sort_fields will be
   /// reversed so if any of them are already reversed the will be turned back
   /// to their natural order again.
-  Sort({List<SortField> sort_fields, bool reverse: false}) : super() {
+  factory Sort(Ferret ferret,
+      {List<SortField> sort_fields, bool reverse: false}) {
     if (sort_fields == null) {
       sort_fields = [SortField.SCORE, SortField.DOC];
     }
-    handle = module.callMethod('_frt_sort_new');
-    module.callMethod('_frjs_sort_set_destroy_all', [handle, 0]);
+    int h = ferret.callMethod('_frt_sort_new');
+    ferret.callMethod('_frjs_sort_set_destroy_all', [h, 0]);
     for (var sf in sort_fields) {
       if (reverse) {
         sf._reverse();
       }
-      module.callMethod('_frt_sort_add_sort_field', [handle, sf.handle]);
+      ferret.callMethod('_frt_sort_add_sort_field', [h, sf.handle]);
     }
     if (!sort_fields.contains(SortField.DOC)) {
-      module.callMethod(
-          '_frt_sort_add_sort_field', [handle, SortField.DOC.handle]);
+      ferret.callMethod('_frt_sort_add_sort_field', [h, SortField.DOC.handle]);
     }
+    return new Sort._(ferret, h);
   }
 
   /// Returns an array of the [SortField]s held by the [Sort] object.
   List<SortField> get fields {
-    int size = module.callMethod('_frjs_sort_get_size', [handle]);
+    int size = _ferret.callMethod('_frjs_sort_get_size', [handle]);
     var a = new List<SortField>(size);
     for (int i = 0; i < size; i++) {
-      int p_sf = module.callMethod('_frjs_sort_get_sort_field', [handle, i]);
-      a[i] = new SortField.handle(p_sf);
+      int p_sf = _ferret.callMethod('_frjs_sort_get_sort_field', [handle, i]);
+      a[i] = new SortField.handle(_ferret, p_sf);
     }
     return a;
   }
 
   /// Returns a human readable string representing the sort object.
   String to_s() {
-    int p_s = module.callMethod('_frt_sort_to_s', [handle]);
-    var s = stringify(p_s);
-    free(p_s);
+    int p_s = _ferret.callMethod('_frt_sort_to_s', [handle]);
+    var s = _ferret.stringify(p_s);
+    _ferret.free(p_s);
     return s;
   }
 
-  static final Sort RELEVANCE = new Sort();
-  static final Sort INDEX_ORDER = new Sort(sort_fields: [SortField.DOC]);
+  static Sort RELEVANCE;
+  static Sort INDEX_ORDER;
 }

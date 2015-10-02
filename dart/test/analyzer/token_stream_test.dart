@@ -471,7 +471,7 @@ test_stem_filter() {
 class MyRegExpTokenizer extends TokenStream {
   var _ss;
 
-  MyRegExpTokenizer(String input) {
+  MyRegExpTokenizer(String input) : super.wrap(ferret, h) {
     _ss = new StringScanner(input);
   }
 
@@ -511,7 +511,7 @@ class MyRegExpTokenizer extends TokenStream {
 class MyReverseTokenFilter extends TokenStream {
   var _token_stream;
 
-  MyReverseTokenFilter(token_stream) {
+  MyReverseTokenFilter(token_stream) : super.wrap(ferret, h) {
     _token_stream = token_stream;
   }
 
@@ -586,7 +586,7 @@ class TokenFilter extends TokenStream {
   var _input;
   //protected
   /// Construct a token stream filtering the given input.
-  TokenFilter(input) {
+  TokenFilter(input) : super.wrap(ferret, h) {
     _input = input;
   }
 }

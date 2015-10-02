@@ -3,7 +3,9 @@ part of ferret.ext.index;
 /// The IndexWriter is the class used to add documents to an index. You can
 /// also delete documents from the index using this class. The indexing
 /// process is highly customizable.
-class IndexWriter extends JsProxy {
+class IndexWriter {
+  final Ferret _ferret;
+  final int handle;
 
   /*static const WRITE_LOCK_TIMEOUT = 1;
   static const COMMIT_LOCK_TIMEOUT = 10;
@@ -123,47 +125,57 @@ class IndexWriter extends JsProxy {
   /// referenced by the ID. For example:
   ///
   ///     index_writer.delete('id', "/path/to/indexed/file");
-  IndexWriter({Directory dir, String path, bool create_if_missing: true,
-      bool create: false, FieldInfos field_infos, analysis.Analyzer analyzer,
-      int chunk_size: 0x100000, int max_buffer_memory: 0x1000000,
-      int term_index_interval: 128, int doc_skip_interval: 16,
-      int merge_factor: 10, int max_buffered_docs: 10000, max_merge_docs,
-      int max_field_length: 10000, bool use_compound_file: true})
-      : super() {
-    _analyzer = analyzer;
-
+  factory IndexWriter(Ferret ferret,
+      {Directory dir,
+      String path,
+      bool create_if_missing: true,
+      bool create: false,
+      FieldInfos field_infos,
+      analysis.Analyzer analyzer,
+      int chunk_size: 0x100000,
+      int max_buffer_memory: 0x1000000,
+      int term_index_interval: 128,
+      int doc_skip_interval: 16,
+      int merge_factor: 10,
+      int max_buffered_docs: 10000,
+      max_merge_docs,
+      int max_field_length: 10000,
+      bool use_compound_file: true}) {
     var p_store = dir != null ? dir.handle : 0;
     var p_analyzer = analyzer != null ? analyzer.handle : 0;
     var p_fis = field_infos != null ? field_infos.handle : 0;
     // TODO: remaining args
-    handle = module.callMethod('_frjs_iw_init', [
+    int h = ferret.callMethod('_frjs_iw_init', [
       create ? 1 : 0,
       create_if_missing ? 1 : 0,
       p_store,
       p_analyzer,
       p_fis
     ]);
+    return new IndexWriter._(ferret, h, analyzer);
   }
+
+  IndexWriter._(this._ferret, this.handle, this._analyzer);
 
   /// Returns the number of documents in the [Index]. Note that deletions
   /// won't be taken into account until the [IndexWriter] has been committed.
-  int doc_count() => module.callMethod('_frt_iw_doc_count');
+  int doc_count() => _ferret.callMethod('_frt_iw_doc_count');
 
   /// Close the [IndexWriter]. This will close and free all resources used
   /// exclusively by the index writer. The garbage collector will do this
   /// automatically if not called explicitly.
   void close() {
-    module.callMethod('_frt_iw_close', [handle]);
+    _ferret.callMethod('_frt_iw_close', [handle]);
   }
 
   /// Add a document to the index. See [Document]. A document can also be a
   /// simple map object.
   void add_document(doc) {
-    int p_doc = module.callMethod('_frt_doc_new');
+    int p_doc = _ferret.callMethod('_frt_doc_new');
 
     if (doc is Map) {
       if (doc.containsKey('boost') && doc['boost'] is num) {
-        module.callMethod(
+        _ferret.callMethod(
             '_frjs_doc_set_boost', [p_doc, doc['boost'].toDouble()]);
       }
 
@@ -172,88 +184,88 @@ class IndexWriter extends JsProxy {
           return;
         }
 
-        int p_key = allocString(k);
-        int symbol = module.callMethod('_frt_intern', [p_key]);
-        free(p_key);
+        int p_key = _ferret.allocString(k);
+        int symbol = _ferret.callMethod('_frt_intern', [p_key]);
+        _ferret.free(p_key);
 
-        int p_df = module.callMethod('_frt_doc_get_field', [p_doc, symbol]);
+        int p_df = _ferret.callMethod('_frt_doc_get_field', [p_doc, symbol]);
         if (p_df == 0) {
-          p_df = module.callMethod('_frt_df_new', [symbol]);
+          p_df = _ferret.callMethod('_frt_df_new', [symbol]);
         }
 
         if (v is Map && v.containsKey('boost') && v['boost'] is num) {
-          module.callMethod(
+          _ferret.callMethod(
               '_frjs_df_set_boost', [p_df, v['boost'].toDouble()]);
         }
 
         if (v is List) {
-          module.callMethod('_frjs_df_set_destroy_data', [p_df, 1]);
+          _ferret.callMethod('_frjs_df_set_destroy_data', [p_df, 1]);
           v.forEach((a) {
             var a_str = a.toString();
-            int p_a = allocString(a_str);
-            module.callMethod(
+            int p_a = _ferret.allocString(a_str);
+            _ferret.callMethod(
                 '_frt_df_add_data_len', [p_df, p_a, a_str.length]);
-            free(p_a);
+            _ferret.free(p_a);
           });
         } else if (v is String) {
-          int p_v = allocString(v);
-          module.callMethod('_frt_df_add_data_len', [p_df, p_v, v.length]);
-          free(p_v);
+          int p_v = _ferret.allocString(v);
+          _ferret.callMethod('_frt_df_add_data_len', [p_df, p_v, v.length]);
+          _ferret.free(p_v);
         } else {
-          module.callMethod('_frjs_df_set_destroy_data', [p_df, 1]);
+          _ferret.callMethod('_frjs_df_set_destroy_data', [p_df, 1]);
 
           var v_str = v.toString();
-          int p_v = allocString(v_str);
-          module.callMethod('_frt_df_add_data_len', [p_df, p_v, v_str.length]);
-          free(p_v);
+          int p_v = _ferret.allocString(v_str);
+          _ferret.callMethod('_frt_df_add_data_len', [p_df, p_v, v_str.length]);
+          _ferret.free(p_v);
         }
-        module.callMethod('_frt_doc_add_field', [p_doc, p_df]);
+        _ferret.callMethod('_frt_doc_add_field', [p_doc, p_df]);
       });
     } else if (doc is List) {
-      int p_content = allocString('content');
-      int fsym_content = module.callMethod('_frt_intern', [p_content]);
-      free(p_content);
+      int p_content = _ferret.allocString('content');
+      int fsym_content = _ferret.callMethod('_frt_intern', [p_content]);
+      _ferret.free(p_content);
 
-      int p_df = module.callMethod('_frt_df_new', [fsym_content]);
+      int p_df = _ferret.callMethod('_frt_df_new', [fsym_content]);
 
-      module.callMethod('_frjs_df_set_destroy_data', [p_df, 1]);
+      _ferret.callMethod('_frjs_df_set_destroy_data', [p_df, 1]);
 
       doc.forEach((a) {
         var a_str = a.toString();
-        int p_a = allocString(a_str);
-        module.callMethod('_frt_df_add_data_len', [p_df, p_a, a_str.length]);
-        free(p_a);
+        int p_a = _ferret.allocString(a_str);
+        _ferret.callMethod('_frt_df_add_data_len', [p_df, p_a, a_str.length]);
+        _ferret.free(p_a);
       });
-      module.callMethod('_frt_doc_add_field', [p_doc, p_df]);
+      _ferret.callMethod('_frt_doc_add_field', [p_doc, p_df]);
     } else if (doc is String) {
-      int p_content = allocString('content');
-      int fsym_content = module.callMethod('_frt_intern', [p_content]);
-      free(p_content);
+      int p_content = _ferret.allocString('content');
+      int fsym_content = _ferret.callMethod('_frt_intern', [p_content]);
+      _ferret.free(p_content);
 
-      int p_df = module.callMethod('_frt_df_new', [fsym_content]);
+      int p_df = _ferret.callMethod('_frt_df_new', [fsym_content]);
 
-      int p_v = allocString(doc);
-      module.callMethod('_frt_df_add_data_len', [p_df, p_v, doc.length]);
-      free(p_v);
+      int p_v = _ferret.allocString(doc);
+      _ferret.callMethod('_frt_df_add_data_len', [p_df, p_v, doc.length]);
+      _ferret.free(p_v);
 
-      module.callMethod('_frt_doc_add_field', [p_doc, p_df]);
+      _ferret.callMethod('_frt_doc_add_field', [p_doc, p_df]);
     } else {
-      int p_content = allocString('content');
-      int fsym_content = module.callMethod('_frt_intern', [p_content]);
-      free(p_content);
+      int p_content = _ferret.allocString('content');
+      int fsym_content = _ferret.callMethod('_frt_intern', [p_content]);
+      _ferret.free(p_content);
 
-      int p_df = module.callMethod('_frt_df_new', [fsym_content]);
+      int p_df = _ferret.callMethod('_frt_df_new', [fsym_content]);
 
       var s = doc.toString();
-      int p_v = allocString(s);
-      module.callMethod('_frt_df_add_data_len', [p_df, p_v, s.length]);
-      free(p_v);
+      int p_v = _ferret.allocString(s);
+      _ferret.callMethod('_frt_df_add_data_len', [p_df, p_v, s.length]);
+      _ferret.free(p_v);
 
-      module.callMethod('_frt_doc_add_field', [p_doc, p_df]);
+      _ferret.callMethod('_frt_doc_add_field', [p_doc, p_df]);
     }
 
-    module.callMethod('_frt_iw_add_doc', [handle, p_doc]);
-    module.callMethod('_frt_doc_destroy', [p_doc]);
+    _ferret.callMethod('_frt_iw_add_doc', [handle, p_doc]);
+    _ferret.callMethod('_frt_doc_destroy', [p_doc]);
   }
 
   /// Alias for [add_document].
@@ -266,12 +278,12 @@ class IndexWriter extends JsProxy {
   /// process. Note that calling the optimize method do not in any way effect
   /// indexing speed (except for the time taken to complete the optimization
   /// process).
-  void optimize() => module.callMethod('_frt_iw_optimize');
+  void optimize() => _ferret.callMethod('_frt_iw_optimize');
 
   /// Explicitly commit any changes to the index that may be hanging around in
   /// memory. You should call this method if you want to read the latest index
   /// with an [IndexWriter].
-  void commit() => module.callMethod('_frt_iw_commit');
+  void commit() => _ferret.callMethod('_frt_iw_commit');
 
   /// Use this method to merge other indexes into the one being written by
   /// [IndexWriter]. This is useful for parallel indexing. You can have
@@ -287,14 +299,14 @@ class IndexWriter extends JsProxy {
   /// example, you may want to delete all documents with the term "viagra"
   /// when deleting spam.
   void delete(String field, String term) {
-    var p_field = allocString(field);
-    var p_term = allocString(term);
-    int symbol = module.callMethod('_frt_intern', [p_field]);
+    var p_field = _ferret.allocString(field);
+    var p_term = _ferret.allocString(term);
+    int symbol = _ferret.callMethod('_frt_intern', [p_field]);
 
-    module.callMethod('_frt_iw_delete_term', [handle, symbol, p_term]);
+    _ferret.callMethod('_frt_iw_delete_term', [handle, symbol, p_term]);
 
-    free(p_field);
-    free(p_term);
+    _ferret.free(p_field);
+    _ferret.free(p_term);
   }
 
   /// Delete all documents in the index with the given [terms] in
@@ -308,14 +320,14 @@ class IndexWriter extends JsProxy {
   /// Get the [FieldInfos] object for this [IndexWriter]. This is useful if
   /// you need to dynamically add new fields to the index with specific
   /// properties.
-  FieldInfos get field_infos => new FieldInfos()
-    ..handle = module.callMethod('_frjs_iw_field_infos', [handle]);
+  FieldInfos get field_infos => new FieldInfos._wrap(
+      _ferret, _ferret.callMethod('_frjs_iw_field_infos', [handle]));
 
   /// Get the [Analyzer] for this [IndexWriter]. This is useful if you need
   /// to use the same analyzer in a [QueryParser].
   analysis.Analyzer get analyzer {
     if (_analyzer != null) {
-      _analyzer.handle = module.callMethod('_frjs_iw_get_analyzer', [handle]);
+      _analyzer.handle = _ferret.callMethod('_frjs_iw_get_analyzer', [handle]);
       return _analyzer;
     }
     return null;
@@ -325,71 +337,71 @@ class IndexWriter extends JsProxy {
   /// change the analyzer for a special document. It is risky though as the
   /// same analyzer will be used for all documents during search.
   void set analyzer(analysis.Analyzer a) {
-    module.callMethod('_frjs_iw_set_analyzer', [handle, a.handle]);
+    _ferret.callMethod('_frjs_iw_set_analyzer', [handle, a.handle]);
   }
 
   /// Returns the current version of the index writer.
-  int get version => module.callMethod('_frjs_iw_version', [handle]);
+  int get version => _ferret.callMethod('_frjs_iw_version', [handle]);
 
-  int get chunk_size => module.callMethod('_frjs_iw_get_chunk_size', [handle]);
+  int get chunk_size => _ferret.callMethod('_frjs_iw_get_chunk_size', [handle]);
 
   void set chunk_size(int size) {
-    module.callMethod('_frjs_iw_set_chunk_size', [handle, size]);
+    _ferret.callMethod('_frjs_iw_set_chunk_size', [handle, size]);
   }
 
   int get max_buffer_memory =>
-      module.callMethod('_frjs_iw_get_max_buffer_memory', [handle]);
+      _ferret.callMethod('_frjs_iw_get_max_buffer_memory', [handle]);
 
   void set max_buffer_memory(int max) {
-    module.callMethod('_frjs_iw_set_max_buffer_memory', [handle, max]);
+    _ferret.callMethod('_frjs_iw_set_max_buffer_memory', [handle, max]);
   }
 
   int get term_index_interval =>
-      module.callMethod('_frjs_iw_get_index_interval', [handle]);
+      _ferret.callMethod('_frjs_iw_get_index_interval', [handle]);
 
   void set term_index_interval(int interval) {
-    module.callMethod('_frjs_iw_set_index_interval', [handle, interval]);
+    _ferret.callMethod('_frjs_iw_set_index_interval', [handle, interval]);
   }
 
   int get doc_skip_interval =>
-      module.callMethod('frjs_iw_get_skip_interval', [handle]);
+      _ferret.callMethod('frjs_iw_get_skip_interval', [handle]);
 
   void set doc_skip_interval(int interval) {
-    module.callMethod('_frjs_iw_set_skip_interval', [handle, interval]);
+    _ferret.callMethod('_frjs_iw_set_skip_interval', [handle, interval]);
   }
 
   int get merge_factor =>
-      module.callMethod('_frjs_iw_get_merge_factor', [handle]);
+      _ferret.callMethod('_frjs_iw_get_merge_factor', [handle]);
 
   void set merge_factor(int factor) {
-    module.callMethod('_frjs_iw_set_merge_factor', [handle, factor]);
+    _ferret.callMethod('_frjs_iw_set_merge_factor', [handle, factor]);
   }
 
   int get max_buffered_docs =>
-      module.callMethod('_frjs_iw_get_max_buffered_docs', [handle]);
+      _ferret.callMethod('_frjs_iw_get_max_buffered_docs', [handle]);
 
   void set max_buffered_docs(int max) {
-    module.callMethod('_frjs_iw_set_max_buffered_docs', [handle, max]);
+    _ferret.callMethod('_frjs_iw_set_max_buffered_docs', [handle, max]);
   }
 
   int get max_merge_docs =>
-      module.callMethod('_frjs_iw_get_max_merge_docs', [handle]);
+      _ferret.callMethod('_frjs_iw_get_max_merge_docs', [handle]);
 
   void set max_merge_docs(int max) {
-    module.callMethod('_frjs_iw_set_max_merge_docs', [handle, max]);
+    _ferret.callMethod('_frjs_iw_set_max_merge_docs', [handle, max]);
   }
 
   int get max_field_length =>
-      module.callMethod('_frjs_iw_get_max_field_length', [handle]);
+      _ferret.callMethod('_frjs_iw_get_max_field_length', [handle]);
 
   void set max_field_length(int len) {
-    module.callMethod('_frjs_iw_set_max_field_length', [handle, len]);
+    _ferret.callMethod('_frjs_iw_set_max_field_length', [handle, len]);
   }
 
   bool get use_compound_file =>
-      module.callMethod('_frjs_iw_get_use_compound_file', [handle]) != 0;
+      _ferret.callMethod('_frjs_iw_get_use_compound_file', [handle]) != 0;
 
   void set use_compound_file(bool use) {
-    module.callMethod('_frjs_iw_set_use_compound_file', [handle, use ? 1 : 0]);
+    _ferret.callMethod('_frjs_iw_set_use_compound_file', [handle, use ? 1 : 0]);
   }
 }

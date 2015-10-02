@@ -7,12 +7,12 @@ part of ferret.ext.analysis;
 ///     "Dave's résumé, at http://www.davebalmain.com/ 1234"
 ///     => ["Dave", "s", "r", "sum", "at", "http", "www", "davebalmain", "com"]
 class AsciiLetterTokenizer extends TokenStream {
-  AsciiLetterTokenizer(String text) : super() {
-    handle = module.callMethod('_frt_letter_tokenizer_new');
+  AsciiLetterTokenizer(Ferret ferret, String text)
+      : super.wrap(ferret, ferret.callMethod('_frt_letter_tokenizer_new')) {
     this.text = text;
   }
 
-  AsciiLetterTokenizer._handle(int h_ts) : super._handle(h_ts);
+  AsciiLetterTokenizer._handle(Ferret ferret, int h) : super.wrap(ferret, h);
 }
 
 /// A [LetterTokenizer] is a tokenizer that divides text at non-letters. That
@@ -25,12 +25,13 @@ class AsciiLetterTokenizer extends TokenStream {
 class LetterTokenizer extends TokenStream {
   /// Create a new [LetterTokenizer] which optionally downcases tokens.
   /// Downcasing is done according the current locale.
-  LetterTokenizer(String text, {bool lower: true}) : super() {
-    handle = module.callMethod('_frjs_letter_tokenizer_init', [lower ? 1 : 0]);
+  LetterTokenizer(Ferret ferret, String text, {bool lower: true})
+      : super.wrap(ferret,
+            ferret.callMethod('_frjs_letter_tokenizer_init', [lower ? 1 : 0])) {
     this.text = text;
   }
 
-  LetterTokenizer._handle(int h_ts) : super._handle(h_ts);
+  LetterTokenizer._handle(Ferret ferret, int h) : super.wrap(ferret, h);
 }
 
 /// A [WhiteSpaceTokenizer] is a tokenizer that divides text at white-space.
@@ -39,12 +40,14 @@ class LetterTokenizer extends TokenStream {
 ///     "Dave's résumé, at http://www.davebalmain.com/ 1234"
 ///     => ["Dave's", "résumé,", "at", "http://www.davebalmain.com", "1234"]
 class AsciiWhiteSpaceTokenizer extends TokenStream {
-  AsciiWhiteSpaceTokenizer(String text) : super() {
-    handle = module.callMethod('_frt_whitespace_tokenizer_new');
+  AsciiWhiteSpaceTokenizer(Ferret ferret, String text)
+      : super.wrap(
+            ferret, ferret.callMethod('_frt_whitespace_tokenizer_new')) {
     this.text = text;
   }
 
-  AsciiWhiteSpaceTokenizer._handle(int h_ts) : super._handle(h_ts);
+  AsciiWhiteSpaceTokenizer._handle(Ferret ferret, int h)
+      : super.wrap(ferret, h);
 }
 
 /// A [WhiteSpaceTokenizer] is a tokenizer that divides text at white-space.
@@ -55,13 +58,15 @@ class AsciiWhiteSpaceTokenizer extends TokenStream {
 class WhiteSpaceTokenizer extends TokenStream {
   /// Create a new [WhiteSpaceTokenizer] which optionally downcases tokens.
   /// Downcasing is done according the current locale.
-  WhiteSpaceTokenizer(String text, {bool lower: true}) : super() {
-    handle =
-        module.callMethod('_frjs_whitespace_tokenizer_init', [lower ? 1 : 0]);
+  WhiteSpaceTokenizer(Ferret ferret, String text, {bool lower: true})
+      : super.wrap(
+            ferret,
+            ferret.callMethod(
+                '_frjs_whitespace_tokenizer_init', [lower ? 1 : 0])) {
     this.text = text;
   }
 
-  WhiteSpaceTokenizer._handle(int h_ts) : super._handle(h_ts);
+  WhiteSpaceTokenizer._handle(Ferret ferret, int h) : super.wrap(ferret, h);
 }
 
 /// The standard tokenizer is an advanced tokenizer which tokenizes most
@@ -71,12 +76,14 @@ class WhiteSpaceTokenizer extends TokenStream {
 ///     "Dave's résumé, at http://www.davebalmain.com/ 1234"
 ///     => ["Dave's", "r", "sum", "at", "http://www.davebalmain.com", "1234"]
 class AsciiStandardTokenizer extends TokenStream {
-  AsciiStandardTokenizer(String text) : super() {
-    handle = module.callMethod('_frt_standard_tokenizer_new');
+  AsciiStandardTokenizer(Ferret ferret, String text)
+      : super.wrap(
+            ferret, ferret.callMethod('_frt_standard_tokenizer_new')) {
     this.text = text;
   }
 
-  AsciiStandardTokenizer._handle(int h_ts) : super._handle(h_ts);
+  AsciiStandardTokenizer._handle(Ferret ferret, int h)
+      : super.wrap(ferret, h);
 }
 
 /// The standard tokenizer is an advanced tokenizer which tokenizes most
@@ -88,12 +95,13 @@ class AsciiStandardTokenizer extends TokenStream {
 class StandardTokenizer extends TokenStream {
   /// Create a new StandardTokenizer which optionally downcases tokens.
   /// Downcasing is done according the current locale.
-  StandardTokenizer(String text, {bool lower: true}) : super() {
-    handle = module.callMethod('_frjs_standard_tokenizer_init');
+  StandardTokenizer(Ferret ferret, String text, {bool lower: true})
+      : super.wrap(
+            ferret, ferret.callMethod('_frjs_standard_tokenizer_init')) {
     this.text = text;
   }
 
-  StandardTokenizer._handle(int h_ts) : super._handle(h_ts);
+  StandardTokenizer._handle(Ferret ferret, int h) : super.wrap(ferret, h);
 }
 
 /// A tokenizer that recognizes tokens based on a regular expression passed to
@@ -110,9 +118,8 @@ class StandardTokenizer extends TokenStream {
 ///     => ["Dave", "s", "résumé", "at", "http", "www", "davebalmain", "com"]
 class RegExpTokenizer extends TokenStream {
   /// Create a new tokenizer based on a regular expression.
-  RegExpTokenizer(String text, RegExp regexp) : super() {
-    frb_rets_init;
-  }
+  RegExpTokenizer(Ferret ferret, String text, RegExp regexp)
+      : super.wrap(ferret, frb_rets_init);
 
   /// Set the text to be tokenized by the tokenizer. The tokenizer gets reset
   /// to tokenize the text from the beginning.

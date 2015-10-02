@@ -22,17 +22,18 @@ part of ferret.ext.analysis;
 ///         return new StemFilter(new LowerCaseFilter(new StandardTokenizer(str)));
 ///       }
 ///     }
-abstract class Analyzer extends JsProxy {
+abstract class Analyzer {
+  final Ferret _ferret;
+  final int handle;
+
   /// Create a new [LetterAnalyzer] which downcases tokens by default but can
   /// optionally leave case as is. Lowercasing will be done based on the current
   /// locale.
-  factory Analyzer({bool lower: true}) {
-    return new LetterAnalyzer(lower: lower);
+  factory Analyzer(Ferret ferret, {bool lower: true}) {
+    return new LetterAnalyzer(ferret, lower: lower);
   }
 
-  Analyzer._(/*{bool lower: true}*/) : super() {
-//    frb_letter_analyzer_init;
-  }
+  Analyzer._(this._ferret, this.handle);
 
   TokenStream _makeTokenStream(int h_ts);
 
@@ -40,12 +41,12 @@ abstract class Analyzer extends JsProxy {
   /// created may also depend on the [field_name]. Although this parameter
   /// is typically ignored.
   TokenStream token_stream(String field_name, String input) {
-    int p_field = allocString(field_name);
-    int p_text = allocString(input);
-    int p_ts = module.callMethod(
+    int p_field = _ferret.allocString(field_name);
+    int p_text = _ferret.allocString(input);
+    int p_ts = _ferret.callMethod(
         '_frjs_analyzer_token_stream', [handle, p_field, p_text]);
-    free(p_field);
-    free(p_text);
+    _ferret.free(p_field);
+    _ferret.free(p_text);
     var ts = _makeTokenStream(p_ts);
     // Make sure that there is no entry already.
     ts.text = input;
@@ -79,13 +80,11 @@ class AsciiLetterAnalyzer extends Analyzer {
   /// Create a new [AsciiWhiteSpaceAnalyzer] which downcases tokens by default
   /// but can optionally leave case as is. Lowercasing will only be done to
   /// ASCII characters.
-  AsciiLetterAnalyzer({bool lower: true}) : super._() {
-    handle = module.callMethod('_frt_letter_analyzer_new', [lower ? 1 : 0]);
-  }
+  AsciiLetterAnalyzer(Ferret ferret, {bool lower: true})
+      : super._(ferret,
+            ferret.callMethod('_frt_letter_analyzer_new', [lower ? 1 : 0]));
 
-  TokenStream _makeTokenStream(int h_ts) {
-    return new AsciiLetterTokenizer._handle(h_ts);
-  }
+  TokenStream _makeTokenStream(int h) => new AsciiLetterTokenizer._handle(h);
 }
 
 /// A [LetterAnalyzer] creates a [TokenStream] that splits the input up into
@@ -107,13 +106,11 @@ class LetterAnalyzer extends Analyzer {
   /// Create a new [LetterAnalyzer] which downcases tokens by default but can
   /// optionally leave case as is. Lowercasing will be done based on the
   /// current locale.
-  LetterAnalyzer({bool lower: true}) : super._() {
-    handle = module.callMethod('_frjs_letter_analyzer_init', [lower ? 1 : 0]);
-  }
+  LetterAnalyzer(Ferret ferret, {bool lower: true})
+      : super._(ferret,
+            ferret.callMethod('_frjs_letter_analyzer_init', [lower ? 1 : 0]));
 
-  TokenStream _makeTokenStream(int h_ts) {
-    return new LetterTokenizer._handle(h_ts);
-  }
+  TokenStream _makeTokenStream(int h) => new LetterTokenizer._handle(h);
 }
 
 /// The [AsciiWhiteSpaceAnalyzer] recognizes tokens as maximal strings of
@@ -141,13 +138,12 @@ class AsciiWhiteSpaceAnalyzer extends Analyzer {
   /// Create a new [AsciiWhiteSpaceAnalyzer] which downcases tokens by default
   /// but can optionally leave case as is. Lowercasing will only be done to
   /// ASCII characters.
-  AsciiWhiteSpaceAnalyzer({bool lower: false}) : super._() {
-    handle = module.callMethod('_frt_whitespace_analyzer_new', [lower ? 1 : 0]);
-  }
+  AsciiWhiteSpaceAnalyzer(Ferret ferret, {bool lower: false})
+      : super._(ferret,
+            ferret.callMethod('_frt_whitespace_analyzer_new', [lower ? 1 : 0]));
 
-  TokenStream _makeTokenStream(int h_ts) {
-    return new AsciiWhiteSpaceTokenizer._handle(h_ts);
-  }
+  TokenStream _makeTokenStream(int h) =>
+      new AsciiWhiteSpaceTokenizer._handle(h);
 }
 
 /// The [WhiteSpaceAnalyzer] recognizes tokens as maximal strings of
@@ -169,14 +165,13 @@ class WhiteSpaceAnalyzer extends Analyzer {
   /// Create a new [WhiteSpaceAnalyzer] which downcases tokens by default but
   /// can optionally leave case as is. Lowercasing will be done based on the
   /// current locale.
-  WhiteSpaceAnalyzer({bool lower: false}) : super._() {
-    handle =
-        module.callMethod('_frjs_white_space_analyzer_init', [lower ? 1 : 0]);
-  }
+  WhiteSpaceAnalyzer(Ferret ferret, {bool lower: false})
+      : super._(
+            ferret,
+            ferret.callMethod(
+                '_frjs_white_space_analyzer_init', [lower ? 1 : 0]));
 
-  TokenStream _makeTokenStream(int h_ts) {
-    return new WhiteSpaceTokenizer._handle(h_ts);
-  }
+  TokenStream _makeTokenStream(int h) => new WhiteSpaceTokenizer._handle(h);
 }
 
 /// The [AsciiStandardAnalyzer] is the most advanced of the available
@@ -207,16 +202,14 @@ class AsciiStandardAnalyzer extends Analyzer {
   /// but can optionally leave case as is. Lowercasing will be done based on
   /// the current locale. You can also set the list of stop-words to be used
   /// by the [StopFilter].
-  AsciiStandardAnalyzer({lower: true, stop_words /*: FULL_ENGLISH_STOP_WORDS*/})
-      : super._() {
-    int p_stop_words = 0; // FIXME
-    handle = module.callMethod(
-        '_frjs_a_standard_analyzer_init', [lower ? 1 : 0, p_stop_words]);
-  }
+  AsciiStandardAnalyzer(Ferret ferret,
+      {lower: true, stop_words: 0 /*: FULL_ENGLISH_STOP_WORDS*/})
+      : super._(
+            ferret,
+            ferret.callMethod(
+                '_frjs_a_standard_analyzer_init', [lower ? 1 : 0, stop_words]));
 
-  TokenStream _makeTokenStream(int h_ts) {
-    return new AsciiStandardTokenizer._handle(h_ts);
-  }
+  TokenStream _makeTokenStream(int h) => new AsciiStandardTokenizer._handle(h);
 }
 
 /// The [StandardAnalyzer] is the most advanced of the available analyzers. If
@@ -244,13 +237,12 @@ class StandardAnalyzer extends Analyzer {
   /// can optionally leave case as is. Lowercasing will be done based on the
   /// current locale. You can also set the list of stop-words to be used by
   /// the [StopFilter].
-  StandardAnalyzer({lower: true /*, stop_words : FULL_ENGLISH_STOP_WORDS*/})
-      : super._() {
-    int _lower = lower ? 1 : 0;
-    int p_stop_words = 0; // FIXME
-    handle = module.callMethod(
-        '_frjs_standard_analyzer_init', [_lower, p_stop_words]);
-  }
+  StandardAnalyzer(Ferret ferret,
+      {lower: true /*, stop_words : FULL_ENGLISH_STOP_WORDS*/})
+      : super._(
+            ferret,
+            ferret.callMethod(
+                '_frjs_standard_analyzer_init', [lower ? 1 : 0, 0]));
 
   TokenStream _makeTokenStream(int h_ts) {
     return new StandardTokenizer._handle(h_ts);
@@ -272,9 +264,8 @@ class StandardAnalyzer extends Analyzer {
 class PerFieldAnalyzer extends Analyzer {
   /// Create a new [PerFieldAnalyzer] specifying the default analyzer to use
   /// on all fields that are set specifically.
-  PerFieldAnalyzer(Analyzer default_analyzer) : super._() {
-    frb_per_field_analyzer_init;
-  }
+  PerFieldAnalyzer(Ferret ferret, Analyzer default_analyzer)
+      : super._(ferret, frb_per_field_analyzer_init);
 
   /// Set the analyzer to be used on field [field_name].
   add_field(String field_name, Analyzer default_analyzer) {
@@ -318,9 +309,8 @@ class PerFieldAnalyzer extends Analyzer {
 class RegExpAnalyzer extends Analyzer {
   /// Create a new [RegExpAnalyzer] which will create tokenizers based on the
   /// regular expression and lowercasing if required.
-  RegExpAnalyzer(RegExp reg_exp, {bool lower: true}) : super._() {
-    frb_re_analyzer_init;
-  }
+  RegExpAnalyzer(Ferret ferret, RegExp reg_exp, {bool lower: true})
+      : super._(ferret, frb_re_analyzer_init);
 
   /// Create a new [TokenStream] to tokenize [input]. The [TokenStream]
   /// created may also depend on the [field_name]. Although this parameter

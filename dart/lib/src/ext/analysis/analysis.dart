@@ -29,7 +29,7 @@ library ferret.ext.analysis;
 
 import 'dart:typed_data' show Uint8List;
 
-import '../../proxy.dart';
+import '../../ferret.dart';
 
 part 'analyzer.dart';
 part 'filter.dart';
@@ -53,7 +53,10 @@ part 'tokenizer.dart';
 /// Note that the difference between [end_offset] and [start_offset] may not
 /// be equal to [text.length], as the term text may have been altered by a
 /// stemmer or some other filter.
-class Token extends JsProxy implements Comparable {
+class Token implements Comparable {
+  final Ferret _ferret;
+  final int handle;
+
   String _text;
   int _start;
   int _end;
@@ -84,17 +87,20 @@ class Token extends JsProxy implements Comparable {
   /// [text] is the main text for the token. [start] is the start offset of
   /// the token in bytes. [end] is the end offset of the token in bytes.
   /// [pos_inc] is the position increment of a token.
-  Token.test(this._text, this._start, this._end, [this._pos_inc = 1]) : super();
+  Token.test(this._text, this._start, this._end, [this._pos_inc = 1])
+      : _ferret = null,
+        handle = 0;
   /*  frb_token_init;
   }*/
 
-  Token._handle(int htk) : super() {
-    handle = htk;
-    int p_text = module.callMethod('_frjs_tk_get_text', [handle]);
-    _text = stringify(p_text);
-    _start = module.callMethod('_frjs_tk_get_start', [handle]);
-    _end = module.callMethod('_frjs_tk_get_end', [handle]);
-    _pos_inc = module.callMethod('_frjs_tk_get_pos_inc', [handle]);
+  Token._handle(Ferret ferret, int h)
+      : _ferret = ferret,
+        handle = h {
+    int p_text = _ferret.callMethod('_frjs_tk_get_text', [handle]);
+    _text = _ferret.stringify(p_text);
+    _start = _ferret.callMethod('_frjs_tk_get_start', [handle]);
+    _end = _ferret.callMethod('_frjs_tk_get_end', [handle]);
+    _pos_inc = _ferret.callMethod('_frjs_tk_get_pos_inc', [handle]);
   }
 
   /// Used to compare two tokens. Token is extended by [Comparable] so you
@@ -123,10 +129,10 @@ class Token extends JsProxy implements Comparable {
   }
 
   void _set() {
-    int p_text = allocString(_text);
-    module.callMethod(
+    int p_text = _ferret.allocString(_text);
+    _ferret.callMethod(
         '_frt_tk_set_no_len', [handle, p_text, _start, _end, _pos_inc]);
-    free(p_text);
+    _ferret.free(p_text);
   }
 
   /// Returns the text that this token represents.
@@ -200,18 +206,21 @@ class Token extends JsProxy implements Comparable {
 ///
 /// * [Tokenizer]: a [TokenStream] whose input is a string
 /// * [TokenFilter]: a [TokenStream] whose input is another [TokenStream]
-abstract class TokenStream extends JsProxy {
-  TokenStream() : super();
+abstract class TokenStream {
+  final Ferret _ferret;
+  final int handle;
 
-  TokenStream._handle(int hts) : super() {
-    handle = hts;
-  }
+//  TokenStream();
+
+  TokenStream.wrap(Ferret ferret, int h)
+      : _ferret = ferret,
+        handle = h;
 
   /// Return the next token from the [TokenStream] or null if there are no
   /// more tokens.
   Token next() {
-    int p_tk = module.callMethod('_frjs_ts_next', [handle]);
-    return p_tk != 0 ? new Token._handle(p_tk) : null;
+    int p_tk = _ferret.callMethod('_frjs_ts_next', [handle]);
+    return p_tk != 0 ? new Token._handle(_ferret, p_tk) : null;
   }
 
   /// Set the text attribute of the [TokenStream] to the text you wish to be
@@ -219,14 +228,14 @@ abstract class TokenStream extends JsProxy {
   ///
   ///     token_stream.text = File.read(file_name);
   void set text(String val) {
-    int p_text = allocString(val);
-    module.callMethod('_frjs_ts_set_text', [handle, p_text]);
+    int p_text = _ferret.allocString(val);
+    _ferret.callMethod('_frjs_ts_set_text', [handle, p_text]);
 //    free(p_text); FIXME: memory leak?
   }
 
   /// Return the text that the TokenStream is tokenizing.
   String get text {
-    int p_text = module.callMethod('_frjs_ts_get_text', [handle]);
-    return stringify(p_text);
+    int p_text = _ferret.callMethod('_frjs_ts_get_text', [handle]);
+    return _ferret.stringify(p_text);
   }
 }

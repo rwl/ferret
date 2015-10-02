@@ -9,21 +9,26 @@ part of ferret.ext.search;
 ///
 /// TODO: add support for user implemented Filter.
 /// TODO: add example of user implemented Filter.
-class Filter extends JsProxy {
+class Filter {
+  final Ferret _ferret;
+  final int handle;
+
+  Filter.wrap(this._ferret, this.handle);
+
   /// Get the bit_vector used by this filter. This method will usually be used
   /// to group filters or apply filters to other filters.
   BitVector bits(IndexReader index_reader) {
     int p_bv =
-        module.callMethod('_frt_filt_get_bv', [handle, index_reader.handle]);
+        _ferret.callMethod('_frt_filt_get_bv', [handle, index_reader.handle]);
     return new BitVector.handle(p_bv);
   }
 
   /// Return a human readable string representing the [Filter] object that the
   /// method was called on.
   String to_s() {
-    int p_s = module.callMethod('_frjs_f_to_s', [handle]);
-    var s = stringify(p_s);
-    free(p_s);
+    int p_s = _ferret.callMethod('_frjs_f_to_s', [handle]);
+    var s = _ferret.stringify(p_s);
+    _ferret.free(p_s);
     return s;
   }
 }
@@ -53,7 +58,7 @@ class RangeFilter extends Filter {
   ///     var f = new RangeFilter('date', lower: "200501", upper: 200502);
   ///     // is equivalent to
   ///     var f = new RangeFilter('date', geq: "200501", leq: 200502);
-  RangeFilter(String field,
+  factory RangeFilter(Ferret ferret, String field,
       {lower,
       upper,
       lower_exclusive,
@@ -63,11 +68,10 @@ class RangeFilter extends Filter {
       le,
       leq,
       ge,
-      geq})
-      : super() {
-    int p_field = allocString(field);
-    int symbol = module.callMethod('_frt_internal', [p_field]);
-    free(p_field);
+      geq}) {
+    int p_field = ferret.allocString(field);
+    int symbol = ferret.callMethod('_frt_internal', [p_field]);
+    ferret.free(p_field);
 
     RangeParams params = _range_params(lower, upper, lower_exclusive,
         upper_exclusive, include_lower, include_upper, le, leq, ge, geq);
@@ -75,22 +79,25 @@ class RangeFilter extends Filter {
     int lterm = 0;
     int uterm = 0;
     if (params.lterm != null) {
-      lterm = allocString(params.lterm);
+      lterm = ferret.allocString(params.lterm);
     }
     if (params.uterm != null) {
-      uterm = allocString(params.uterm);
+      uterm = ferret.allocString(params.uterm);
     }
 
-    handle = module.callMethod('_frt_rfilt_new', [
+    int h = ferret.callMethod('_frt_rfilt_new', [
       symbol,
       lterm,
       uterm,
       params.include_lower ? 1 : 0,
       params.include_upper ? 1 : 0
     ]);
-    free(lterm);
-    free(uterm);
+    ferret.free(lterm);
+    ferret.free(uterm);
+    return new RangeFilter._(ferret, h);
   }
+
+  RangeFilter._(Ferret ferret, int handle) : super.wrap(ferret, handle);
 }
 
 /// [TypedRangeFilter] filters a set of documents which contain a
@@ -119,7 +126,7 @@ class TypedRangeFilter extends Filter {
   ///     var f = new TypedRangeFilter('date', lower: "-132.2", upper: -1.4);
   ///     // is equivalent to
   ///     var f = new TypedRangeFilter('date', geq: "-132.2", leq: -1.4);
-  TypedRangeFilter(String field,
+  factory TypedRangeFilter(Ferret ferret, String field,
       {lower,
       upper,
       lower_exclusive,
@@ -129,11 +136,10 @@ class TypedRangeFilter extends Filter {
       le,
       leq,
       ge,
-      geq})
-      : super() {
-    int p_field = allocString(field);
-    int symbol = module.callMethod('_frt_internal', [p_field]);
-    free(p_field);
+      geq}) {
+    int p_field = ferret.allocString(field);
+    int symbol = ferret.callMethod('_frt_internal', [p_field]);
+    ferret.free(p_field);
 
     RangeParams params = _range_params(lower, upper, lower_exclusive,
         upper_exclusive, include_lower, include_upper, le, leq, ge, geq);
@@ -141,22 +147,25 @@ class TypedRangeFilter extends Filter {
     int lterm = 0;
     int uterm = 0;
     if (params.lterm != null) {
-      lterm = allocString(params.lterm);
+      lterm = ferret.allocString(params.lterm);
     }
     if (params.uterm != null) {
-      uterm = allocString(params.uterm);
+      uterm = ferret.allocString(params.uterm);
     }
 
-    handle = module.callMethod('_frt_trfilt_new', [
+    int h = ferret.callMethod('_frt_trfilt_new', [
       symbol,
       lterm,
       uterm,
       params.include_lower ? 1 : 0,
       params.include_upper ? 1 : 0
     ]);
-    free(lterm);
-    free(uterm);
+    ferret.free(lterm);
+    ferret.free(uterm);
+    return new TypedRangeFilter._(ferret, h);
   }
+
+  TypedRangeFilter._(Ferret ferret, int handle) : super.wrap(ferret, handle);
 }
 
 /// [QueryFilter] can be used to restrict one queries results by another
@@ -177,7 +186,6 @@ class TypedRangeFilter extends Filter {
 /// caching. Don't create a new one for each request.
 class QueryFilter extends Filter {
   /// Create a new [QueryFilter] which applies the query [query].
-  QueryFilter(Query query) : super() {
-    handle = module.callMethod('_frt_qfilt_new', [query.handle]);
-  }
+  QueryFilter(Ferret ferret, Query query)
+      : super.wrap(ferret, ferret.callMethod('_frt_qfilt_new', [query.handle]));
 }

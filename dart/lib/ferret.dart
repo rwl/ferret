@@ -1,5 +1,6 @@
 library ferret;
 
+export 'src/ferret.dart';
 export 'src/index.dart';
 export 'src/document.dart';
 export 'src/number_tools.dart';
