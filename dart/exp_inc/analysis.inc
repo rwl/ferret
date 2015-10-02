@@ -1,4 +1,6 @@
 EXP_ANALYSIS = \
+'_frjs_get_locale',\
+'_frjs_set_locale',\
 '_frjs_tk_get_text',\
 '_frjs_tk_get_start',\
 '_frjs_tk_get_end',\
@@ -17,6 +19,7 @@ EXP_ANALYSIS = \
 '_frjs_whitespace_tokenizer_init',\
 '_frt_standard_tokenizer_new',\
 '_frjs_standard_tokenizer_init',\
+'_frt_whitespace_analyzer_new',\
 '_frjs_white_space_analyzer_init',\
 '_frjs_a_standard_analyzer_init',\
 '_frt_lowercase_filter_new',\

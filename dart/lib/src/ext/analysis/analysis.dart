@@ -187,6 +187,10 @@ class Token extends JsProxy implements Comparable {
 
   /// Return a string representation of the token.
   String to_s() => 'token["$_text":$_start:$_end:$_pos_inc]';
+
+  String toString() => to_s();
+
+  bool operator ==(Token token) => compareTo(token) == 0;
 }
 
 /// A [TokenStream] enumerates the sequence of tokens, either from
@@ -207,7 +211,7 @@ abstract class TokenStream extends JsProxy {
   /// more tokens.
   Token next() {
     int p_tk = module.callMethod('_frjs_ts_next', [handle]);
-    return new Token._handle(p_tk);
+    return p_tk != 0 ? new Token._handle(p_tk) : null;
   }
 
   /// Set the text attribute of the [TokenStream] to the text you wish to be
@@ -217,7 +221,7 @@ abstract class TokenStream extends JsProxy {
   void set text(String val) {
     int p_text = allocString(val);
     module.callMethod('_frjs_ts_set_text', [handle, p_text]);
-    free(p_text);
+//    free(p_text); FIXME: memory leak?
   }
 
   /// Return the text that the TokenStream is tokenizing.

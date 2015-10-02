@@ -6,6 +6,16 @@
 static char *frb_locale = NULL;
 
 char *
+frjs_get_locale() {
+    return frb_locale;
+}
+
+void
+frjs_set_locale(char *l) {
+    frb_locale = setlocale(LC_CTYPE, l);
+}
+
+char *
 frjs_tk_get_text(Token *tk) {
 	return tk->text;
 }

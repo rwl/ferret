@@ -47,7 +47,8 @@ abstract class Analyzer extends JsProxy {
     free(p_field);
     free(p_text);
     var ts = _makeTokenStream(p_ts);
-    //ts.text = input;
+    // Make sure that there is no entry already.
+    ts.text = input;
     return ts;
   }
 }
@@ -140,7 +141,7 @@ class AsciiWhiteSpaceAnalyzer extends Analyzer {
   /// Create a new [AsciiWhiteSpaceAnalyzer] which downcases tokens by default
   /// but can optionally leave case as is. Lowercasing will only be done to
   /// ASCII characters.
-  AsciiWhiteSpaceAnalyzer({bool lower: true}) : super._() {
+  AsciiWhiteSpaceAnalyzer({bool lower: false}) : super._() {
     handle = module.callMethod('_frt_whitespace_analyzer_new', [lower ? 1 : 0]);
   }
 
@@ -168,7 +169,7 @@ class WhiteSpaceAnalyzer extends Analyzer {
   /// Create a new [WhiteSpaceAnalyzer] which downcases tokens by default but
   /// can optionally leave case as is. Lowercasing will be done based on the
   /// current locale.
-  WhiteSpaceAnalyzer({bool lower: true}) : super._() {
+  WhiteSpaceAnalyzer({bool lower: false}) : super._() {
     handle =
         module.callMethod('_frjs_white_space_analyzer_init', [lower ? 1 : 0]);
   }
