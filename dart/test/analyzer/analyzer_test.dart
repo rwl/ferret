@@ -3,10 +3,10 @@ library ferret.test.analyzer;
 import 'package:test/test.dart';
 import 'package:ferret/ferret.dart';
 
-test_analyzer() {
+test_analyzer(Ferret ferret) {
   test('analyzer', () {
     var input = r'DBalmain@gmail.com is My E-Mail 523@#$ ADDRESS. 23#!$';
-    var a = new Analyzer();
+    var a = new Analyzer(ferret);
     var t = a.token_stream("fieldname", input);
     var t2 = a.token_stream("fieldname", input);
     expect(t.next(), equals(new Token.test("dbalmain", 0, 8)));
@@ -27,7 +27,7 @@ test_analyzer() {
     expect(new Token.test("mail", 27, 31), equals(t2.next()));
     expect(new Token.test("address", 39, 46), equals(t2.next()));
     expect(t2.next(), isNull);
-    var a2 = new Analyzer(lower: false);
+    var a2 = new Analyzer(ferret, lower: false);
     var t3 = a2.token_stream("fieldname", input);
     expect(new Token.test("DBalmain", 0, 8), equals(t3.next()));
     expect(new Token.test("gmail", 9, 14), equals(t3.next()));
@@ -41,10 +41,10 @@ test_analyzer() {
   });
 }
 
-test_ascii_letter_analyzer() {
+test_ascii_letter_analyzer(Ferret ferret) {
   test('ascii_letter_analyzer', () {
     var input = r'DBalmain@gmail.com is My E-Mail 523@#$ ADDRESS. 23#!$';
-    var a = new AsciiLetterAnalyzer();
+    var a = new AsciiLetterAnalyzer(ferret);
     var t = a.token_stream("fieldname", input);
     var t2 = a.token_stream("fieldname", input);
     expect(new Token.test("dbalmain", 0, 8), equals(t.next()));
@@ -65,7 +65,7 @@ test_ascii_letter_analyzer() {
     expect(new Token.test("mail", 27, 31), equals(t2.next()));
     expect(new Token.test("address", 39, 46), equals(t2.next()));
     expect(t2.next(), isNull);
-    a = new AsciiLetterAnalyzer(lower: false);
+    a = new AsciiLetterAnalyzer(ferret, lower: false);
     t = a.token_stream("fieldname", input);
     expect(new Token.test("DBalmain", 0, 8), equals(t.next()));
     expect(new Token.test("gmail", 9, 14), equals(t.next()));
@@ -79,12 +79,12 @@ test_ascii_letter_analyzer() {
   });
 }
 
-test_letter_analyzer() {
+test_letter_analyzer(Ferret ferret) {
   test('letter_analyzer', () {
-    set_locale("");
+    ferret.set_locale("");
     var input =
         r'DBalmän@gmail.com is My e-mail 52   #$ address. 23#!$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ';
-    var a = new LetterAnalyzer(lower: false);
+    var a = new LetterAnalyzer(ferret, lower: false);
     var t = a.token_stream("fieldname", input);
     var t2 = a.token_stream("fieldname", input);
     expect(new Token.test("DBalmän", 0, 8), equals(t.next()));
@@ -113,7 +113,7 @@ test_letter_analyzer() {
     expect(new Token.test("ÚØÃ", 72, 78), equals(t2.next()));
     expect(new Token.test("ÖÎÍ", 80, 86), equals(t2.next()));
     expect(t2.next(), isNull);
-    a = new LetterAnalyzer();
+    a = new LetterAnalyzer(ferret);
     t = a.token_stream("fieldname", input);
     expect(new Token.test("dbalmän", 0, 8), equals(t.next()));
     expect(new Token.test("gmail", 9, 14), equals(t.next()));
@@ -131,10 +131,10 @@ test_letter_analyzer() {
   });
 }
 
-test_ascii_white_space_analyzer() {
+test_ascii_white_space_analyzer(Ferret ferret) {
   test('ascii_white_space_analyzer', () {
     var input = r'DBalmain@gmail.com is My E-Mail 52   #$ ADDRESS. 23#!$';
-    var a = new AsciiWhiteSpaceAnalyzer();
+    var a = new AsciiWhiteSpaceAnalyzer(ferret);
     var t = a.token_stream("fieldname", input);
     var t2 = a.token_stream("fieldname", input);
     expect(new Token.test('DBalmain@gmail.com', 0, 18), equals(t.next()));
@@ -155,7 +155,7 @@ test_ascii_white_space_analyzer() {
     expect(new Token.test('ADDRESS.', 40, 48), equals(t2.next()));
     expect(new Token.test(r'23#!$', 49, 54), equals(t2.next()));
     expect(t2.next(), isNull);
-    a = new AsciiWhiteSpaceAnalyzer(lower: true);
+    a = new AsciiWhiteSpaceAnalyzer(ferret, lower: true);
     t = a.token_stream("fieldname", input);
     expect(new Token.test('dbalmain@gmail.com', 0, 18), equals(t.next()));
     expect(new Token.test('is', 19, 21), equals(t.next()));
@@ -169,11 +169,11 @@ test_ascii_white_space_analyzer() {
   });
 }
 
-test_white_space_analyzer() {
+test_white_space_analyzer(Ferret ferret) {
   test('white_space_analyzer', () {
     var input =
         r'DBalmän@gmail.com is My e-mail 52   #$ address. 23#!$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ';
-    var a = new WhiteSpaceAnalyzer();
+    var a = new WhiteSpaceAnalyzer(ferret);
     var t = a.token_stream("fieldname", input);
     var t2 = a.token_stream("fieldname", input);
     expect(new Token.test('DBalmän@gmail.com', 0, 18), equals(t.next()));
@@ -196,7 +196,7 @@ test_white_space_analyzer() {
     expect(new Token.test(r'23#!$', 49, 54), equals(t2.next()));
     expect(new Token.test('ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ', 55, 86), equals(t2.next()));
     expect(t2.next(), isNull);
-    a = new WhiteSpaceAnalyzer(lower: true);
+    a = new WhiteSpaceAnalyzer(ferret, lower: true);
     t = a.token_stream("fieldname", input);
     expect(new Token.test('dbalmän@gmail.com', 0, 18), equals(t.next()));
     expect(new Token.test('is', 19, 21), equals(t.next()));
@@ -211,11 +211,11 @@ test_white_space_analyzer() {
   });
 }
 
-test_ascii_standard_analyzer() {
+test_ascii_standard_analyzer(Ferret ferret) {
   test('ascii_standard_analyzer', () {
     var input =
         r'DBalmain@gmail.com is My e-mail 52   #$ Address. 23#!$ http://www.google.com/results/ T.N.T. 123-1235-ASD-1234';
-    var a = new AsciiStandardAnalyzer();
+    var a = new AsciiStandardAnalyzer(ferret);
     var t = a.token_stream("fieldname", input);
     var t2 = a.token_stream("fieldname", input);
     expect(new Token.test('dbalmain@gmail.com', 0, 18), equals(t.next()));
@@ -240,7 +240,8 @@ test_ascii_standard_analyzer() {
     expect(new Token.test('tnt', 86, 91), equals(t2.next()));
     expect(new Token.test('123-1235-asd-1234', 93, 110), equals(t2.next()));
     expect(t2.next(), isNull);
-    a = new AsciiStandardAnalyzer(stop_words: ENGLISH_STOP_WORDS, lower: false);
+    a = new AsciiStandardAnalyzer(ferret,
+        stop_words: ENGLISH_STOP_WORDS, lower: false);
     t = a.token_stream("fieldname", input);
     t2 = a.token_stream("fieldname", input);
     expect(new Token.test('DBalmain@gmail.com', 0, 18), equals(t.next()));
@@ -258,11 +259,11 @@ test_ascii_standard_analyzer() {
   });
 }
 
-test_standard_analyzer() {
+test_standard_analyzer(Ferret ferret) {
   test('standard_analyzer', () {
     var input =
         r'DBalmán@gmail.com is My e-mail and the Address. 23#!$ http://www.google.com/results/ T.N.T. 123-1235-ASD-1234 23#!$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ';
-    var a = new StandardAnalyzer();
+    var a = new StandardAnalyzer(ferret);
     var t = a.token_stream("fieldname", input);
     var t2 = a.token_stream("fieldname", input);
     expect(new Token.test('dbalmán@gmail.com', 0, 18), equals(t.next()));
@@ -295,7 +296,7 @@ test_standard_analyzer() {
     expect(new Token.test('úøã', 134, 140), equals(t2.next()));
     expect(new Token.test('öîí', 142, 148), equals(t2.next()));
     expect(t2.next(), isNull);
-    a = new StandardAnalyzer(stop_words: null, lower: false);
+    a = new StandardAnalyzer(ferret, stop_words: null, lower: false);
     t = a.token_stream("fieldname", input);
     expect(new Token.test('DBalmán@gmail.com', 0, 18), equals(t.next()));
     expect(new Token.test('My', 22, 24), equals(t.next()));
@@ -313,7 +314,7 @@ test_standard_analyzer() {
     expect(new Token.test('ÚØÃ', 134, 140), equals(t.next()));
     expect(new Token.test('ÖÎÍ', 142, 148), equals(t.next()));
     expect(t.next(), isNull);
-    a = new StandardAnalyzer(stop_words: ["e-mail", "23", "tnt"]);
+    a = new StandardAnalyzer(ferret, stop_words: ["e-mail", "23", "tnt"]);
     t = a.token_stream("fieldname", input);
     t2 = a.token_stream("fieldname", input);
     expect(new Token.test('dbalmán@gmail.com', 0, 18), equals(t.next()));
@@ -345,15 +346,15 @@ test_standard_analyzer() {
   });
 }
 
-test_per_field_analyzer() {
+test_per_field_analyzer(Ferret ferret) {
   test('per_field_analyzer', () {
     var input = r'DBalmain@gmail.com is My e-mail 52   #$ address. 23#!$';
-    var pfa = new PerFieldAnalyzer(new StandardAnalyzer());
-    pfa['white'] = new WhiteSpaceAnalyzer(lower: false);
-    pfa['white_l'] = new WhiteSpaceAnalyzer(lower: true);
-    pfa['letter'] = new LetterAnalyzer(lower: false);
-    pfa.add_field('letter', new LetterAnalyzer(lower: true));
-    pfa.add_field('letter_u', new LetterAnalyzer(lower: false));
+    var pfa = new PerFieldAnalyzer(ferret, new StandardAnalyzer(ferret));
+    pfa['white'] = new WhiteSpaceAnalyzer(ferret, lower: false);
+    pfa['white_l'] = new WhiteSpaceAnalyzer(ferret, lower: true);
+    pfa['letter'] = new LetterAnalyzer(ferret, lower: false);
+    pfa.add_field('letter', new LetterAnalyzer(ferret, lower: true));
+    pfa.add_field('letter_u', new LetterAnalyzer(ferret, lower: false));
     var t = pfa.token_stream('white', input);
     expect(new Token.test('DBalmain@gmail.com', 0, 18), equals(t.next()));
     expect(new Token.test('is', 19, 21), equals(t.next()));
@@ -406,11 +407,11 @@ test_per_field_analyzer() {
   });
 }
 
-test_reg_exp_analyzer() {
+test_reg_exp_analyzer(Ferret ferret) {
   test('reg_exp_analyzer', () {
     var input =
         r"DBalmain@gmail.com is My e-mail 52   #$ Address. 23#!$ http://www.google.com/RESULT_3.html T.N.T. 123-1235-ASD-1234 23 Rob's";
-    var a = new RegExpAnalyzer();
+    var a = new RegExpAnalyzer(ferret);
     var t = a.token_stream('XXX', input);
     var t2 = a.token_stream('XXX', "one_Two three");
     expect(new Token.test('dbalmain@gmail.com', 0, 18), equals(t.next()));
@@ -431,7 +432,7 @@ test_reg_exp_analyzer() {
     expect(new Token.test("one_two", 0, 7), t.next());
     expect(new Token.test("three", 8, 13), t.next());
     expect(t.next(), isNull);
-    a = new RegExpAnalyzer(new RegExp(r"\w{2,}"), lower: false);
+    a = new RegExpAnalyzer(ferret, new RegExp(r"\w{2,}"), lower: false);
     t = a.token_stream('XXX', input);
     t2 = a.token_stream('XXX', "one Two three");
     expect(new Token.test('DBalmain', 0, 8), equals(t.next()));
@@ -498,7 +499,7 @@ class StemmingStandardAnalyzer {
   }
 }
 
-test_custom_filter() {
+test_custom_filter(Ferret ferret) {
   test('custom_filter', () {
     var input =
         r'DBalmán@gmail.com is My e-mail and the Address. 23#!$ http://www.google.com/results/ T.N.T. 123-1235-ASD-1234 23#!$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ';
@@ -528,7 +529,8 @@ test_custom_filter() {
     expect(new Token.test("debat", 32, 39), equals(t.next()));
     expect(t.next(), isNull);
     input = "Dêbate dêbates DÊBATED DÊBATing dêbater";
-    t = new StemFilter(new LowerCaseFilter(new LetterTokenizer(input)),
+    t = new StemFilter(
+        ferret, new LowerCaseFilter(ferret, new LetterTokenizer(ferret, input)),
         algorithm: 'english');
     expect(new Token.test("dêbate", 0, 7), equals(t.next()));
     expect(new Token.test("dêbate", 8, 16), equals(t.next()));

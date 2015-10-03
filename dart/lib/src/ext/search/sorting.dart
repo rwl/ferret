@@ -53,7 +53,7 @@ class SortField {
     ferret.free(p_field);
     int h = ferret.callMethod(
         '_frt_sort_field_new', [symbol, type.index, reverse ? 1 : 0]);
-    return new SortField.handle(ferret, h);
+    return new SortField.wrap(ferret, h);
   }
 
   /// Return `true` if the field is to be reverse sorted. This attribute is
@@ -140,7 +140,7 @@ class Sort {
     var a = new List<SortField>(size);
     for (int i = 0; i < size; i++) {
       int p_sf = _ferret.callMethod('_frjs_sort_get_sort_field', [handle, i]);
-      a[i] = new SortField.handle(_ferret, p_sf);
+      a[i] = new SortField.wrap(_ferret, p_sf);
     }
     return a;
   }

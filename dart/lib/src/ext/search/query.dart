@@ -234,9 +234,7 @@ class BooleanClause {
     _occur = occur;
   }
 
-  BooleanClause._handle(int p_bc) : super() {
-    handle = p_bc;
-  }
+  BooleanClause._handle(this._ferret, this.handle, this.query);
 
   /// Return the query object wrapped by this [BooleanClause].
   // Query get query => frb_bc_get_query;
@@ -329,7 +327,7 @@ class BooleanQuery extends Query {
     } else if (query is Query) {
       int p_bc = _ferret.callMethod(
           '_frt_bq_add_query', [handle, query.handle, occur.index]);
-      return new BooleanClause._handle(p_bc);
+      return new BooleanClause._handle(_ferret, p_bc, query);
     } else {
       throw new ArgumentError.value(
           query, 'query', "Cannot add $query to a BooleanQuery");
@@ -624,7 +622,8 @@ class TypedRangeQuery extends Query {
 /// 0. With a little help from your analyzer you can actually tag bold or
 /// italic text for example.
 class PhraseQuery extends Query {
-  PhraseQuery.handle(Ferret ferret, int h, int slop) : super._(ferret, h) {
+  PhraseQuery.handle(Ferret ferret, int h, [int slop = 0])
+      : super._(ferret, h) {
     this.slop = slop;
   }
 
@@ -886,7 +885,7 @@ class FuzzyQuery extends Query {
     int p_term = ferret.allocString(term);
 
     int h = ferret.callMethod('_frt_fuzq_new_conf',
-        [p_field, p_term, min_similarity, prefix_length, max_terms]);
+        [symbol, p_term, min_similarity, prefix_length, max_terms]);
 
     ferret.free(p_field);
     ferret.free(p_term);

@@ -125,21 +125,21 @@ do_test_index_with_doc_array(index) {
   expect(index.deleted(0), isTrue);
 }
 
-test_ram_index() {
-  var index = new Index(default_input_field: 'xxx');
+test_ram_index(Ferret ferret) {
+  var index = new Index(ferret, default_input_field: 'xxx');
   do_test_index_with_array(index);
   index.close();
 
-  index = new Index(default_field: 'xxx');
+  index = new Index(ferret, default_field: 'xxx');
   do_test_index_with_hash(index);
   index.close();
 
-  index = new Index(default_field: 'xxx', id_field: 'id');
+  index = new Index(ferret, default_field: 'xxx', id_field: 'id');
   do_test_index_with_doc_array(index);
   index.close();
 }
 
-test_fs_index() {
+test_fs_index(Ferret ferret) {
   var fs_path =
       File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'));
 
@@ -148,11 +148,12 @@ test_fs_index() {
       File.delete(path);
     } catch (_) {}
     assert_raise(FileNotFoundError, () {
-      new Index(path: fs_path, create_if_missing: false, default_field: 'xxx');
+      new Index(ferret,
+          path: fs_path, create_if_missing: false, default_field: 'xxx');
     });
   });
 
-  var index = new Index(path: fs_path, default_input_field: 'xxx');
+  var index = new Index(ferret, path: fs_path, default_input_field: 'xxx');
   do_test_index_with_array(index);
   index.close();
 
@@ -161,7 +162,7 @@ test_fs_index() {
       File.delete(path);
     } catch (_) {}
   });
-  index = new Index(path: fs_path, default_field: 'xxx');
+  index = new Index(ferret, path: fs_path, default_field: 'xxx');
   do_test_index_with_hash(index);
   index.close();
 
@@ -170,15 +171,17 @@ test_fs_index() {
       File.delete(path);
     } catch (_) {}
   });
-  index = new Index(path: fs_path, default_field: 'xxx', id_field: "id");
+  index =
+      new Index(ferret, path: fs_path, default_field: 'xxx', id_field: "id");
   do_test_index_with_doc_array(index);
   index.close();
 }
 
-test_fs_index_is_persistant() {
-  fs_path =
+test_fs_index_is_persistant(Ferret ferret) {
+  var fs_path =
       File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'));
-  var index = new Index(path: fs_path, default_field: 'xxx', create: true);
+  var index =
+      new Index(ferret, path: fs_path, default_field: 'xxx', create: true);
 
   [
     {'xxx': "one two", 'id': "me"},
@@ -193,17 +196,17 @@ test_fs_index_is_persistant() {
   expect(8, equals(index.size));
   index.close();
 
-  index = new Index(path: fs_path, create_if_missing: false);
+  index = new Index(ferret, path: fs_path, create_if_missing: false);
   expect(8, equals(index.size));
   expect("four", equals(index[5]["field3"]));
   index.close();
 }
 
-test_key_used_for_id_field() {
+test_key_used_for_id_field(Ferret ferret) {
   var fs_path =
       File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'));
 
-  var index = new Index(path: fs_path, key: 'my_id', create: true);
+  var index = new Index(ferret, path: fs_path, key: 'my_id', create: true);
   [
     {'my_id': "three", 'id': "me"},
     {'my_id': "one", 'field2': "three"},
@@ -220,10 +223,10 @@ test_key_used_for_id_field() {
   index.close();
 }
 
-test_merging_indexes() {
-  var index1 = new Index(default_field: 'f');
-  var index2 = new Index(default_field: 'f');
-  var index3 = new Index(default_field: 'f');
+test_merging_indexes(Ferret ferret) {
+  var index1 = new Index(ferret, default_field: 'f');
+  var index2 = new Index(ferret, default_field: 'f');
+  var index3 = new Index(ferret, default_field: 'f');
 
   [
     {'f': "zero"},
@@ -241,7 +244,7 @@ test_merging_indexes() {
     {'f': "eight"}
   ].forEach((doc) => index3.add_document(doc));
 
-  var index = new Index(default_field: 'f');
+  var index = new Index(ferret, default_field: 'f');
   index.add_indexes([index1]);
   expect(3, equals(index.size));
   expect("zero", equals(index[0]['f']));
@@ -258,8 +261,8 @@ test_merging_indexes() {
     {'f': "beta"},
     {'f': "charlie"}
   ];
-  var dir1 = new RAMDirectory();
-  index1 = new Index(dir: dir1, default_field: 'f');
+  var dir1 = new RAMDirectory(ferret);
+  index1 = new Index(ferret, dir: dir1, default_field: 'f');
   data.forEach((doc) => index1.add_document(doc));
   index1.flush();
   data = [
@@ -267,8 +270,8 @@ test_merging_indexes() {
     {'f': "echo"},
     {'f': "foxtrot"}
   ];
-  var dir2 = new RAMDirectory();
-  index2 = new Index(dir: dir2, default_field: 'f');
+  var dir2 = new RAMDirectory(ferret);
+  index2 = new Index(ferret, dir: dir2, default_field: 'f');
   data.forEach((doc) => index2.add_document(doc));
   index2.flush();
   data = [
@@ -276,8 +279,8 @@ test_merging_indexes() {
     {'f': "india"},
     {'f': "juliet"}
   ];
-  var dir3 = new RAMDirectory();
-  index3 = new Index(dir: dir3, default_field: 'f');
+  var dir3 = new RAMDirectory(ferret);
+  index3 = new Index(ferret, dir: dir3, default_field: 'f');
   data.forEach((doc) => index3.add_document(doc));
   index3.flush();
 
@@ -297,13 +300,13 @@ test_merging_indexes() {
   index.close();
 }
 
-test_persist_index() {
+test_persist_index(Ferret ferret) {
   var data = [
     {'f': "zero"},
     {'f': "one"},
     {'f': "two"}
   ];
-  var index = new Index(default_field: 'f');
+  var index = new Index(ferret, default_field: 'f');
   data.forEach((doc) => index.add_document(doc));
   var fs_path =
       File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'));
@@ -313,7 +316,7 @@ test_persist_index() {
   expect("zero", equals(index[0]['f']));
   index.close();
 
-  index = new Index(path: fs_path);
+  index = new Index(ferret, path: fs_path);
   expect(3, equals(index.size));
   expect("zero", equals(index[0]['f']));
   index.close();
@@ -323,32 +326,33 @@ test_persist_index() {
     {'f': "sierra"},
     {'f': "tango"}
   ];
-  index = new Index(default_field: 'f');
+  index = new Index(ferret, default_field: 'f');
   data.forEach((doc) => index.add_document(doc));
   expect(3, equals(index.size));
   expect("romeo", equals(index[0]['f']));
-  var dir = FSDirectory.create(fs_path, create: false);
+  var dir = new FSDirectory(ferret, fs_path, create: false);
   index.persist(dir);
   expect(6, equals(index.size));
   expect("zero", equals(index[0]['f']));
   expect("romeo", equals(index[3]['f']));
   index.close();
 
-  index = new Index(path: fs_path);
+  index = new Index(ferret, path: fs_path);
   expect(6, equals(index.size));
   expect("zero", equals(index[0]['f']));
   expect("romeo", equals(index[3]['f']));
   index.close();
 }
 
-test_auto_update_when_externally_modified() {
+test_auto_update_when_externally_modified(Ferret ferret) {
   var fs_path =
       File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'));
-  var index = new Index(path: fs_path, default_field: 'f', create: true);
+  var index =
+      new Index(ferret, path: fs_path, default_field: 'f', create: true);
   index.add_document("document 1");
   expect(1, equals(index.size));
 
-  var index2 = new Index(path: fs_path, default_field: 'f');
+  var index2 = new Index(ferret, path: fs_path, default_field: 'f');
   expect(1, equals(index2.size));
   index2.add_document("document 2");
   expect(2, equals(index2.size));
@@ -357,7 +361,8 @@ test_auto_update_when_externally_modified() {
 
   expect(0, equals(top_docs.hits.length));
 
-  var iw = new IndexWriter(path: fs_path, analyzer: new WhiteSpaceAnalyzer());
+  var iw = new IndexWriter(ferret,
+      path: fs_path, analyzer: new WhiteSpaceAnalyzer(ferret));
   iw.add_document({'f': "content3"});
   iw.close();
 
@@ -369,8 +374,8 @@ test_auto_update_when_externally_modified() {
   index.close();
 }
 
-test_delete() {
-  var index = new Index(analyzer: new WhiteSpaceAnalyzer());
+test_delete(Ferret ferret) {
+  var index = new Index(ferret, analyzer: new WhiteSpaceAnalyzer(ferret));
   [
     {'id': 0, 'cat': "/cat1/subcat1"},
     {'id': 1, 'cat': "/cat1/subcat2"},
@@ -399,9 +404,9 @@ test_delete() {
   index.close();
 }
 
-test_update() {
-  var index = new Index(
-      analyzer: new WhiteSpaceAnalyzer(),
+test_update(Ferret ferret) {
+  var index = new Index(ferret,
+      analyzer: new WhiteSpaceAnalyzer(ferret),
       default_input_field: 'content',
       id_field: 'id');
   [
@@ -454,14 +459,15 @@ test_update() {
   index.close();
 }
 
-test_index_key() {
+test_index_key(Ferret ferret) {
   var data = [
     {'id': 0, 'val': "one"},
     {'id': 0, 'val': "two"},
     {'id': 1, 'val': "three"},
     {'id': 1, 'val': "four"},
   ];
-  var index = new Index(analyzer: new WhiteSpaceAnalyzer(), key: 'id');
+  var index =
+      new Index(ferret, analyzer: new WhiteSpaceAnalyzer(ferret), key: 'id');
   data.forEach((doc) => index.add_document(doc));
   expect(2, equals(index.size));
   expect("two", equals(index["0"]['val']));
@@ -469,7 +475,7 @@ test_index_key() {
   index.close();
 }
 
-test_index_key_batch0() {
+test_index_key_batch0(Ferret ferret) {
   var data = {
     //"0": {'id': "0", 'val': "one"},
     "0": {'id': "0", 'val': "two"},
@@ -477,13 +483,14 @@ test_index_key_batch0() {
     "1": {'id': "1", 'val': "four"},
   };
 
-  var index = new Index(analyzer: new WhiteSpaceAnalyzer(), key: 'id');
+  var index =
+      new Index(ferret, analyzer: new WhiteSpaceAnalyzer(ferret), key: 'id');
   index.batch_update(data);
   expect(2, equals(index.size()));
   index.close();
 }
 
-test_index_key_batch1() {
+test_index_key_batch1(Ferret ferret) {
   var data0 = {
     //"0" => {'id': "0", 'val': "one"},
     "0": {'id': "0", 'val': "two"},
@@ -499,7 +506,8 @@ test_index_key_batch1() {
     "4": {'id': "4", 'val': "four"},
   };
 
-  var index = new Index(analyzer: new WhiteSpaceAnalyzer(), key: 'id');
+  var index =
+      new Index(ferret, analyzer: new WhiteSpaceAnalyzer(ferret), key: 'id');
   index.batch_update(data0);
   expect(3, equals(index.size));
   index.batch_update(data1);
@@ -507,7 +515,7 @@ test_index_key_batch1() {
   index.close();
 }
 
-test_index_key_delete_batch0() {
+test_index_key_delete_batch0(Ferret ferret) {
   var data0 = {
     "1": {'id': "1", 'val': "three"},
     "2": {'id': "2", 'val': "four"},
@@ -516,7 +524,8 @@ test_index_key_delete_batch0() {
 
   var data1 = ["0", "1"];
 
-  var index = new Index(analyzer: new WhiteSpaceAnalyzer(), key: 'id');
+  var index =
+      new Index(ferret, analyzer: new WhiteSpaceAnalyzer(ferret), key: 'id');
   index.batch_update(data0);
 
   expect("four", equals(index["0"]['val']));
@@ -531,8 +540,8 @@ test_index_key_delete_batch0() {
   index.close();
 }
 
-test_index_key_delete_batch1() {
-  var index = new Index(analyzer: new WhiteSpaceAnalyzer());
+test_index_key_delete_batch1(Ferret ferret) {
+  var index = new Index(ferret, analyzer: new WhiteSpaceAnalyzer(ferret));
   range(1000).forEach(
       (i) => index.add_document({'id': "${i}", 'content': "content ${i}"}));
   expect(1000, equals(index.size));
@@ -558,9 +567,9 @@ test_index_key_delete_batch1() {
   expect("Hash(78)", equals(index['78']['content']));
 }
 
-test_index_multi_key() {
-  var index =
-      new Index(analyzer: new WhiteSpaceAnalyzer(), key: ['id', 'table']);
+test_index_multi_key(Ferret ferret) {
+  var index = new Index(ferret,
+      analyzer: new WhiteSpaceAnalyzer(ferret), key: ['id', 'table']);
   [
     {'id': 0, 'table': "product", 'product': "tent"},
     {'id': 0, 'table': "location", 'location': "first floor"},
@@ -581,13 +590,15 @@ test_index_multi_key() {
   index.close();
 }
 
-test_index_multi_key_untokenized() {
-  var field_infos = new FieldInfos(term_vector: TermVectorStorage.NO);
+test_index_multi_key_untokenized(Ferret ferret) {
+  var field_infos = new FieldInfos(ferret, term_vector: TermVectorStorage.NO);
   field_infos.add_field('id', index: FieldIndexing.UNTOKENIZED);
   field_infos.add_field('table', index: FieldIndexing.UNTOKENIZED);
 
-  var index = new Index(
-      analyzer: new Analyzer(), key: ['id', 'table'], field_infos: field_infos);
+  var index = new Index(ferret,
+      analyzer: new Analyzer(ferret),
+      key: ['id', 'table'],
+      field_infos: field_infos);
   [
     {'id': 0, 'table': "Product", 'product': "tent"},
     {'id': 0, 'table': "location", 'location': "first floor"},
@@ -609,8 +620,8 @@ test_index_multi_key_untokenized() {
   index.close();
 }
 
-test_sortby_date() {
-  var index = new Index(analyzer: new WhiteSpaceAnalyzer());
+test_sortby_date(Ferret ferret) {
+  var index = new Index(ferret, analyzer: new WhiteSpaceAnalyzer(ferret));
 
   [
     {'content': "one", 'date': "20051023"},
@@ -624,9 +635,10 @@ test_sortby_date() {
     {'content': "four", 'date': "19390912"}
   ].forEach((doc) => index.add_document(doc));
 
-  var sf_date = new SortField("date", type: SortType.INTEGER);
+  var sf_date = new SortField(ferret, "date", type: SortType.INTEGER);
   //top_docs = index.search("one", sort: [sf_date, SortField::SCORE]);
-  var top_docs = index.search("one", sort: new Sort("date"));
+  var top_docs =
+      index.search("one", sort: new Sort(ferret, sort_fields: ["date"]));
   expect(3, equals(top_docs.total_hits));
   expect("19770725", equals(index[top_docs.hits[0].doc]['date']));
   expect("19770905", equals(index[top_docs.hits[1].doc]['date']));
@@ -652,7 +664,7 @@ test_sortby_date() {
 
 // this test has been corrected to work as intended
 // it now fails the same way on both 1.8 and 1.9 -- sds
-test_auto_flush() {
+test_auto_flush(Ferret ferret) {
   var fs_path =
       File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'));
   Dir[File.join(fs_path, "*")].each((path) {
@@ -663,9 +675,9 @@ test_auto_flush() {
 
   var data = "one two three four five six seven eight nine ten eleven twelve"
       .split(" ");
-  var index1 = new Index(path: fs_path, auto_flush: true, key: 'id');
+  var index1 = new Index(ferret, path: fs_path, auto_flush: true, key: 'id');
   index1.add_document({'id': 0, 'content': "zero"});
-  var index2 = new Index(path: fs_path, auto_flush: true);
+  var index2 = new Index(ferret, path: fs_path, auto_flush: true);
   try {
     var n = 1;
     data.forEach((datum) {
@@ -686,15 +698,15 @@ test_auto_flush() {
   index2.close();
 }
 
-test_doc_specific_analyzer() {
-  var index = new Index();
-  index.add_document("abc", new Analyzer());
+test_doc_specific_analyzer(Ferret ferret) {
+  var index = new Index(ferret);
+  index.add_document("abc", new Analyzer(ferret));
   expect(1, equals(index.size));
 }
 
-test_adding_empty_term_vectors() {
-  var index =
-      new Index(field_infos: new FieldInfos(term_vector: TermVectorStorage.NO));
+test_adding_empty_term_vectors(Ferret ferret) {
+  var index = new Index(ferret,
+      field_infos: new FieldInfos(ferret, term_vector: TermVectorStorage.NO));
 
   // Note: Adding keywords to either field1 or field2 gets rid of the error
 
@@ -706,13 +718,13 @@ test_adding_empty_term_vectors() {
   index.close();
 }
 
-test_stopwords() {
-  var field_infos =
-      new FieldInfos(store: FieldStorage.NO, term_vector: TermVectorStorage.NO);
+test_stopwords(Ferret ferret) {
+  var field_infos = new FieldInfos(ferret,
+      store: FieldStorage.NO, term_vector: TermVectorStorage.NO);
   field_infos.add_field('id',
       store: FieldStorage.YES, index: FieldIndexing.UNTOKENIZED);
 
-  var i = new Index(or_default: false, default_search_field: '*');
+  var i = new Index(ferret, or_default: false, default_search_field: '*');
 
   // adding this additional field to the document leads to failure below
   // comment out this statement and all tests pass:
@@ -726,10 +738,10 @@ test_stopwords() {
   expect(1, equals(hits.total_hits)); // fails when id field is present
 }
 
-test_threading() {
+test_threading(Ferret ferret) {
   var path =
       File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'));
-  var index = new Index(path: path, create: true);
+  var index = new Index(ferret, path: path, create: true);
 
   range(100).forEach((i) {
     var buf = '';
@@ -777,11 +789,11 @@ check_highlight(index, q, excerpt_length, num_excerpts, expected,
   expect(highlights, equals(expected));
 }
 
-test_highlighter() {
-  var index = new Index(
+test_highlighter(Ferret ferret) {
+  var index = new Index(ferret,
       default_field: 'field',
       default_input_field: 'field',
-      analyzer: new WhiteSpaceAnalyzer());
+      analyzer: new WhiteSpaceAnalyzer(ferret));
   [
     "the words we are searching for are one and two also " +
         "sometimes looking for them as a phrase like this; one " +
@@ -838,17 +850,17 @@ test_highlighter() {
   index.close();
 }
 
-test_changing_analyzer() {
-  var index = new Index();
-  var a = new WhiteSpaceAnalyzer(lower: false);
+test_changing_analyzer(Ferret ferret) {
+  var index = new Index(ferret);
+  var a = new WhiteSpaceAnalyzer(ferret, lower: false);
   index.add_document({'content': "Content With Capitals"}, a);
   var tv = index.reader.term_vector(0, 'content');
   expect(tv.terms[0].text, equals("Capitals"));
   index.close();
 }
 
-test_top_doc_to_json() {
-  var index = new Index();
+test_top_doc_to_json(Ferret ferret) {
+  var index = new Index(ferret);
   [
     {'f1': "one"},
     {
@@ -866,8 +878,8 @@ test_top_doc_to_json() {
   index.close();
 }
 
-test_large_query_delete() {
-  var index = new Index();
+test_large_query_delete(Ferret ferret) {
+  var index = new Index(ferret);
   range(20).forEach((_) {
     index.add_document({'id': 'one'});
     index.add_document({'id': 'two'});
@@ -876,8 +888,8 @@ test_large_query_delete() {
   expect(index.size(), equals(20));
 }
 
-test_query_update_delete_more_than_ten() {
-  var index = new Index();
+test_query_update_delete_more_than_ten(Ferret ferret) {
+  var index = new Index(ferret);
   range(20).forEach(
       (i) => index.add_document({'id': i, 'find': 'match', 'change': 'one'}));
 

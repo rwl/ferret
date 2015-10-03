@@ -22,9 +22,9 @@ test_token() {
   expect(1, equals(t.pos_inc));
 }
 
-test_ascii_letter_tokenizer() {
+test_ascii_letter_tokenizer(Ferret ferret) {
   var input = r'DBalmain@gmail.com is My e-mail 523@#$ ADDRESS. 23#!$';
-  var t = new AsciiLetterTokenizer(input);
+  var t = new AsciiLetterTokenizer(ferret, input);
   expect(new Token.test("DBalmain", 0, 8), equals(t.next()));
   expect(new Token.test("gmail", 9, 14), equals(t.next()));
   expect(new Token.test("com", 15, 18), equals(t.next()));
@@ -39,7 +39,7 @@ test_ascii_letter_tokenizer() {
   expect(new Token.test("two", 4, 7), equals(t.next()));
   expect(new Token.test("three", 8, 13), equals(t.next()));
   expect(t.next(), isNull);
-  t = new AsciiLowerCaseFilter(new AsciiLetterTokenizer(input));
+  t = new AsciiLowerCaseFilter(ferret, new AsciiLetterTokenizer(ferret, input));
   expect(new Token.test("dbalmain", 0, 8), equals(t.next()));
   expect(new Token.test("gmail", 9, 14), equals(t.next()));
   expect(new Token.test("com", 15, 18), equals(t.next()));
@@ -51,10 +51,10 @@ test_ascii_letter_tokenizer() {
   expect(t.next(), isNull);
 }
 
-test_letter_tokenizer() {
+test_letter_tokenizer(Ferret ferret) {
   var input =
       r'DBalmän@gmail.com is My e-mail 52   #$ address. 23#!$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ';
-  var t = new LetterTokenizer(input);
+  var t = new LetterTokenizer(ferret, input);
   expect(new Token.test('DBalmän', 0, 8), equals(t.next()));
   expect(new Token.test('gmail', 9, 14), equals(t.next()));
   expect(new Token.test('com', 15, 18), equals(t.next()));
@@ -73,7 +73,7 @@ test_letter_tokenizer() {
   expect(new Token.test("two", 4, 7), equals(t.next()));
   expect(new Token.test("three", 8, 13), equals(t.next()));
   expect(t.next(), isNull);
-  t = new LowerCaseFilter(new LetterTokenizer(input));
+  t = new LowerCaseFilter(ferret, new LetterTokenizer(ferret, input));
   expect(new Token.test('dbalmän', 0, 8), equals(t.next()));
   expect(new Token.test('gmail', 9, 14), equals(t.next()));
   expect(new Token.test('com', 15, 18), equals(t.next()));
@@ -87,7 +87,7 @@ test_letter_tokenizer() {
   expect(new Token.test('úøã', 72, 78), equals(t.next()));
   expect(new Token.test('öîí', 80, 86), equals(t.next()));
   expect(t.next(), isNull);
-  t = new LetterTokenizer(input, lower: true);
+  t = new LetterTokenizer(ferret, input, lower: true);
   expect(new Token.test('dbalmän', 0, 8), equals(t.next()));
   expect(new Token.test('gmail', 9, 14), equals(t.next()));
   expect(new Token.test('com', 15, 18), equals(t.next()));
@@ -103,9 +103,9 @@ test_letter_tokenizer() {
   expect(t.next(), isNull);
 }
 
-test_ascii_whitespace_tokenizer() {
+test_ascii_whitespace_tokenizer(Ferret ferret) {
   var input = r'DBalmain@gmail.com is My e-mail 52   #$ ADDRESS. 23#!$';
-  var t = new AsciiWhiteSpaceTokenizer(input);
+  var t = new AsciiWhiteSpaceTokenizer(ferret, input);
   expect(new Token.test('DBalmain@gmail.com', 0, 18), equals(t.next()));
   expect(new Token.test('is', 19, 21), equals(t.next()));
   expect(new Token.test('My', 22, 24), equals(t.next()));
@@ -119,7 +119,8 @@ test_ascii_whitespace_tokenizer() {
   expect(new Token.test("one_two", 0, 7), equals(t.next()));
   expect(new Token.test("three", 8, 13), equals(t.next()));
   expect(t.next(), isNull);
-  t = new AsciiLowerCaseFilter(new AsciiWhiteSpaceTokenizer(input));
+  t = new AsciiLowerCaseFilter(
+      ferret, new AsciiWhiteSpaceTokenizer(ferret, input));
   expect(new Token.test('dbalmain@gmail.com', 0, 18), equals(t.next()));
   expect(new Token.test('is', 19, 21), equals(t.next()));
   expect(new Token.test('my', 22, 24), equals(t.next()));
@@ -131,10 +132,10 @@ test_ascii_whitespace_tokenizer() {
   expect(t.next(), isNull);
 }
 
-test_whitespace_tokenizer() {
+test_whitespace_tokenizer(Ferret ferret) {
   var input =
       r'DBalmän@gmail.com is My e-mail 52   #$ address. 23#!$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ';
-  var t = new WhiteSpaceTokenizer(input);
+  var t = new WhiteSpaceTokenizer(ferret, input);
   expect(new Token.test('DBalmän@gmail.com', 0, 18), equals(t.next()));
   expect(new Token.test('is', 19, 21), equals(t.next()));
   expect(new Token.test('My', 22, 24), equals(t.next()));
@@ -149,7 +150,7 @@ test_whitespace_tokenizer() {
   expect(new Token.test("one_two", 0, 7), equals(t.next()));
   expect(new Token.test("three", 8, 13), equals(t.next()));
   expect(t.next(), isNull);
-  t = new LowerCaseFilter(new WhiteSpaceTokenizer(input));
+  t = new LowerCaseFilter(ferret, new WhiteSpaceTokenizer(ferret, input));
   expect(new Token.test('dbalmän@gmail.com', 0, 18), equals(t.next()));
   expect(new Token.test('is', 19, 21), equals(t.next()));
   expect(new Token.test('my', 22, 24), equals(t.next()));
@@ -160,7 +161,7 @@ test_whitespace_tokenizer() {
   expect(new Token.test(r'23#!$', 49, 54), equals(t.next()));
   expect(new Token.test('áägç®êëì¯úøã¬öîí', 55, 86), equals(t.next()));
   expect(t.next(), isNull);
-  t = new WhiteSpaceTokenizer(input, lower: true);
+  t = new WhiteSpaceTokenizer(ferret, input, lower: true);
   expect(new Token.test('dbalmän@gmail.com', 0, 18), equals(t.next()));
   expect(new Token.test('is', 19, 21), equals(t.next()));
   expect(new Token.test('my', 22, 24), equals(t.next()));
@@ -173,10 +174,10 @@ test_whitespace_tokenizer() {
   expect(t.next(), isNull);
 }
 
-test_ascii_standard_tokenizer() {
+test_ascii_standard_tokenizer(Ferret ferret) {
   var input =
       r'DBalmain@gmail.com is My e-mail 52   #$ Address. 23#!$ http://www.google.com/results/ T.N.T. 123-1235-ASD-1234';
-  var t = new AsciiStandardTokenizer(input);
+  var t = new AsciiStandardTokenizer(ferret, input);
   expect(new Token.test('DBalmain@gmail.com', 0, 18), equals(t.next()));
   expect(new Token.test('is', 19, 21), equals(t.next()));
   expect(new Token.test('My', 22, 24), equals(t.next()));
@@ -192,7 +193,8 @@ test_ascii_standard_tokenizer() {
   expect(new Token.test("one_two", 0, 7), equals(t.next()));
   expect(new Token.test("three", 8, 13), equals(t.next()));
   expect(t.next(), isNull);
-  t = new AsciiLowerCaseFilter(new AsciiStandardTokenizer(input));
+  t = new AsciiLowerCaseFilter(
+      ferret, new AsciiStandardTokenizer(ferret, input));
   expect(new Token.test('dbalmain@gmail.com', 0, 18), equals(t.next()));
   expect(new Token.test('is', 19, 21), equals(t.next()));
   expect(new Token.test('my', 22, 24), equals(t.next()));
@@ -206,10 +208,10 @@ test_ascii_standard_tokenizer() {
   expect(t.next(), isNull);
 }
 
-test_standard_tokenizer() {
+test_standard_tokenizer(Ferret ferret) {
   var input =
       r'DBalmán@gmail.com is My e-mail 52   #$ Address. 23#!$ http://www.google.com/res_345/ T.N.T. 123-1235-ASD-1234 23#!$ ÁÄGÇ®ÊËÌ¯ÚØÃ¬ÖÎÍ';
-  var t = new StandardTokenizer(input);
+  var t = new StandardTokenizer(ferret, input);
   expect(new Token.test('DBalmán@gmail.com', 0, 18), equals(t.next()));
   expect(new Token.test('is', 19, 21), equals(t.next()));
   expect(new Token.test('My', 22, 24), equals(t.next()));
@@ -230,7 +232,7 @@ test_standard_tokenizer() {
   expect(new Token.test("one_two", 0, 7), equals(t.next()));
   expect(new Token.test("three", 8, 13), equals(t.next()));
   expect(t.next(), isNull);
-  t = new LowerCaseFilter(new StandardTokenizer(input));
+  t = new LowerCaseFilter(ferret, new StandardTokenizer(ferret, input));
   expect(new Token.test('dbalmán@gmail.com', 0, 18), equals(t.next()));
   expect(new Token.test('is', 19, 21), equals(t.next()));
   expect(new Token.test('my', 22, 24), equals(t.next()));
@@ -247,7 +249,7 @@ test_standard_tokenizer() {
   expect(new Token.test('úøã', 134, 140), equals(t.next()));
   expect(new Token.test('öîí', 142, 148), equals(t.next()));
   input = "e-mail 123-1235-asd-1234 http://www.davebalmain.com/trac-site/";
-  t = new HyphenFilter(new StandardTokenizer(input));
+  t = new HyphenFilter(ferret, new StandardTokenizer(ferret, input));
   expect(new Token.test('email', 0, 6), equals(t.next()));
   expect(new Token.test('e', 0, 1, 0), equals(t.next()));
   expect(new Token.test('mail', 2, 6, 1), equals(t.next()));
@@ -263,10 +265,10 @@ const ACRONYM = r"#{ALPHA}\.(#{ALPHA}\.)+";
 const ACRONYM_WORD = r"^#{ACRONYM}$";
 const APOSTROPHE_WORD = r"^#{APOSTROPHE}$";
 
-test_reg_exp_tokenizer() {
+test_reg_exp_tokenizer(Ferret ferret) {
   var input =
       r"DBalmain@gmail.com is My e-mail 52   #$ Address. 23#!$ http://www.google.com/RESULT_3.html T.N.T. 123-1235-ASD-1234 23 Rob's";
-  var t = new RegExpTokenizer(input);
+  var t = new RegExpTokenizer(ferret, input);
   expect(new Token.test('DBalmain@gmail.com', 0, 18), equals(t.next()));
   expect(new Token.test('is', 19, 21), equals(t.next()));
   expect(new Token.test('My', 22, 24), equals(t.next()));
@@ -285,9 +287,9 @@ test_reg_exp_tokenizer() {
   expect(new Token.test("one_two", 0, 7), equals(t.next()));
   expect(new Token.test("three", 8, 13), equals(t.next()));
   expect(t.next(), isNull);
-  t = new LowerCaseFilter(new RegExpTokenizer(input));
-  var t2 =
-      new LowerCaseFilter(new RegExpTokenizer(input, new RegExp(r"\w{2,}")));
+  t = new LowerCaseFilter(ferret, new RegExpTokenizer(ferret, input));
+  var t2 = new LowerCaseFilter(
+      ferret, new RegExpTokenizer(ferret, input, new RegExp(r"\w{2,}")));
   expect(new Token.test('dbalmain@gmail.com', 0, 18), equals(t.next()));
   expect(new Token.test('is', 19, 21), equals(t.next()));
   expect(new Token.test('my', 22, 24), equals(t.next()));
@@ -332,7 +334,7 @@ test_reg_exp_tokenizer() {
     }
     return str;
   });
-  t = new LowerCaseFilter(t);
+  t = new LowerCaseFilter(ferret, t);
   expect(new Token.test('dbalmain@gmail.com', 0, 18), equals(t.next()));
   expect(new Token.test('is', 19, 21), equals(t.next()));
   expect(new Token.test('my', 22, 24), equals(t.next()));
@@ -349,7 +351,7 @@ test_reg_exp_tokenizer() {
   expect(t.next(), isNull);
 }
 
-test_mapping_filter() {
+test_mapping_filter(Ferret ferret) {
   var mapping = {
     ['à', 'á', 'â', 'ã', 'ä', 'å', 'ā', 'ă']: 'a',
     'æ': 'ae',
@@ -380,7 +382,8 @@ aàáâãäåāăb cæd eďđf gçćčĉċh ièéêëēęěĕėj kƒl mĝğġģn
 włľĺļŀx yñńňņŉŋz aòóôõöøōőŏŏb cœd eąf gŕřŗh iśšşŝșj kťţŧțl mùúûüūůűŭũųn oŵp
 qýÿŷr sžżźt
 ''';
-  var t = new MappingFilter(new LetterTokenizer(input), mapping);
+  var t =
+      new MappingFilter(ferret, new LetterTokenizer(ferret, input), mapping);
   expect(new Token.test('aaaaaaaaab', 0, 18), equals(t.next()));
   expect(new Token.test('caed', 19, 23), equals(t.next()));
   expect(new Token.test('eddf', 24, 30), equals(t.next()));
@@ -407,10 +410,11 @@ qýÿŷr sžżźt
   expect(t.next(), isNull);
 }
 
-test_stop_filter() {
+test_stop_filter(Ferret ferret) {
   var words = ["one", "four", "five", "seven"];
   var input = "one, two, three, four, five, six, seven, eight, nine, ten.";
-  var t = new StopFilter(new AsciiLetterTokenizer(input), words);
+  var t =
+      new StopFilter(ferret, new AsciiLetterTokenizer(ferret, input), words);
   expect(new Token.test('two', 5, 8, 2), equals(t.next()));
   expect(new Token.test('three', 10, 15, 1), equals(t.next()));
   expect(new Token.test('six', 29, 32, 3), equals(t.next()));
@@ -420,10 +424,10 @@ test_stop_filter() {
   expect(t.next(), isNull);
 }
 
-test_stem_filter() {
+test_stem_filter(Ferret ferret) {
   var input = "Debate Debates DEBATED DEBating Debater";
-  var t = new StemFilter(
-      new AsciiLowerCaseFilter(new AsciiLetterTokenizer(input)),
+  var t = new StemFilter(ferret,
+      new AsciiLowerCaseFilter(ferret, new AsciiLetterTokenizer(ferret, input)),
       algorithm: "english");
   expect(new Token.test("debat", 0, 6), equals(t.next()));
   expect(new Token.test("debat", 7, 14), equals(t.next()));
@@ -431,23 +435,27 @@ test_stem_filter() {
   expect(new Token.test("debat", 23, 31), equals(t.next()));
   expect(new Token.test("debat", 32, 39), equals(t.next()));
   expect(t.next(), isNull);
-  t = new StemFilter(new AsciiLetterTokenizer(input), algorithm: 'english');
+  t = new StemFilter(ferret, new AsciiLetterTokenizer(ferret, input),
+      algorithm: 'english');
   expect(new Token.test("Debat", 0, 6), equals(t.next()));
   expect(new Token.test("Debat", 7, 14), equals(t.next()));
   expect(new Token.test("DEBATED", 15, 22), equals(t.next()));
   expect(new Token.test("DEBate", 23, 31), equals(t.next()));
   expect(new Token.test("Debat", 32, 39), equals(t.next()));
 
-  if (Ferret.locale && Ferret.locale.downcase.index("utf")) {
+  if (ferret.get_locale() != null &&
+      ferret.get_locale().toLowerCase().indexOf("utf") != -1) {
     input = "Dêbate dêbates DÊBATED DÊBATing dêbater";
-    t = new StemFilter(new LowerCaseFilter(new LetterTokenizer(input)),
+    t = new StemFilter(
+        ferret, new LowerCaseFilter(ferret, new LetterTokenizer(ferret, input)),
         algorithm: 'english');
     expect(new Token.test("dêbate", 0, 7), equals(t.next()));
     expect(new Token.test("dêbate", 8, 16), equals(t.next()));
     expect(new Token.test("dêbate", 17, 25), equals(t.next()));
     expect(new Token.test("dêbate", 26, 35), equals(t.next()));
     expect(new Token.test("dêbater", 36, 44), equals(t.next()));
-    t = new StemFilter(new LetterTokenizer(input), algorithm: 'english');
+    t = new StemFilter(ferret, new LetterTokenizer(ferret, input),
+        algorithm: 'english');
     expect(new Token.test("Dêbate", 0, 7), equals(t.next()));
     expect(new Token.test("dêbate", 8, 16), equals(t.next()));
     expect(new Token.test("DÊBATED", 17, 25), equals(t.next()));
@@ -456,13 +464,14 @@ test_stem_filter() {
     expect(t.next(), isNull);
   }
 
-  var tz = new AsciiLetterTokenizer(input);
+  var tz = new AsciiLetterTokenizer(ferret, input);
+  expect(new StemFilter(ferret, tz, algorithm: 'HunGarIaN', encoding: 'Utf-8'),
+      isNotNull);
   expect(
-      new StemFilter(tz, algorithm: 'HunGarIaN', encoding: 'Utf-8'), isNotNull);
-  expect(new StemFilter(tz, algorithm: 'romanIAN', encoding: 'iso-8859-2'),
+      new StemFilter(ferret, tz, algorithm: 'romanIAN', encoding: 'iso-8859-2'),
       isNotNull);
   expect(ArgumentError, () {
-    new StemFilter(tz, algorithm: 'Jibberish', encoding: 'UTF-8');
+    new StemFilter(ferret, tz, algorithm: 'Jibberish', encoding: 'UTF-8');
   });
 }
 
@@ -471,7 +480,7 @@ test_stem_filter() {
 class MyRegExpTokenizer extends TokenStream {
   var _ss;
 
-  MyRegExpTokenizer(String input) : super.wrap(ferret, h) {
+  MyRegExpTokenizer(Ferret ferret, String input) : super.wrap(ferret, h) {
     _ss = new StringScanner(input);
   }
 
@@ -511,7 +520,7 @@ class MyRegExpTokenizer extends TokenStream {
 class MyReverseTokenFilter extends TokenStream {
   var _token_stream;
 
-  MyReverseTokenFilter(token_stream) : super.wrap(ferret, h) {
+  MyReverseTokenFilter(Ferret ferret, token_stream) : super.wrap(ferret, h) {
     _token_stream = token_stream;
   }
 
@@ -529,7 +538,7 @@ class MyReverseTokenFilter extends TokenStream {
 }
 
 class MyCSVTokenizer extends MyRegExpTokenizer {
-  MyCSVTokenizer(token_stream) : super(token_stream);
+  MyCSVTokenizer(Ferret ferret, token_stream) : super(ferret, token_stream);
 
   //protected
   /// returns the regular expression used to find the next token
@@ -546,22 +555,22 @@ class MyCSVTokenizer extends MyRegExpTokenizer {
   }
 }
 
-test_custom_tokenizer() {
+test_custom_tokenizer(Ferret ferret) {
   var input = "First Field,2nd Field,  P a d d e d  F i e l d  ";
-  var t = new MyCSVTokenizer(input);
+  var t = new MyCSVTokenizer(ferret, input);
   expect(new Token.test("FIRST FIELD", 0, 11), equals(t.next()));
   expect(new Token.test("2ND FIELD", 12, 21), equals(t.next()));
   expect(
       new Token.test("  P A D D E D  F I E L D  ", 22, 48), equals(t.next()));
   expect(t.next(), isNull);
-  t = new AsciiLowerCaseFilter(new MyCSVTokenizer(input));
+  t = new AsciiLowerCaseFilter(ferret, new MyCSVTokenizer(ferret, input));
   expect(new Token.test("first field", 0, 11), equals(t.next()));
   expect(new Token.test("2nd field", 12, 21), equals(t.next()));
   expect(
       new Token.test("  p a d d e d  f i e l d  ", 22, 48), equals(t.next()));
   expect(t.next(), isNull);
-  t = new MyReverseTokenFilter(
-      new AsciiLowerCaseFilter(new MyCSVTokenizer(input)));
+  t = new MyReverseTokenFilter(ferret,
+      new AsciiLowerCaseFilter(ferret, new MyCSVTokenizer(ferret, input)));
   expect(new Token.test("dleif tsrif", 0, 11), equals(t.next()));
   expect(new Token.test("dleif dn2", 12, 21), equals(t.next()));
   expect(
@@ -570,8 +579,8 @@ test_custom_tokenizer() {
   expect(new Token.test("eno", 0, 3), equals(t.next()));
   expect(new Token.test("owt", 4, 7), equals(t.next()));
   expect(new Token.test("eerht", 8, 13), equals(t.next()));
-  t = new AsciiLowerCaseFilter(
-      new MyReverseTokenFilter(new MyCSVTokenizer(input)));
+  t = new AsciiLowerCaseFilter(ferret,
+      new MyReverseTokenFilter(ferret, new MyCSVTokenizer(ferret, input)));
   expect(new Token.test("dleif tsrif", 0, 11), equals(t.next()));
   expect(new Token.test("dleif dn2", 12, 21), equals(t.next()));
   expect(
@@ -586,14 +595,14 @@ class TokenFilter extends TokenStream {
   var _input;
   //protected
   /// Construct a token stream filtering the given input.
-  TokenFilter(input) : super.wrap(ferret, h) {
+  TokenFilter(Ferret ferret, input) : super.wrap(ferret, h) {
     _input = input;
   }
 }
 
 /// Normalizes token text to lower case.
 class CapitalizeFilter extends TokenFilter {
-  CapitalizeFilter(input) : super(input);
+  CapitalizeFilter(Ferret ferret, input) : super(ferret, input);
 
   next() {
     var t = _input.next();
@@ -608,9 +617,9 @@ class CapitalizeFilter extends TokenFilter {
   }
 }
 
-test_custom_filter() {
+test_custom_filter(Ferret ferret) {
   var input = "This text SHOULD be capitalized ... I hope. :-S";
-  var t = new CapitalizeFilter(new AsciiLetterTokenizer(input));
+  var t = new CapitalizeFilter(ferret, new AsciiLetterTokenizer(ferret, input));
   expect(new Token.test("This", 0, 4), equals(t.next()));
   expect(new Token.test("Text", 5, 9), equals(t.next()));
   expect(new Token.test("Should", 10, 16), equals(t.next()));
@@ -620,7 +629,8 @@ test_custom_filter() {
   expect(new Token.test("Hope", 38, 42), equals(t.next()));
   expect(new Token.test("S", 46, 47), equals(t.next()));
   expect(t.next(), isNull);
-  t = new StemFilter(new CapitalizeFilter(new AsciiLetterTokenizer(input)));
+  t = new StemFilter(ferret,
+      new CapitalizeFilter(ferret, new AsciiLetterTokenizer(ferret, input)));
   expect(new Token.test("This", 0, 4), equals(t.next()));
   expect(new Token.test("Text", 5, 9), equals(t.next()));
   expect(new Token.test("Should", 10, 16), equals(t.next()));

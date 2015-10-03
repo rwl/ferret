@@ -9,10 +9,11 @@ class IndexWriterTest {
   //< Test::Unit::TestCase
 //  include Ferret::Index
 //  include Ferret::Analysis
+  Ferret _ferret;
   Directory _dir;
 
   setup() {
-    _dir = new RAMDirectory();
+    _dir = new RAMDirectory(_ferret);
     var fis = new FieldInfos();
     fis.create_index(_dir);
   }
@@ -26,7 +27,7 @@ class IndexWriterTest {
     var clock = _dir.make_lock(IndexWriter.COMMIT_LOCK_NAME);
     expect(wlock.locked, isFalse);
     expect(clock.locked, isFalse);
-    var iw = new IndexWriter(dir: _dir, create: true);
+    var iw = new IndexWriter(_ferret, dir: _dir, create: true);
     expect(_dir.exists("segments"), isTrue);
     expect(wlock.locked, isTrue);
     iw.close();
@@ -36,7 +37,7 @@ class IndexWriterTest {
   }
 
   test_add_document() {
-    var iw = new IndexWriter(
+    var iw = new IndexWriter(_ferret,
         dir: _dir, analyzer: new StandardAnalyzer(), create: true);
     iw.add_document({
       'title': "first doc",
@@ -51,7 +52,8 @@ class IndexWriterTest {
   }
 
   test_add_documents_fuzzy() {
-    var iw = new IndexWriter(dir: _dir, analyzer: new StandardAnalyzer());
+    var iw = new IndexWriter(_ferret,
+        dir: _dir, analyzer: new StandardAnalyzer(_ferret));
     iw.merge_factor = 3;
     iw.max_buffered_docs = 3;
 
@@ -65,7 +67,7 @@ class IndexWriterTest {
   }
 
   test_adding_long_url() {
-    var iw = new IndexWriter(dir: _dir, default_field: 'content');
+    var iw = new IndexWriter(_ferret, dir: _dir, default_field: 'content');
     iw.add_document({'content': "http://" + 'x' * 255});
     // The following line will cause a segfault prior to 0.11.6
     iw.add_document({'content': "http://" + 'x' * 1000000});

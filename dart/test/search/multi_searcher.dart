@@ -11,14 +11,14 @@ class SimpleMultiSearcherTest extends SearcherTest {
 
   setUp() {
     super.setUp();
-    _searcher = new MultiSearcher([new Searcher.store(dir)]);
+    _searcher = new MultiSearcher(ferret, [new Searcher.store(ferret, dir)]);
   }
 }
 
 /// Checks query results of a [MultiSearcher] searching two indexes
 /// against those of a single [Searcher] searching the same
 /// set of documents.
-multiSearcherTest() {
+multiSearcherTest(Ferret ferret) {
   final List DOCUMENTS1 = [
     {"date": "20050930", 'field': "word1", "cat": "cat1/"},
     {
@@ -72,28 +72,28 @@ multiSearcherTest() {
 
   setUp(() {
     // create MultiSearcher from two seperate searchers
-    var dir1 = new RAMDirectory();
-    var iw1 = new IndexWriter(
-        dir: dir1, analyzer: new WhiteSpaceAnalyzer(), create: true);
+    var dir1 = new RAMDirectory(ferret);
+    var iw1 = new IndexWriter(ferret,
+        dir: dir1, analyzer: new WhiteSpaceAnalyzer(ferret), create: true);
     DOCUMENTS1.forEach((doc) => iw1.add_document(doc));
     iw1.close();
 
-    var dir2 = new RAMDirectory();
-    var iw2 = new IndexWriter(
-        dir: dir2, analyzer: new WhiteSpaceAnalyzer(), create: true);
+    var dir2 = new RAMDirectory(ferret);
+    var iw2 = new IndexWriter(ferret,
+        dir: dir2, analyzer: new WhiteSpaceAnalyzer(ferret), create: true);
     DOCUMENTS2.forEach((doc) => iw2.add_document(doc));
     iw2.close();
-    _searcher =
-        new MultiSearcher([new Searcher.store(dir1), new Searcher.store(dir2)]);
+    _searcher = new MultiSearcher(ferret,
+        [new Searcher.store(ferret, dir1), new Searcher.store(ferret, dir2)]);
 
     // create single searcher
-    var dir = new RAMDirectory();
-    var iw = new IndexWriter(
-        dir: dir, analyzer: new WhiteSpaceAnalyzer(), create: true);
+    var dir = new RAMDirectory(ferret);
+    var iw = new IndexWriter(ferret,
+        dir: dir, analyzer: new WhiteSpaceAnalyzer(ferret), create: true);
     DOCUMENTS1.forEach((doc) => iw.add_document(doc));
     DOCUMENTS2.forEach((doc) => iw.add_document(doc));
     iw.close();
-    _single = new Searcher.store(dir);
+    _single = new Searcher.store(ferret, dir);
 
     //_query_parser = new QueryParser(['date', 'field', 'cat'], analyzer: new WhiteSpaceAnalyzer());
   });

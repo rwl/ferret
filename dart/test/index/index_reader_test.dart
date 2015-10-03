@@ -7,6 +7,7 @@ import 'package:quiver/iterables.dart' show range;
 import 'index_test_helper.dart';
 
 abstract class IndexReaderCommon {
+  Ferret _ferret;
   IndexReader _ir;
 
   test_index_reader() {
@@ -459,21 +460,22 @@ class MultiReaderTest extends IndexReaderCommon {
   Directory _dir;
 
   ir_new() {
-    new IndexReader(_dir);
+    new IndexReader(_ferret, _dir);
   }
 
   iw_optimize() {
-    var iw = new IndexWriter(dir: _dir, analyzer: new WhiteSpaceAnalyzer());
+    var iw =
+        new IndexWriter(_ferret, dir: _dir, analyzer: new WhiteSpaceAnalyzer());
     iw.optimize();
     iw.close();
   }
 
   setup() {
-    _dir = new RAMDirectory();
+    _dir = new RAMDirectory(_ferret);
 
-    var iw = new IndexWriter(
+    var iw = new IndexWriter(_ferret,
         dir: _dir,
-        analyzer: new WhiteSpaceAnalyzer(),
+        analyzer: new WhiteSpaceAnalyzer(_ferret),
         create: true,
         field_infos: IndexTestHelper.INDEX_TEST_FIS,
         max_buffered_docs: 15);
@@ -499,13 +501,14 @@ class MultiExternalReaderTest extends IndexReaderCommon {
   List<Directory> _dirs;
 
   ir_new() {
-    var readers = _dirs.map((dir) => new IndexReader(dir));
-    new IndexReader(readers);
+    var readers = _dirs.map((dir) => new IndexReader(_ferret, dir));
+    new IndexReader(_ferret, readers);
   }
 
   iw_optimize() {
-    _dirs.each((dir) {
-      var iw = new IndexWriter(dir: dir, analyzer: new WhiteSpaceAnalyzer());
+    _dirs.forEach((dir) {
+      var iw = new IndexWriter(_ferret,
+          dir: dir, analyzer: new WhiteSpaceAnalyzer(_ferret));
       iw.optimize();
       iw.close();
     });
@@ -520,12 +523,12 @@ class MultiExternalReaderTest extends IndexReaderCommon {
       [30, IndexTestHelper.INDEX_TEST_DOCS.size]
     ].forEach((row) {
       var start = row[0], finish = row[1];
-      var dir = new RAMDirectory();
+      var dir = new RAMDirectory(_ferret);
       _dirs.add(dir);
 
-      var iw = new IndexWriter(
+      var iw = new IndexWriter(_ferret,
           dir: dir,
-          analyzer: new WhiteSpaceAnalyzer(),
+          analyzer: new WhiteSpaceAnalyzer(_ferret),
           create: true,
           field_infos: IndexTestHelper.INDEX_TEST_FIS);
       range(start, finish).forEach((doc_id) {
@@ -548,12 +551,13 @@ class MultiExternalReaderDirTest extends IndexReaderCommon {
   List<Directory> _dirs;
 
   ir_new() {
-    return new IndexReader(_dirs);
+    return new IndexReader(_ferret, _dirs);
   }
 
   iw_optimize() {
     _dirs.forEach((dir) {
-      var iw = new IndexWriter(dir: dir, analyzer: new WhiteSpaceAnalyzer());
+      var iw = new IndexWriter(_ferret,
+          dir: dir, analyzer: new WhiteSpaceAnalyzer(_ferret));
       iw.optimize();
       iw.close();
     });
@@ -568,16 +572,16 @@ class MultiExternalReaderDirTest extends IndexReaderCommon {
       [30, IndexTestHelper.INDEX_TEST_DOCS.size]
     ].forEach((row) {
       var start = row[0], finish = row[1];
-      var dir = new RAMDirectory();
+      var dir = new RAMDirectory(_ferret);
       _dirs.add(dir);
 
-      var iw = new IndexWriter(
+      var iw = new IndexWriter(_ferret,
           dir: dir,
-          analyzer: new WhiteSpaceAnalyzer(),
+          analyzer: new WhiteSpaceAnalyzer(_ferret),
           create: true,
           field_infos: IndexTestHelper.INDEX_TEST_FIS);
       range(start, finish).forEach((doc_id) {
-        iw.add(IndexTestHelper.INDEX_TEST_DOCS[doc_id]);
+        iw.add_document(IndexTestHelper.INDEX_TEST_DOCS[doc_id]);
       });
       iw.close();
     });
@@ -596,12 +600,13 @@ class MultiExternalReaderPathTest extends IndexReaderCommon {
   List<String> _paths;
 
   ir_new() {
-    return new IndexReader(_paths);
+    return new IndexReader(_ferret, _paths);
   }
 
   iw_optimize() {
-    _paths.each((path) {
-      var iw = new IndexWriter(path: path, analyzer: new WhiteSpaceAnalyzer());
+    _paths.forEach((path) {
+      var iw = new IndexWriter(_ferret,
+          path: path, analyzer: new WhiteSpaceAnalyzer(_ferret));
       iw.optimize();
       iw.close();
     });
@@ -626,18 +631,18 @@ class MultiExternalReaderPathTest extends IndexReaderCommon {
       var start = row[0], finish = row[1];
       var path = _paths[i];
 
-      var iw = new IndexWriter(
+      var iw = new IndexWriter(_ferret,
           path: path,
-          analyzer: new WhiteSpaceAnalyzer(),
+          analyzer: new WhiteSpaceAnalyzer(_ferret),
           create: true,
           field_infos: IndexTestHelper.INDEX_TEST_FIS);
-      range(start, finish).each((doc_id) {
-        iw.add(IndexTestHelper.INDEX_TEST_DOCS[doc_id]);
+      range(start, finish).forEach((doc_id) {
+        iw.add_document(IndexTestHelper.INDEX_TEST_DOCS[doc_id]);
       });
       iw.close();
       i++;
     });
-    _ir = ir_new;
+    _ir = ir_new();
   }
 
   teardown() {
@@ -649,11 +654,12 @@ class IndexReaderTest {
   //< Test::Unit::TestCase
   //include Ferret::Index
   //include Ferret::Analysis
+  Ferret _ferret;
   Directory _dir, _fs_dir;
   String _fs_dpath;
 
   setup() {
-    _dir = new RAMDirectory();
+    _dir = new RAMDirectory(_ferret);
   }
 
   teardown() {
@@ -663,10 +669,10 @@ class IndexReaderTest {
   test_ir_multivalue_fields() {
     _fs_dpath =
         File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'));
-    _fs_dir = FSDirectory.create(_fs_dpath, create: true);
+    _fs_dir = new FSDirectory(_ferret, _fs_dpath, create: true);
 
-    var iw = new IndexWriter(
-        dir: _fs_dir, analyzer: new WhiteSpaceAnalyzer(), create: true);
+    var iw = new IndexWriter(_ferret,
+        dir: _fs_dir, analyzer: new WhiteSpaceAnalyzer(_ferret), create: true);
     var doc = {
       'tag': ["Ruby", "C", "Lucene", "Ferret"],
       'body': "this is the body Document Field",
@@ -677,8 +683,8 @@ class IndexReaderTest {
 
     iw.close();
 
-    _dir = new RAMDirectory(dir: _fs_dir);
-    var ir = new IndexReader(_dir);
+    _dir = new RAMDirectory(_ferret, dir: _fs_dir);
+    var ir = new IndexReader(_ferret, _dir);
     expect(doc, ir.get_document(0).load);
     ir.close();
   }
@@ -718,9 +724,9 @@ class IndexReaderTest {
   }
 
   do_test_ir_read_while_optimizing(dir) {
-    var iw = new IndexWriter(
+    var iw = new IndexWriter(_ferret,
         dir: dir,
-        analyzer: new WhiteSpaceAnalyzer(),
+        analyzer: new WhiteSpaceAnalyzer(_ferret),
         create: true,
         field_infos: IndexTestHelper.INDEX_TEST_FIS);
 
@@ -728,10 +734,11 @@ class IndexReaderTest {
 
     iw.close();
 
-    var ir = new IndexReader(dir);
+    var ir = new IndexReader(_ferret, dir);
     do_test_term_vectors(ir);
 
-    iw = new IndexWriter(dir: dir, analyzer: new WhiteSpaceAnalyzer());
+    iw = new IndexWriter(_ferret,
+        dir: dir, analyzer: new WhiteSpaceAnalyzer(_ferret));
     iw.optimize();
     iw.close();
 
@@ -747,7 +754,7 @@ class IndexReaderTest {
   test_ir_read_while_optimizing_on_disk() {
     var dpath =
         File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'));
-    var fs_dir = FSDirectory.create(dpath, create: true);
+    var fs_dir = new FSDirectory(_ferret, dpath, create: true);
     do_test_ir_read_while_optimizing(fs_dir);
     fs_dir.close();
   }
@@ -755,24 +762,25 @@ class IndexReaderTest {
   test_latest() {
     var dpath =
         File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'));
-    var fs_dir = FSDirectory.create(dpath, create: true);
+    var fs_dir = new FSDirectory(_ferret, dpath, create: true);
 
-    var iw = new IndexWriter(
-        dir: fs_dir, analyzer: new WhiteSpaceAnalyzer(), create: true);
+    var iw = new IndexWriter(_ferret,
+        dir: fs_dir, analyzer: new WhiteSpaceAnalyzer(_ferret), create: true);
     iw.add_document({'field': "content"});
     iw.close();
 
-    var ir = new IndexReader(fs_dir);
+    var ir = new IndexReader(_ferret, fs_dir);
     expect(ir.latest, isTrue);
 
-    iw = new IndexWriter(dir: fs_dir, analyzer: new WhiteSpaceAnalyzer());
+    iw = new IndexWriter(_ferret,
+        dir: fs_dir, analyzer: new WhiteSpaceAnalyzer(_ferret));
     iw.add_document({'field': "content2"});
     iw.close();
 
     expect(ir.latest, isFalse);
 
     ir.close();
-    ir = new IndexReader(fs_dir);
+    ir = new IndexReader(_ferret, fs_dir);
     expect(ir.latest, isTrue);
     ir.close();
   }

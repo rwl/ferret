@@ -54,7 +54,7 @@ class Searcher {
   /// Return the [IndexReader] wrapped by this searcher.
   IndexReader get reader {
     int p_ir = _ferret.callMethod('_frjs_sea_get_reader', [handle]);
-    return new IndexReader.handle(p_ir);
+    return new IndexReader.wrap(_ferret, p_ir);
   }
 
   /// Return the number of documents in which the term [term] appears in the
@@ -74,7 +74,7 @@ class Searcher {
   /// ids which are returned by the Searchers search methods.
   LazyDoc get_document(int doc_id) {
     int p_ld = _ferret.callMethod('_frjs_sea_doc', [handle, doc_id]);
-    return new LazyDoc.handle(p_ld);
+    return new LazyDoc.wrap(_ferret, p_ld);
   }
 
   /// Alias for [get_document].
@@ -158,7 +158,7 @@ class Searcher {
   /// score and the [Searcher] object as its parameters and returns a [bool]
   /// value specifying whether the result should be included in the result
   /// set.
-  int search_each(Query query, fn(int doc, double score),
+  TopDocs search_each(Query query, fn(int doc, double score),
       {int offset: 0,
       int limit: 10,
       Sort sort,
@@ -169,9 +169,9 @@ class Searcher {
     for (var hit in td.hits) {
       fn(hit.doc, hit.score / max_score);
     }
-    var total = td.total_hits;
-    td.destroy();
-    return total;
+//    var total = td.total_hits;
+    return td;
+//    return total;
   }
 
   /// Run a query through the [Searcher] on the index, ignoring scoring and

@@ -37,7 +37,7 @@ class IndexWriter {
   var _max_field_length;
   var _use_compound_file;*/
 
-  analysis.Analyzer _analyzer;
+//  analysis.Analyzer _analyzer;
 
   /// Create a new [IndexWriter]. You should either pass a path or a directory
   /// to this constructor. For example, here are three ways you can create an
@@ -152,10 +152,10 @@ class IndexWriter {
       p_analyzer,
       p_fis
     ]);
-    return new IndexWriter._(ferret, h, analyzer);
+    return new IndexWriter._(ferret, h); //, analyzer);
   }
 
-  IndexWriter._(this._ferret, this.handle, this._analyzer);
+  IndexWriter._(this._ferret, this.handle); //, this._analyzer);
 
   /// Returns the number of documents in the [Index]. Note that deletions
   /// won't be taken into account until the [IndexWriter] has been committed.
@@ -315,7 +315,9 @@ class IndexWriter {
   /// word "the" in them. There are of course exceptions to this rule. For
   /// example, you may want to delete all documents with the term "viagra"
   /// when deleting spam.
-  //void deleteAll(String field, List<String> terms) {}
+  void deleteAll(String field, List<String> terms) {
+    terms.forEach((term) => delete(field, term)); // TODO: alloc field once
+  }
 
   /// Get the [FieldInfos] object for this [IndexWriter]. This is useful if
   /// you need to dynamically add new fields to the index with specific
@@ -325,20 +327,20 @@ class IndexWriter {
 
   /// Get the [Analyzer] for this [IndexWriter]. This is useful if you need
   /// to use the same analyzer in a [QueryParser].
-  analysis.Analyzer get analyzer {
+  /*analysis.Analyzer get analyzer {
     if (_analyzer != null) {
       _analyzer.handle = _ferret.callMethod('_frjs_iw_get_analyzer', [handle]);
       return _analyzer;
     }
     return null;
-  }
+  }*/
 
   /// Set the [Analyzer] for this [IndexWriter]. This is useful if you need to
   /// change the analyzer for a special document. It is risky though as the
   /// same analyzer will be used for all documents during search.
-  void set analyzer(analysis.Analyzer a) {
+  /*void set analyzer(analysis.Analyzer a) {
     _ferret.callMethod('_frjs_iw_set_analyzer', [handle, a.handle]);
-  }
+  }*/
 
   /// Returns the current version of the index writer.
   int get version => _ferret.callMethod('_frjs_iw_version', [handle]);

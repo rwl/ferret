@@ -3,9 +3,9 @@ library ferret.test.query_parser;
 import 'package:test/test.dart';
 import 'package:ferret/ferret.dart';
 
-queryParserTest() {
+queryParserTest(Ferret ferret) {
   test('strings', () {
-    var parser = new QueryParser(
+    var parser = new QueryParser(ferret,
         default_field: "xxx",
         all_fields: ["xxx", "field", "f1", "f2"],
         tokenized_fields: ["xxx", "f1", "f2"]);
@@ -126,10 +126,10 @@ queryParserTest() {
   });
 
   test('qp_with_standard_analyzer', () {
-    var parser = new QueryParser(
+    var parser = new QueryParser(ferret,
         default_field: "xxx",
         all_fields: ["xxx", "key"],
-        analyzer: new StandardAnalyzer());
+        analyzer: new StandardAnalyzer(ferret));
     var pairs = [
       ['key:1234', 'key:1234'],
       ['key:(1234 and Dave)', 'key:1234 key:dave'],
@@ -144,10 +144,10 @@ queryParserTest() {
   });
 
   test('qp_changing_fields', () {
-    var parser = new QueryParser(
+    var parser = new QueryParser(ferret,
         default_field: "xxx",
         all_fields: ["xxx", "key"],
-        analyzer: new WhiteSpaceAnalyzer());
+        analyzer: new WhiteSpaceAnalyzer(ferret));
     expect(parser.parse("*:word").to_s("xxx"), equals('word key:word'));
 
     parser.fields = ["xxx", "one", "two", "three"];
@@ -158,19 +158,19 @@ queryParserTest() {
   });
 
   test('qp_allow_any_field', () {
-    var parser = new QueryParser(
+    var parser = new QueryParser(ferret,
         default_field: "xxx",
         all_fields: ["xxx", "key"],
-        analyzer: new WhiteSpaceAnalyzer(),
+        analyzer: new WhiteSpaceAnalyzer(ferret),
         validate_fields: true);
 
     expect(parser.parse("key:word song:word").to_s("xxx"), equals('key:word'));
     expect(parser.parse("*:word").to_s("xxx"), equals('word key:word'));
 
-    parser = new QueryParser(
+    parser = new QueryParser(ferret,
         default_field: "xxx",
         all_fields: ["xxx", "key"],
-        analyzer: new WhiteSpaceAnalyzer());
+        analyzer: new WhiteSpaceAnalyzer(ferret));
 
     expect(parser.parse("key:word song:word").to_s("xxx"),
         equals('key:word song:word'));
@@ -178,7 +178,7 @@ queryParserTest() {
   });
 
   do_test_query_parse_exception_raised(String str) {
-    var parser = new QueryParser(
+    var parser = new QueryParser(ferret,
         default_field: "xxx",
         all_fields: ["f1", "f2", "f3"],
         handle_parse_errors: false);
@@ -187,11 +187,11 @@ queryParserTest() {
   }
 
   test('or_default', () {
-    var parser = new QueryParser(
+    var parser = new QueryParser(ferret,
         default_field: '*',
         all_fields: ['x', 'y'],
         or_default: false,
-        analyzer: new StandardAnalyzer());
+        analyzer: new StandardAnalyzer(ferret));
     var pairs = [
       ['word', 'x:word y:word'],
       ['word1 word2', '+(x:word1 y:word1) +(x:word2 y:word2)']
@@ -204,10 +204,10 @@ queryParserTest() {
   });
 
   test('prefix_query', () {
-    var parser = new QueryParser(
+    var parser = new QueryParser(ferret,
         default_field: "xxx",
         all_fields: ["xxx"],
-        analyzer: new StandardAnalyzer());
+        analyzer: new StandardAnalyzer(ferret));
     expect(parser.parse("asdg*") is PrefixQuery, isTrue);
     expect(parser.parse("a?dg*") is WildcardQuery, isTrue);
     expect(parser.parse("a*dg*") is WildcardQuery, isTrue);
@@ -216,7 +216,7 @@ queryParserTest() {
 
   test('bad_queries', () {
     var parser =
-        new QueryParser(default_field: "xxx", all_fields: ["f1", "f2"]);
+        new QueryParser(ferret, default_field: "xxx", all_fields: ["f1", "f2"]);
 
     var pairs = [
       ['::*word', 'word'],
@@ -244,12 +244,13 @@ queryParserTest() {
   });
 
   test('use_keywords_switch', () {
-    var analyzer = new LetterAnalyzer();
-    var parser = new QueryParser(analyzer: analyzer, default_field: "xxx");
+    var analyzer = new LetterAnalyzer(ferret);
+    var parser =
+        new QueryParser(ferret, analyzer: analyzer, default_field: "xxx");
     expect(parser.parse("REQ www (xxx AND yyy) OR NOT zzz").to_s("xxx"),
         equals("+www (+xxx +yyy) -zzz"));
 
-    parser = new QueryParser(
+    parser = new QueryParser(ferret,
         analyzer: analyzer, default_field: "xxx", use_keywords: false);
     expect(parser.parse("REQ www (xxx AND yyy) OR NOT zzz").to_s("xxx"),
         equals("req www (xxx and yyy) or not zzz"));

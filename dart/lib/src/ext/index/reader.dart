@@ -39,10 +39,10 @@ class IndexReader {
     } else if (dir is String) {
       throw dir; // FIXME
     }
-    return new IndexReader._(ferret, h);
+    return new IndexReader.wrap(ferret, h);
   }
 
-  IndexReader._(this._ferret, this.handle);
+  IndexReader.wrap(this._ferret, this.handle);
 
   /// Expert: change the boost value for a [field] in document at [doc_id].
   /// [val] should be an integer in the range 0..255 which corresponds to an
@@ -132,7 +132,7 @@ class IndexReader {
     int p_tv =
         _ferret.callMethod('_frjs_ir_term_vector', [handle, doc_id, p_field]);
     _ferret.free(p_field);
-    return new TermVector._handle(p_tv);
+    return new TermVector._handle(_ferret, p_tv);
   }
 
   /// Return the [TermVector]s for the document at [doc_id] in the index. The
@@ -146,7 +146,7 @@ class IndexReader {
       int p_key = _ferret.callMethod('_frjs_hash_get_key', [p_tvs, i]);
       int p_val = _ferret.callMethod('_frjs_hash_get_value', [p_tvs, i]);
       var key = _ferret.stringify(p_key);
-      m[key] = new TermVector._handle(p_val);
+      m[key] = new TermVector._handle(_ferret, p_val);
     }
     _ferret.callMethod('_h_destroy', [p_tvs]);
     return m;
@@ -157,14 +157,14 @@ class IndexReader {
   /// occur. See [TermDocEnum] for more info.
   TermDocEnum term_docs() {
     int p_tde = _ferret.callMethod('_frjs_ir_term_docs', [handle]);
-    return new TermDocEnum._handle(p_tde, _field_num_map);
+    return new TermDocEnum._handle(_ferret, p_tde, _field_num_map);
   }
 
   /// Same as [term_docs] except the [TermDocEnum] will also allow you to scan
   /// through the positions at which a term occurs.
   TermDocEnum term_positions() {
     int p_tde = _ferret.callMethod('_frjs_ir_term_positions', [handle]);
-    return new TermDocEnum._handle(p_tde, _field_num_map);
+    return new TermDocEnum._handle(_ferret, p_tde, _field_num_map);
   }
 
   /// Builds a [TermDocEnum] to iterate through the documents that contain the
@@ -179,7 +179,7 @@ class IndexReader {
         _ferret.callMethod('_frt_ir_term_docs_for', [handle, symbol, p_term]);
     _ferret.free(p_term);
 
-    return new TermDocEnum._handle(p_tde, _field_num_map);
+    return new TermDocEnum._handle(_ferret, p_tde, _field_num_map);
   }
 
   /// Same as [term_docs_for] except the [TermDocEnum] will also allow you to
@@ -193,7 +193,7 @@ class IndexReader {
     int p_tde = _ferret.callMethod(
         '_frt_ir_term_positions_for', [handle, symbol, p_term]);
     _ferret.free(p_term);
-    return new TermDocEnum._handle(p_tde, _field_num_map);
+    return new TermDocEnum._handle(_ferret, p_tde, _field_num_map);
   }
 
   /// Return the number of documents in which the term [term] appears in the
@@ -217,7 +217,7 @@ class IndexReader {
     _ferret.free(p_field);
 
     int p_te = _ferret.callMethod('_frt_ir_terms', [handle, symbol]);
-    return new TermEnum._handle(p_te, _field_num_map);
+    return new TermEnum._handle(_ferret, p_te, _field_num_map);
   }
 
   /// Same as [terms] except that it starts the enumerator off at term [term].
@@ -231,7 +231,7 @@ class IndexReader {
         _ferret.callMethod('_frt_ir_terms_from', [handle, symbol, p_term]);
     _ferret.free(p_term);
 
-    return new TermEnum._handle(p_te, _field_num_map);
+    return new TermEnum._handle(_ferret, p_te, _field_num_map);
   }
 
   /// Same return a count of the number of terms in the field.

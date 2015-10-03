@@ -122,16 +122,16 @@ class Index {
     if (_path != null) {
       _close_dir = true;
       try {
-        _dir = FSDirectory.create(_path, create: _create);
+        _dir = new FSDirectory(_ferret, _path, create: _create);
       } on IOError catch (io) {
-        _dir = FSDirectory.create(_path, create: _create_if_missing);
+        _dir = new FSDirectory(_ferret, _path, create: _create_if_missing);
       }
     } else if (dir != null) {
       _dir = dir;
     } else {
       _create = true; // this should always be true for a new RAMDir
       _close_dir = true;
-      _dir = new RAMDirectory();
+      _dir = new RAMDirectory(_ferret);
     }
 
     //@dir.extend(MonitorMixin) unless @dir.kind_of? MonitorMixin
@@ -146,7 +146,7 @@ class Index {
           field_infos: _field_infos).close();
     }
     if (analyzer == null) {
-      _analyzer = new analysis.StandardAnalyzer();
+      _analyzer = new analysis.StandardAnalyzer(_ferret);
     } else {
       _analyzer = analyzer;
     }
@@ -203,7 +203,7 @@ class Index {
   /// excerpts (unless the excerpt hits the start or end of the field.
   /// Alternatively you may want to use the HTML entity `&#8230;` or the UTF-8
   /// string `\342\200\246`.
-  List<String> highlight(query, String doc_id,
+  List<String> highlight(query, int doc_id,
       {field,
       int excerpt_length: 150,
       int num_excerpts: 2,
@@ -292,7 +292,7 @@ class Index {
   ///     index.addDocument({"id": row.id, "title": row.title, "date": row.date});
   ///
   /// See [FieldInfos] for more information on how to set field properties.
-  void add_document(doc, [analysis.Analyzer analyzer]) {
+  void add_document(doc /*, [analysis.Analyzer analyzer]*/) {
     //@dir.synchronize do
     _ensure_writer_open();
     if (doc is String || doc is List) {
@@ -303,27 +303,28 @@ class Index {
     if (_key != null) {
       if (_key is List) {
         _key.forEach((field) {
-          var query = new BooleanQuery()
-            ..add_query(new TermQuery(field, doc[field].to_s), occur: 'must');
+          var query = new BooleanQuery(_ferret)
+            ..add_query(new TermQuery(_ferret, field, doc[field].to_s),
+                occur: BCType.MUST);
           query_delete(query);
         });
       } else {
         var id = doc[_key];
         if (id != null) {
-          _writer.delete(_key, term: id.toString());
+          _writer.delete(_key, id.toString());
         }
       }
     }
     _ensure_writer_open();
 
-    if (analyzer != null) {
+    /*if (analyzer != null) {
       var old_analyzer = _writer.analyzer;
       _writer.analyzer = analyzer;
       _writer.add_document(doc);
       _writer.analyzer = old_analyzer;
-    } else {
-      _writer.add_document(doc);
-    }
+    } else {*/
+    _writer.add_document(doc);
+    //}
 
     if (_auto_flush) {
       flush();
@@ -411,25 +412,25 @@ class Index {
   ///     index.search_each(query) do |doc, score|
   ///       print("hit document number #{doc} with a score of #{score}");
   ///     }
-  TopDocs search_each(query,
+  TopDocs search_each(query, fn(int doc, double score),
       {int offset: 0,
       int limit: 10,
       sort,
-      Filter filter,
-      Function filter_proc}) {
+      Filter filter /*,
+      Function filter_proc*/
+      }) {
     //# :yield: doc, score
     //@dir.synchronize do
     _ensure_searcher_open();
     query = _do_process_query(query);
 
-    _searcher.search_each(query,
+    return _searcher.search_each(query, fn,
         offset: offset,
         limit: limit,
         sort: sort,
-        filter: filter,
-        filter_proc: filter_proc, fn: (doc, score) {
-      //yield doc, score
-    });
+        filter: filter /*,
+        filter_proc: filter_proc*/
+        );
   }
 
   /// Run a query through the [Searcher] on the index, ignoring scoring and
@@ -555,10 +556,10 @@ class Index {
     //@dir.synchronize do
     if (arg is String) {
       _ensure_writer_open();
-      _writer.delete(_id_field, term: arg);
+      _writer.delete(_id_field, arg);
     } else if (arg is int) {
       _ensure_reader_open();
-      var cnt = _reader.delete(arg);
+      _reader.delete(arg);
     } else if (arg is Map || arg is List) {
       _batch_delete(arg);
     } else {
@@ -578,9 +579,9 @@ class Index {
     _ensure_writer_open();
     _ensure_searcher_open();
     query = _do_process_query(query);
-    _searcher.search_each(query, limit: "all").forEach((doc, score) {
+    _searcher.search_each(query, (doc, score) {
       _reader.delete(doc);
-    });
+    }, limit: -1);
     if (_auto_flush) {
       flush();
     }
@@ -701,7 +702,7 @@ class Index {
     _ensure_searcher_open();
     var docs_to_add = [];
     query = _do_process_query(query);
-    _searcher.search_each(query, limit: 'all').forEach((id, score) {
+    _searcher.search_each(query, (id, score) {
       var document = _searcher[id].load;
       if (new_val is Map) {
         document.merge /*!*/ (new_val);
@@ -710,7 +711,7 @@ class Index {
       }
       docs_to_add.add(document);
       _reader.delete(id);
-    });
+    }, limit: -1);
     _ensure_writer_open();
     docs_to_add.forEach((doc) => _writer.add_document(doc));
     if (_auto_flush) {
@@ -777,7 +778,7 @@ class Index {
   /// merging sub-collection indexes with this method.
   ///
   /// After this completes, the index is optimized.
-  void add_indexes(List indexes) {
+  /*void add_indexes(List indexes) {
     //@dir.synchronize do
     _ensure_writer_open();
     flatten(input) => input.expand((x) => x is Iterable ? flatten(x) : [x]);
@@ -790,7 +791,7 @@ class Index {
       indexes = indexes.map((index) => index.reader).toList();
     } else if (indexes[0] is Directory) {
       indexes.remove(_dir); // don't merge with self
-      indexes = indexes.map((dir) => new IndexReader(dir)).toList();
+      indexes = indexes.map((dir) => new IndexReader(_ferret, dir)).toList();
     } else if (indexes[0] is IndexReader) {
       indexes.remove(_reader); // don't merge with self
     } else {
@@ -799,7 +800,7 @@ class Index {
     }
     _ensure_writer_open();
     _writer.add_readers(indexes);
-  }
+  }*/
 
   /// This is a simple utility method for saving an in memory or RAM index to
   /// the file system. The same thing can be achieved by using the
@@ -814,12 +815,12 @@ class Index {
   /// Set [create] true if you'd like to create the directory if it doesn't
   /// exist or copy over an existing directory. False if you'd like to merge
   /// with the existing directory.
-  void persist(directory, [create = true]) {
+  /*void persist(directory, [create = true]) {
     //synchronize do
     _close_all();
     var old_dir = _dir;
     if (directory is String) {
-      _dir = FSDirectory.create(directory, create: create);
+      _dir = new FSDirectory(_ferret, directory, create: create);
     } else if (directory is Directory) {
       _dir = directory;
     }
@@ -827,7 +828,7 @@ class Index {
     //_dir = _dir;
     _create_if_missing = true;
     add_indexes([old_dir]);
-  }
+  }*/
 
   String toString() {
     var buf = new StringBuffer();
@@ -885,7 +886,7 @@ class Index {
       _reader = null;
       _searcher = null;
     }
-    var w = new IndexWriter(
+    var w = new IndexWriter(_ferret,
         dir: _dir,
         path: _path,
         create_if_missing: _create_if_missing,
@@ -924,7 +925,7 @@ class Index {
         _writer.close();
         _writer = null;
       }
-      _reader = new IndexReader(_dir);
+      _reader = new IndexReader(_ferret, _dir);
       return _reader;
     }
     return null; //false;
@@ -935,7 +936,7 @@ class Index {
       throw "tried to use a closed index";
     }
     if (_ensure_reader_open() != null || _searcher == null) {
-      _searcher = new Searcher(_reader);
+      _searcher = new Searcher(_ferret, _reader);
     }
   }
 
@@ -944,7 +945,7 @@ class Index {
   Query _do_process_query(query) {
     if (query is String) {
       if (_qp == null) {
-        _qp = new QueryParser(_options);
+        _qp = new QueryParser(_ferret, _options);
       }
 
       /// we need to set this every time, in case a new field has been added
@@ -968,8 +969,9 @@ class Index {
         offset: offset,
         limit: limit,
         sort: sort,
-        filter: filter,
-        filter_proc: filter_proc);
+        filter: filter /*,
+        filter_proc: filter_proc*/
+        );
   }
 
   void _close_all() {
@@ -1022,7 +1024,7 @@ class Index {
     }
     if (terms.length > 0) {
       _ensure_writer_open();
-      _writer.delete(_id_field, terms: terms);
+      _writer.deleteAll(_id_field, terms);
     }
   }
 }

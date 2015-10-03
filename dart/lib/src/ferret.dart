@@ -48,4 +48,20 @@ class Ferret {
     }
     return module.callMethod('Pointer_stringify', args);
   }
+
+  /// Returns a string corresponding to the locale set. For example:
+  ///
+  ///     get_locale() //=> "en_US.UTF-8"
+  String get_locale() {
+    int p_l = module.callMethod('_frjs_get_locale');
+    return stringify(p_l);
+  }
+
+  /// Set the global locale. You should use this method to set different locales
+  /// when indexing documents with different encodings.
+  void set_locale(String locale) {
+    int p_l = allocString(locale);
+    module.callMethod('_frjs_set_locale', [p_l]);
+    //free(p_l); FIXME: mem leak?
+  }
 }

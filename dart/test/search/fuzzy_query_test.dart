@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 import 'package:ferret/ferret.dart';
 import 'package:quiver/iterables.dart' show range;
 
-void fuzzyQueryTest() {
+void fuzzyQueryTest(Ferret ferret) {
   Directory _dir;
 
   add_doc(String text, IndexWriter writer) {
@@ -12,7 +12,7 @@ void fuzzyQueryTest() {
   }
 
   setUp(() {
-    _dir = new RAMDirectory();
+    _dir = new RAMDirectory(ferret);
   });
 
   tearDown(() {
@@ -31,15 +31,15 @@ void fuzzyQueryTest() {
   }
 
   do_prefix_test(Searcher _is, String text, int prefix, List expected) {
-    var fq = new FuzzyQuery('field', text, prefix_length: prefix);
+    var fq = new FuzzyQuery(ferret, 'field', text, prefix_length: prefix);
     //puts is.explain(fq, 0);
     //puts is.explain(fq, 1);
     do_test_top_docs(_is, fq, expected);
   }
 
   test('fuzziness', () {
-    var iw = new IndexWriter(
-        dir: _dir, analyzer: new WhiteSpaceAnalyzer(), create: true);
+    var iw = new IndexWriter(ferret,
+        dir: _dir, analyzer: new WhiteSpaceAnalyzer(ferret), create: true);
     add_doc("aaaaa", iw);
     add_doc("aaaab", iw);
     add_doc("aaabb", iw);
@@ -52,9 +52,9 @@ void fuzzyQueryTest() {
     //iw.optimize();
     iw.close();
 
-    var _is = new Searcher.store(_dir);
+    var _is = new Searcher.store(ferret, _dir);
 
-    var fq = new FuzzyQuery('field', "aaaaa", prefix_length: 5);
+    var fq = new FuzzyQuery(ferret, 'field', "aaaaa", prefix_length: 5);
 
     do_prefix_test(_is, "aaaaaaaaaaaaaaaaaaaaaa", 1, [8]);
     do_prefix_test(_is, "aaaaa", 0, [0, 1, 2]);
@@ -83,7 +83,7 @@ void fuzzyQueryTest() {
     do_prefix_test(_is, "ddddX", 4, [6]);
     do_prefix_test(_is, "ddddX", 5, []);
 
-    fq = new FuzzyQuery('anotherfield', "ddddX", prefix_length: 0);
+    fq = new FuzzyQuery(ferret, 'anotherfield', "ddddX", prefix_length: 0);
     var top_docs = _is.search(fq);
     expect(0, equals(top_docs.total_hits));
 
@@ -91,13 +91,13 @@ void fuzzyQueryTest() {
   });
 
   test('fuzziness_long', () {
-    var iw = new IndexWriter(
-        dir: _dir, analyzer: new WhiteSpaceAnalyzer(), create: true);
+    var iw = new IndexWriter(ferret,
+        dir: _dir, analyzer: new WhiteSpaceAnalyzer(ferret), create: true);
     add_doc("aaaaaaa", iw);
     add_doc("segment", iw);
     iw.optimize();
     iw.close();
-    var searcher = new Searcher.store(_dir);
+    var searcher = new Searcher.store(ferret, _dir);
 
     // not similar enough:
     do_prefix_test(searcher, "xxxxx", 0, []);
@@ -126,17 +126,17 @@ void fuzzyQueryTest() {
     do_prefix_test(searcher, "stellent", 2, []);
 
     // "student" doesn't match anymore thanks to increased minimum similarity:
-    var fq = new FuzzyQuery('field', "student",
+    var fq = new FuzzyQuery(ferret, 'field', "student",
         min_similarity: 0.6, prefix_length: 0);
 
     var top_docs = searcher.search(fq);
     expect(0, equals(top_docs.total_hits));
 
     expect(() {
-      fq = new FuzzyQuery('f', "s", min_similarity: 1.1);
+      fq = new FuzzyQuery(ferret, 'f', "s", min_similarity: 1.1);
     }, throwsArgumentError);
     expect(() {
-      fq = new FuzzyQuery('f', "s", min_similarity: -0.1);
+      fq = new FuzzyQuery(ferret, 'f', "s", min_similarity: -0.1);
     }, throwsArgumentError);
 
     searcher.close();

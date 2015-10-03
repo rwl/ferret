@@ -84,7 +84,8 @@ class AsciiLetterAnalyzer extends Analyzer {
       : super._(ferret,
             ferret.callMethod('_frt_letter_analyzer_new', [lower ? 1 : 0]));
 
-  TokenStream _makeTokenStream(int h) => new AsciiLetterTokenizer._handle(h);
+  TokenStream _makeTokenStream(int h) =>
+      new AsciiLetterTokenizer._handle(_ferret, h);
 }
 
 /// A [LetterAnalyzer] creates a [TokenStream] that splits the input up into
@@ -110,7 +111,8 @@ class LetterAnalyzer extends Analyzer {
       : super._(ferret,
             ferret.callMethod('_frjs_letter_analyzer_init', [lower ? 1 : 0]));
 
-  TokenStream _makeTokenStream(int h) => new LetterTokenizer._handle(h);
+  TokenStream _makeTokenStream(int h) =>
+      new LetterTokenizer._handle(_ferret, h);
 }
 
 /// The [AsciiWhiteSpaceAnalyzer] recognizes tokens as maximal strings of
@@ -143,7 +145,7 @@ class AsciiWhiteSpaceAnalyzer extends Analyzer {
             ferret.callMethod('_frt_whitespace_analyzer_new', [lower ? 1 : 0]));
 
   TokenStream _makeTokenStream(int h) =>
-      new AsciiWhiteSpaceTokenizer._handle(h);
+      new AsciiWhiteSpaceTokenizer._handle(_ferret, h);
 }
 
 /// The [WhiteSpaceAnalyzer] recognizes tokens as maximal strings of
@@ -171,7 +173,8 @@ class WhiteSpaceAnalyzer extends Analyzer {
             ferret.callMethod(
                 '_frjs_white_space_analyzer_init', [lower ? 1 : 0]));
 
-  TokenStream _makeTokenStream(int h) => new WhiteSpaceTokenizer._handle(h);
+  TokenStream _makeTokenStream(int h) =>
+      new WhiteSpaceTokenizer._handle(_ferret, h);
 }
 
 /// The [AsciiStandardAnalyzer] is the most advanced of the available
@@ -209,7 +212,8 @@ class AsciiStandardAnalyzer extends Analyzer {
             ferret.callMethod(
                 '_frjs_a_standard_analyzer_init', [lower ? 1 : 0, stop_words]));
 
-  TokenStream _makeTokenStream(int h) => new AsciiStandardTokenizer._handle(h);
+  TokenStream _makeTokenStream(int h) =>
+      new AsciiStandardTokenizer._handle(_ferret, h);
 }
 
 /// The [StandardAnalyzer] is the most advanced of the available analyzers. If
@@ -244,8 +248,8 @@ class StandardAnalyzer extends Analyzer {
             ferret.callMethod(
                 '_frjs_standard_analyzer_init', [lower ? 1 : 0, 0]));
 
-  TokenStream _makeTokenStream(int h_ts) {
-    return new StandardTokenizer._handle(h_ts);
+  TokenStream _makeTokenStream(int h) {
+    return new StandardTokenizer._handle(_ferret, h);
   }
 }
 

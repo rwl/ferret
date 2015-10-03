@@ -3,7 +3,7 @@ library ferret.test.search.sort;
 import 'package:test/test.dart';
 import 'package:ferret/ferret.dart';
 
-void sortFieldTest() {
+void sortFieldTest(Ferret ferret) {
   test('field_score', () {
     var fs = SortField.SCORE;
     expect('score', fs.type);
@@ -22,7 +22,7 @@ void sortFieldTest() {
 
   test('error_raised', () {
     expect(() {
-      new SortField(null, type: SortType.INTEGER);
+      new SortField(ferret, null, type: SortType.INTEGER);
     }, throwsArgumentError);
   });
 }

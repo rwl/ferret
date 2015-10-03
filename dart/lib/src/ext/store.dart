@@ -82,7 +82,7 @@ abstract class Directory {
     int p_name = _ferret.allocString(lock_name);
     int p_lock = _ferret.callMethod('_frt_open_lock', [handle]);
     _ferret.free(p_name);
-    return new Lock._handle(p_lock);
+    return new Lock._handle(_ferret, p_lock);
   }
 }
 

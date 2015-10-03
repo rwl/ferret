@@ -6,18 +6,19 @@ import 'package:ferret/ferret.dart';
 import '../index/index_test_helper.dart';
 
 class SearcherTest {
+  Ferret ferret;
   Directory dir;
   Searcher _searcher;
   List _documents;
 
   setUp() {
-    dir = new RAMDirectory();
-    var iw = new IndexWriter(
-        dir: dir, analyzer: new WhiteSpaceAnalyzer(), create: true);
+    dir = new RAMDirectory(ferret);
+    var iw = new IndexWriter(ferret,
+        dir: dir, analyzer: new WhiteSpaceAnalyzer(ferret), create: true);
     _documents = IndexTestHelper.SEARCH_TEST_DOCS;
     _documents.forEach((doc) => iw.add_document(doc));
     iw.close();
-    _searcher = new Searcher.store(dir);
+    _searcher = new Searcher.store(ferret, dir);
   }
 
   tearDown() {

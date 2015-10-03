@@ -6,13 +6,13 @@ import 'package:test/test.dart';
 import 'package:ferret/ferret.dart';
 import 'package:quiver/iterables.dart' show range;
 
-void bitVectorTest() {
+void bitVectorTest(Ferret ferret) {
   final Random _r = new Random();
 
   int rand(max) => _r.nextInt(max);
 
   test('bv_get_set', () {
-    var bv = new BitVector();
+    var bv = new BitVector(ferret);
     expect(bv.count(), equals(0));
 
     bv.set(10);
@@ -40,7 +40,7 @@ void bitVectorTest() {
   });
 
   test('bv_count', () {
-    var bv = new BitVector();
+    var bv = new BitVector(ferret);
     bv.set(10);
     expect(bv.count(), equals(1));
 
@@ -72,8 +72,8 @@ void bitVectorTest() {
   });
 
   test('bv_eql_hash', () {
-    var bv1 = new BitVector();
-    var bv2 = new BitVector();
+    var bv1 = new BitVector(ferret);
+    var bv2 = new BitVector(ferret);
     expect(bv1, equals(bv2));
     expect(bv1.hash(), equals(bv2.hash()));
 
@@ -106,8 +106,8 @@ void bitVectorTest() {
   const BV_SIZE = 1000;
 
   test('bv_and', () {
-    var bv1 = new BitVector();
-    var bv2 = new BitVector();
+    var bv1 = new BitVector(ferret);
+    var bv2 = new BitVector(ferret);
     var set1 = 0, set2 = 0, count = 0;
 
     range(BV_COUNT).forEach((i) {
@@ -135,14 +135,14 @@ void bitVectorTest() {
     bv2.andx(bv1);
     expect(bv2, equals(and_bv));
 
-    bv2 = new BitVector();
+    bv2 = new BitVector(ferret);
     and_bv = bv1 & bv2;
 
     expect(bv2, equals(and_bv), reason: "and_bv should be empty");
     expect(0, equals(and_bv.count()));
 
-    bv1 = new BitVector();
-    bv2 = new BitVector().not();
+    bv1 = new BitVector(ferret);
+    bv2 = new BitVector(ferret).not();
     bv1.set(10);
     bv1.set(11);
     bv1.set(20);
@@ -151,8 +151,8 @@ void bitVectorTest() {
   });
 
   test('bv_or', () {
-    var bv1 = new BitVector();
-    var bv2 = new BitVector();
+    var bv1 = new BitVector(ferret);
+    var bv2 = new BitVector(ferret);
     var set = 0, count = 0;
 
     range(BV_COUNT).forEach((i) {
@@ -184,15 +184,15 @@ void bitVectorTest() {
     bv2.orx(bv1);
     expect(bv2, equals(or_bv));
 
-    bv2 = new BitVector();
+    bv2 = new BitVector(ferret);
     or_bv = bv1 | bv2;
 
     expect(bv1, equals(or_bv));
   });
 
   test('bv_xor', () {
-    var bv1 = new BitVector();
-    var bv2 = new BitVector();
+    var bv1 = new BitVector(ferret);
+    var bv2 = new BitVector(ferret);
     var set1 = 0, set2 = 0, count = 0;
 
     range(BV_COUNT).forEach((i) {
@@ -225,14 +225,14 @@ void bitVectorTest() {
     bv2.xorx(bv1);
     expect(bv2, equals(xor_bv));
 
-    bv2 = new BitVector();
+    bv2 = new BitVector(ferret);
     xor_bv = bv1 ^ bv2;
 
     expect(bv1, equals(xor_bv));
   });
 
   test('bv_not', () {
-    var bv = new BitVector();
+    var bv = new BitVector(ferret);
     [1, 5, 25, 41, 97, 185].forEach((i) => bv.set(i));
     var not_bv = ~bv;
     expect(bv.count(), equals(not_bv.count()));
@@ -246,7 +246,7 @@ void bitVectorTest() {
   const SCAN_INC = 97;
 
   test('scan', () {
-    var bv = new BitVector();
+    var bv = new BitVector(ferret);
 
     range(SCAN_SIZE).forEach((i) => bv.set(i * SCAN_INC));
     var not_bv = ~bv;
@@ -309,7 +309,7 @@ void bitVectorTest() {
   });
 
   test('to_a', () {
-    var bv = new BitVector();
+    var bv = new BitVector(ferret);
     var ary = (range(1, 100).map((_) => rand(1000)).toList()..sort())
         .toSet()
         .toList();

@@ -13,8 +13,8 @@ class IndexTestHelper {
   static final BINARY_DATA = IndexTestHelper.make_binary(256);
   static final COMPRESSED_BINARY_DATA = IndexTestHelper.make_binary(56);
 
-  static prepare_document(dir) {
-    var fis = new FieldInfos();
+  static prepare_document(Ferret ferret, dir) {
+    var fis = new FieldInfos(ferret);
     fis.add_field('text_field1', term_vector: TermVectorStorage.NO);
     fis.add_field('text_field2');
     fis.add_field('key_field', index: FieldIndexing.UNTOKENIZED);
@@ -160,8 +160,8 @@ class IndexTestHelper {
     ];
   }
 
-  static prepare_ir_test_fis() {
-    var fis = new FieldInfos();
+  static prepare_ir_test_fis(Ferret ferret) {
+    var fis = new FieldInfos(ferret);
     fis.add_field('body');
     fis.add_field('changing_field', term_vector: TermVectorStorage.NO);
     fis.add_field('title',

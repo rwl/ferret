@@ -4,14 +4,14 @@ import 'package:test/test.dart';
 import 'package:ferret/ferret.dart';
 import 'package:quiver/iterables.dart' show range;
 
-searchAndSortTest() {
+searchAndSortTest(Ferret ferret) {
   Directory _dir;
 
   setUp(() {
-    _dir = new RAMDirectory();
-    var iw = new IndexWriter(
+    _dir = new RAMDirectory(ferret);
+    var iw = new IndexWriter(ferret,
         dir: _dir,
-        analyzer: new WhiteSpaceAnalyzer(),
+        analyzer: new WhiteSpaceAnalyzer(ferret),
         create: true,
         min_merge_docs: 3);
     [
@@ -55,44 +55,47 @@ searchAndSortTest() {
 
   test('sort_field_to_s', () {
     expect("<SCORE>", equals(SortField.SCORE.to_s));
-    var sf = new SortField("MyScore", type: SortType.SCORE, reverse: true);
+    var sf =
+        new SortField(ferret, "MyScore", type: SortType.SCORE, reverse: true);
     expect(sf.to_s(), equals("MyScore:<SCORE>!"));
     expect(SortField.DOC.to_s(), equals("<DOC>"));
-    sf = new SortField("MyDoc", type: 'doc_id', reverse: true);
+    sf = new SortField(ferret, "MyDoc", type: 'doc_id', reverse: true);
     expect(sf.to_s(), equals("MyDoc:<DOC>!"));
-    sf = new SortField('date', type: SortType.INTEGER);
+    sf = new SortField(ferret, 'date', type: SortType.INTEGER);
     expect(sf.to_s(), equals("date:<integer>"));
-    sf = new SortField('date', type: SortType.INTEGER, reverse: true);
+    sf = new SortField(ferret, 'date', type: SortType.INTEGER, reverse: true);
     expect(sf.to_s(), equals("date:<integer>!"));
-    sf = new SortField('price', type: SortType.FLOAT);
+    sf = new SortField(ferret, 'price', type: SortType.FLOAT);
     expect(sf.to_s(), equals("price:<float>"));
-    sf = new SortField('price', type: SortType.FLOAT, reverse: true);
+    sf = new SortField(ferret, 'price', type: SortType.FLOAT, reverse: true);
     expect(sf.to_s(), equals("price:<float>!"));
-    sf = new SortField('content', type: SortType.STRING);
+    sf = new SortField(ferret, 'content', type: SortType.STRING);
     expect(sf.to_s(), equals("content:<string>"));
-    sf = new SortField('content', type: SortType.STRING, reverse: true);
+    sf = new SortField(ferret, 'content', type: SortType.STRING, reverse: true);
     expect(sf.to_s(), equals("content:<string>!"));
-    sf = new SortField('auto_field', type: SortType.AUTO);
+    sf = new SortField(ferret, 'auto_field', type: SortType.AUTO);
     expect(sf.to_s(), equals("auto_field:<auto>"));
-    sf = new SortField('auto_field', type: SortType.AUTO, reverse: true);
+    sf =
+        new SortField(ferret, 'auto_field', type: SortType.AUTO, reverse: true);
     expect(sf.to_s(), equals("auto_field:<auto>!"));
   });
 
   test('sort_to_s', () {
-    var sort = new Sort();
+    var sort = new Sort(ferret);
     expect(sort.to_s(), equals("Sort[<SCORE>, <DOC>]"));
-    var sf = new SortField('auto_field', type: SortType.AUTO, reverse: true);
-    sort = new Sort(sort_fields: [sf, SortField.SCORE, SortField.DOC]);
+    var sf =
+        new SortField(ferret, 'auto_field', type: SortType.AUTO, reverse: true);
+    sort = new Sort(ferret, sort_fields: [sf, SortField.SCORE, SortField.DOC]);
     expect(sort.to_s(), equals("Sort[auto_field:<auto>!, <SCORE>, <DOC>]"));
-    sort = new Sort(sort_fields: ['one', 'two', SortField.DOC]);
+    sort = new Sort(ferret, sort_fields: ['one', 'two', SortField.DOC]);
     expect(sort.to_s(), equals("Sort[one:<auto>, two:<auto>, <DOC>]"));
-    sort = new Sort(sort_fields: ['one', 'two']);
+    sort = new Sort(ferret, sort_fields: ['one', 'two']);
     expect(sort.to_s(), equals("Sort[one:<auto>, two:<auto>, <DOC>]"));
   });
 
   test('sorts', () {
-    var _is = new Searcher.store(_dir);
-    var q = new TermQuery('x', "findall");
+    var _is = new Searcher.store(ferret, _dir);
+    var q = new TermQuery(ferret, 'x', "findall");
     do_test_top_docs(_is, q, [8, 7, 5, 3, 1, 0, 2, 4, 6, 9]);
     do_test_top_docs(_is, q, [8, 7, 5, 3, 1, 0, 2, 4, 6, 9], Sort.RELEVANCE);
     do_test_top_docs(_is, q, [8, 7, 5, 3, 1, 0, 2, 4, 6, 9], [SortField.SCORE]);
@@ -100,55 +103,57 @@ searchAndSortTest() {
     do_test_top_docs(_is, q, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [SortField.DOC]);
 
     // int
-    var sf_int = new SortField('int', type: SortType.INTEGER, reverse: true);
+    var sf_int =
+        new SortField(ferret, 'int', type: SortType.INTEGER, reverse: true);
     do_test_top_docs(_is, q, [0, 1, 6, 5, 9, 4, 8, 2, 7, 3], [sf_int]);
     do_test_top_docs(_is, q, [0, 1, 6, 5, 9, 4, 8, 2, 7, 3], "int DESC");
     do_test_top_docs(
         _is, q, [0, 1, 6, 5, 9, 8, 4, 7, 2, 3], [sf_int, SortField.SCORE]);
     do_test_top_docs(_is, q, [0, 1, 6, 5, 9, 8, 4, 7, 2, 3], "int DESC, SCORE");
-    sf_int = new SortField('int', type: SortType.INTEGER);
+    sf_int = new SortField(ferret, 'int', type: SortType.INTEGER);
     do_test_top_docs(_is, q, [3, 2, 7, 4, 8, 5, 9, 1, 6, 0], [sf_int]);
     do_test_top_docs(_is, q, [3, 2, 7, 4, 8, 5, 9, 1, 6, 0], "int");
 
     // byte
     do_test_top_docs(_is, q, [3, 2, 7, 4, 8, 5, 9, 1, 6, 0],
-        new SortField('int', type: SortType.BYTE));
+        new SortField(ferret, 'int', type: SortType.BYTE));
     do_test_top_docs(_is, q, [0, 1, 6, 5, 9, 4, 8, 2, 7, 3],
-        [new SortField('int', type: SortType.BYTE, reverse: true)]);
+        [new SortField(ferret, 'int', type: SortType.BYTE, reverse: true)]);
 
     // float
-    var sf_float = new SortField('float', type: SortType.FLOAT, reverse: true);
+    var sf_float =
+        new SortField(ferret, 'float', type: SortType.FLOAT, reverse: true);
     do_test_top_docs(_is, q, [8, 7, 5, 3, 1, 0, 2, 4, 6, 9],
-        new Sort(sort_fields: [sf_float, SortField.SCORE]));
+        new Sort(ferret, sort_fields: [sf_float, SortField.SCORE]));
     do_test_top_docs(
         _is, q, [8, 7, 5, 3, 1, 0, 2, 4, 6, 9], "float DESC, SCORE");
-    sf_float = new SortField('float', type: SortType.FLOAT);
+    sf_float = new SortField(ferret, 'float', type: SortType.FLOAT);
     do_test_top_docs(_is, q, [9, 6, 4, 2, 0, 1, 3, 5, 7, 8],
-        new Sort(sort_fields: [sf_float, SortField.SCORE]));
+        new Sort(ferret, sort_fields: [sf_float, SortField.SCORE]));
     do_test_top_docs(_is, q, [9, 6, 4, 2, 0, 1, 3, 5, 7, 8], "float, SCORE");
 
     // str
-    var sf_str = new SortField('string', type: SortType.STRING);
+    var sf_str = new SortField(ferret, 'string', type: SortType.STRING);
     do_test_top_docs(
         _is, q, [0, 9, 1, 8, 2, 7, 3, 6, 5, 4], [sf_str, SortField.SCORE]);
     do_test_top_docs(_is, q, [0, 9, 1, 8, 2, 7, 3, 6, 4, 5], "string");
 
     // auto
     do_test_top_docs(_is, q, [0, 9, 1, 8, 2, 7, 3, 6, 4, 5],
-        new Sort(sort_fields: [SortType.STRING]));
+        new Sort(ferret, sort_fields: [SortType.STRING]));
     do_test_top_docs(_is, q, [3, 2, 7, 4, 8, 5, 9, 1, 6, 0],
-        new Sort(sort_fields: [SortType.INTEGER]));
+        new Sort(ferret, sort_fields: [SortType.INTEGER]));
     do_test_top_docs(_is, q, [9, 6, 4, 2, 0, 1, 3, 5, 7, 8],
-        new Sort(sort_fields: [SortType.FLOAT]));
+        new Sort(ferret, sort_fields: [SortType.FLOAT]));
     do_test_top_docs(_is, q, [9, 6, 4, 2, 0, 1, 3, 5, 7, 8], 'float');
     do_test_top_docs(_is, q, [8, 7, 5, 3, 1, 0, 2, 4, 6, 9],
-        new Sort(sort_fields: [SortType.FLOAT], reverse: true));
+        new Sort(ferret, sort_fields: [SortType.FLOAT], reverse: true));
     do_test_top_docs(_is, q, [0, 6, 1, 5, 9, 4, 8, 7, 2, 3],
-        new Sort(sort_fields: ['int', 'string'], reverse: true));
+        new Sort(ferret, sort_fields: ['int', 'string'], reverse: true));
     do_test_top_docs(
         _is, q, [0, 6, 1, 5, 9, 4, 8, 7, 2, 3], "int DESC, string DESC");
     do_test_top_docs(_is, q, [3, 2, 7, 8, 4, 9, 5, 1, 6, 0],
-        new Sort(sort_fields: ['int', 'string']));
+        new Sort(ferret, sort_fields: ['int', 'string']));
     do_test_top_docs(_is, q, [3, 2, 7, 8, 4, 9, 5, 1, 6, 0], ['int', 'string']);
     do_test_top_docs(_is, q, [3, 2, 7, 8, 4, 9, 5, 1, 6, 0], "int, string");
   });

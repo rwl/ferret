@@ -5,13 +5,13 @@ import 'package:test/test.dart';
 import 'package:ferret/ferret.dart';
 import 'package:quiver/iterables.dart' show range;
 
-void filterTest() {
+void filterTest(Ferret ferret) {
   Directory _dir;
 
   setUp(() {
-    _dir = new RAMDirectory();
-    var iw = new IndexWriter(
-        dir: _dir, analyzer: new WhiteSpaceAnalyzer(), create: true);
+    _dir = new RAMDirectory(ferret);
+    var iw = new IndexWriter(ferret,
+        dir: _dir, analyzer: new WhiteSpaceAnalyzer(ferret), create: true);
     [
       {'int': "0", 'date': "20040601", 'switch': "on"},
       {'int': "1", 'date': "20041001", 'switch': "off"},
@@ -42,23 +42,23 @@ void filterTest() {
   }
 
   test('range_filter', () {
-    var searcher = new Searcher.store(_dir);
-    var q = new MatchAllQuery();
-    var rf = new RangeFilter('int', geq: "2", leq: "6");
+    var searcher = new Searcher.store(ferret, _dir);
+    var q = new MatchAllQuery(ferret);
+    var rf = new RangeFilter(ferret, 'int', geq: "2", leq: "6");
     do_test_top_docs(searcher, q, [2, 3, 4, 5, 6], rf);
-    rf = new RangeFilter('int', geq: "2", le: "6");
+    rf = new RangeFilter(ferret, 'int', geq: "2", le: "6");
     do_test_top_docs(searcher, q, [2, 3, 4, 5], rf);
-    rf = new RangeFilter('int', ge: "2", leq: "6");
+    rf = new RangeFilter(ferret, 'int', ge: "2", leq: "6");
     do_test_top_docs(searcher, q, [3, 4, 5, 6], rf);
-    rf = new RangeFilter('int', ge: "2", le: "6");
+    rf = new RangeFilter(ferret, 'int', ge: "2", le: "6");
     do_test_top_docs(searcher, q, [3, 4, 5], rf);
-    rf = new RangeFilter('int', geq: "6");
+    rf = new RangeFilter(ferret, 'int', geq: "6");
     do_test_top_docs(searcher, q, [6, 7, 8, 9], rf);
-    rf = new RangeFilter('int', ge: "6");
+    rf = new RangeFilter(ferret, 'int', ge: "6");
     do_test_top_docs(searcher, q, [7, 8, 9], rf);
-    rf = new RangeFilter('int', leq: "2");
+    rf = new RangeFilter(ferret, 'int', leq: "2");
     do_test_top_docs(searcher, q, [0, 1, 2], rf);
-    rf = new RangeFilter('int', le: "2");
+    rf = new RangeFilter(ferret, 'int', le: "2");
     do_test_top_docs(searcher, q, [0, 1], rf);
 
     var bits = rf.bits(searcher.reader);
@@ -71,24 +71,24 @@ void filterTest() {
 
   test('range_filter_errors', () {
     expect(() {
-      new RangeFilter('f', ge: "b", le: "a");
+      new RangeFilter(ferret, 'f', ge: "b", le: "a");
     }, throwsArgumentError);
     expect(() {
-      new RangeFilter('f', include_lower: true);
+      new RangeFilter(ferret, 'f', include_lower: true);
     }, throwsArgumentError);
     expect(() {
-      new RangeFilter('f', include_upper: true);
+      new RangeFilter(ferret, 'f', include_upper: true);
     }, throwsArgumentError);
   });
 
   test('query_filter', () {
-    var searcher = new Searcher.store(_dir);
-    var q = new MatchAllQuery();
-    var qf = new QueryFilter(new TermQuery('switch', "on"));
+    var searcher = new Searcher.store(ferret, _dir);
+    var q = new MatchAllQuery(ferret);
+    var qf = new QueryFilter(ferret, new TermQuery(ferret, 'switch', "on"));
     do_test_top_docs(searcher, q, [0, 2, 4, 6, 8], qf);
     // test again to test caching doesn't break it
     do_test_top_docs(searcher, q, [0, 2, 4, 6, 8], qf);
-    qf = new QueryFilter(new TermQuery('switch', "off"));
+    qf = new QueryFilter(ferret, new TermQuery(ferret, 'switch', "off"));
     do_test_top_docs(searcher, q, [1, 3, 5, 7, 9], qf);
 
     var bits = qf.bits(searcher.reader);
@@ -105,20 +105,20 @@ void filterTest() {
   });
 
   test('filtered_query', () {
-    var searcher = new Searcher.store(_dir);
-    var q = new MatchAllQuery();
-    var rf = new RangeFilter('int', geq: "2", leq: "6");
-    var rq = new FilteredQuery(q, rf);
-    var qf = new QueryFilter(new TermQuery('switch', "on"));
+    var searcher = new Searcher.store(ferret, _dir);
+    var q = new MatchAllQuery(ferret);
+    var rf = new RangeFilter(ferret, 'int', geq: "2", leq: "6");
+    var rq = new FilteredQuery(ferret, q, rf);
+    var qf = new QueryFilter(ferret, new TermQuery(ferret, 'switch', "on"));
     do_test_top_docs(searcher, rq, [2, 4, 6], qf);
-    var query = new FilteredQuery(rq, qf);
-    var rf2 = new RangeFilter('int', geq: "3");
+    var query = new FilteredQuery(ferret, rq, qf);
+    var rf2 = new RangeFilter(ferret, 'int', geq: "3");
     do_test_top_docs(searcher, query, [4, 6], rf2);
   });
 
   test('custom_filter', () {
-    var searcher = new Searcher.store(_dir);
-    var q = new MatchAllQuery();
+    var searcher = new Searcher.store(ferret, _dir);
+    var q = new MatchAllQuery(ferret);
     var filt = new CustomFilter();
     do_test_top_docs(searcher, q, [0, 2, 4], filt);
   });
@@ -155,7 +155,7 @@ void filterTest() {
 }
 
 class CustomFilter extends Filter {
-  CustomFilter() : super.wrap(ferret, h);
+  CustomFilter(Ferret ferret) : super.wrap(ferret, h);
   BitVector bits(IndexReader index_reader) {
     var bv = new BitVector();
     bv[0] = true;

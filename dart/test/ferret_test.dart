@@ -9,17 +9,17 @@ import 'utils/number_tools_test.dart';
 import 'query_parser/query_parser_test.dart';
 
 main() {
-  initFerret();
+  var ferret = new Ferret();
 
-//  test_analyzer();
-//  test_ascii_letter_analyzer();
-//  test_letter_analyzer();
-//  test_ascii_white_space_analyzer();
-  test_white_space_analyzer();
+  test_analyzer(ferret);
+  test_ascii_letter_analyzer(ferret);
+  test_letter_analyzer(ferret);
+  test_ascii_white_space_analyzer(ferret);
+  test_white_space_analyzer(ferret);
 
-//  queryParserTest();
+  queryParserTest(ferret);
 
-//  bitVectorTest();
-//  priorityQueueTest();
-//  numberToolsTest();
+  bitVectorTest(ferret);
+  priorityQueueTest();
+  numberToolsTest();
 }

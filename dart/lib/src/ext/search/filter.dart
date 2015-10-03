@@ -20,7 +20,7 @@ class Filter {
   BitVector bits(IndexReader index_reader) {
     int p_bv =
         _ferret.callMethod('_frt_filt_get_bv', [handle, index_reader.handle]);
-    return new BitVector.handle(p_bv);
+    return new BitVector.wrap(_ferret, p_bv);
   }
 
   /// Return a human readable string representing the [Filter] object that the

@@ -6,25 +6,26 @@ import 'package:quiver/iterables.dart' show range;
 
 abstract class SearcherTests {
 //  include Ferret::Search
+  Ferret ferret;
   Searcher _searcher;
 
   check_hits(query, expected, [b]);
 
   test_term_query() {
-    var tq = new TermQuery('field', "word2");
+    var tq = new TermQuery(ferret, 'field', "word2");
     tq.boost = 100;
     check_hits(tq, [1, 4, 8]);
     //puts _searcher.explain(tq, 1);
     //puts _searcher.explain(tq, 4);
     //puts _searcher.explain(tq, 8);
 
-    tq = new TermQuery('field', "2342");
+    tq = new TermQuery(ferret, 'field', "2342");
     check_hits(tq, []);
 
-    tq = new TermQuery('field', "");
+    tq = new TermQuery(ferret, 'field', "");
     check_hits(tq, []);
 
-    tq = new TermQuery('field', "word1");
+    tq = new TermQuery(ferret, 'field', "word1");
     var top_docs = _searcher.search(tq);
     expect(_searcher.max_doc, equals(top_docs.total_hits));
     expect(10, equals(top_docs.hits.length));
@@ -47,7 +48,7 @@ abstract class SearcherTests {
   }
 
   test_offset() {
-    var tq = new TermQuery('field', "word1");
+    var tq = new TermQuery(ferret, 'field', "word1");
     tq.boost = 100;
     var top_docs = _searcher.search(tq, limit: 100);
     var expected = [];
@@ -69,7 +70,7 @@ abstract class SearcherTests {
   }
 
   test_multi_term_query() {
-    var mtq = new MultiTermQuery('field', max_terms: 4, min_score: 0.5);
+    var mtq = new MultiTermQuery(ferret, 'field', max_terms: 4, min_score: 0.5);
     check_hits(mtq, []);
     expect('""', equals(mtq.to_s('field')));
     expect('field:""', equals(mtq.to_s));
@@ -103,48 +104,48 @@ abstract class SearcherTests {
   }
 
   test_boolean_query() {
-    var bq = new BooleanQuery();
-    var tq1 = new TermQuery('field', "word1");
-    var tq2 = new TermQuery('field', "word3");
+    var bq = new BooleanQuery(ferret);
+    var tq1 = new TermQuery(ferret, 'field', "word1");
+    var tq2 = new TermQuery(ferret, 'field', "word3");
     bq.add_query(tq1, occur: BCType.MUST);
     bq.add_query(tq2, occur: BCType.MUST);
     check_hits(bq, [2, 3, 6, 8, 11, 14], 14);
 
-    var tq3 = new TermQuery('field', "word2");
+    var tq3 = new TermQuery(ferret, 'field', "word2");
     bq.add_query(tq3, occur: BCType.SHOULD);
     check_hits(bq, [2, 3, 6, 8, 11, 14], 8);
 
-    bq = new BooleanQuery();
+    bq = new BooleanQuery(ferret);
     bq.add_query(tq2, occur: BCType.MUST);
     bq.add_query(tq3, occur: BCType.MUST_NOT);
     check_hits(bq, [2, 3, 6, 11, 14]);
 
-    bq = new BooleanQuery();
+    bq = new BooleanQuery(ferret);
     bq.add_query(tq2, occur: BCType.MUST_NOT);
     check_hits(bq, [0, 1, 4, 5, 7, 9, 10, 12, 13, 15, 16, 17]);
 
-    bq = new BooleanQuery();
+    bq = new BooleanQuery(ferret);
     bq.add_query(tq2, occur: BCType.SHOULD);
     bq.add_query(tq3, occur: BCType.SHOULD);
     check_hits(bq, [1, 2, 3, 4, 6, 8, 11, 14]);
 
-    bq = new BooleanQuery();
-    var bc1 = new BooleanClause(tq2, occur: BCType.SHOULD);
-    var bc2 = new BooleanClause(tq3, occur: BCType.SHOULD);
+    bq = new BooleanQuery(ferret);
+    var bc1 = new BooleanClause(ferret, tq2, occur: BCType.SHOULD);
+    var bc2 = new BooleanClause(ferret, tq3, occur: BCType.SHOULD);
     bq.add_query(bc1);
     bq.add_query(bc2);
     check_hits(bq, [1, 2, 3, 4, 6, 8, 11, 14]);
   }
 
   test_phrase_query() {
-    var pq = new PhraseQuery('field');
+    var pq = new PhraseQuery(ferret, 'field');
     expect("\"\"", equals(pq.to_s('field')));
     expect("field:\"\"", equals(pq.to_s));
 
     pq..add_term("quick")..add_term("brown")..add_term("fox");
     check_hits(pq, [1]);
 
-    pq = new PhraseQuery('field', slop: 1);
+    pq = new PhraseQuery(ferret, 'field', slop: 1);
     pq..add_term("quick");
     pq.add_term("fox", 2);
     check_hits(pq, [1, 11, 14, 16]);
@@ -160,112 +161,116 @@ abstract class SearcherTests {
   }
 
   test_range_query() {
-    var rq = new RangeQuery('date', lower: "20051006", upper: "20051010");
+    var rq =
+        new RangeQuery(ferret, 'date', lower: "20051006", upper: "20051010");
     check_hits(rq, [6, 7, 8, 9, 10]);
 
-    rq = new RangeQuery('date', geq: "20051006", leq: "20051010");
+    rq = new RangeQuery(ferret, 'date', geq: "20051006", leq: "20051010");
     check_hits(rq, [6, 7, 8, 9, 10]);
 
-    rq = new RangeQuery('date',
+    rq = new RangeQuery(ferret, 'date',
         lower: "20051006", upper: "20051010", include_lower: false);
     check_hits(rq, [7, 8, 9, 10]);
 
-    rq = new RangeQuery('date', ge: "20051006", leq: "20051010");
+    rq = new RangeQuery(ferret, 'date', ge: "20051006", leq: "20051010");
     check_hits(rq, [7, 8, 9, 10]);
 
-    rq = new RangeQuery('date',
+    rq = new RangeQuery(ferret, 'date',
         lower: "20051006", upper: "20051010", include_upper: false);
     check_hits(rq, [6, 7, 8, 9]);
 
-    rq = new RangeQuery('date', geq: "20051006", le: "20051010");
+    rq = new RangeQuery(ferret, 'date', geq: "20051006", le: "20051010");
     check_hits(rq, [6, 7, 8, 9]);
 
-    rq = new RangeQuery('date',
+    rq = new RangeQuery(ferret, 'date',
         lower: "20051006",
         upper: "20051010",
         include_lower: false,
         include_upper: false);
     check_hits(rq, [7, 8, 9]);
 
-    rq = new RangeQuery('date', ge: "20051006", le: "20051010");
+    rq = new RangeQuery(ferret, 'date', ge: "20051006", le: "20051010");
     check_hits(rq, [7, 8, 9]);
 
-    rq = new RangeQuery('date', upper: "20051003");
+    rq = new RangeQuery(ferret, 'date', upper: "20051003");
     check_hits(rq, [0, 1, 2, 3]);
 
-    rq = new RangeQuery('date', leq: "20051003");
+    rq = new RangeQuery(ferret, 'date', leq: "20051003");
     check_hits(rq, [0, 1, 2, 3]);
 
-    rq = new RangeQuery('date', upper: "20051003", include_upper: false);
+    rq =
+        new RangeQuery(ferret, 'date', upper: "20051003", include_upper: false);
     check_hits(rq, [0, 1, 2]);
 
-    rq = new RangeQuery('date', le: "20051003");
+    rq = new RangeQuery(ferret, 'date', le: "20051003");
     check_hits(rq, [0, 1, 2]);
 
-    rq = new RangeQuery('date', lower: "20051014");
+    rq = new RangeQuery(ferret, 'date', lower: "20051014");
     check_hits(rq, [14, 15, 16, 17]);
 
-    rq = new RangeQuery('date', geq: "20051014");
+    rq = new RangeQuery(ferret, 'date', geq: "20051014");
     check_hits(rq, [14, 15, 16, 17]);
 
-    rq = new RangeQuery('date', lower: "20051014", include_lower: false);
+    rq =
+        new RangeQuery(ferret, 'date', lower: "20051014", include_lower: false);
     check_hits(rq, [15, 16, 17]);
 
-    rq = new RangeQuery('date', ge: "20051014");
+    rq = new RangeQuery(ferret, 'date', ge: "20051014");
     check_hits(rq, [15, 16, 17]);
   }
 
   test_typed_range_query() {
-    var rq = new TypedRangeQuery('number', geq: "-1.0", leq: 1.0);
+    var rq = new TypedRangeQuery(ferret, 'number', geq: "-1.0", leq: 1.0);
     check_hits(rq, [0, 1, 4, 10, 15, 17]);
 
-    rq = new TypedRangeQuery('number', ge: "-1.0", le: 1.0);
+    rq = new TypedRangeQuery(ferret, 'number', ge: "-1.0", le: 1.0);
     check_hits(rq, [0, 1, 4, 15]);
 
     if (ENV['FERRET_DEV']) {
       // text hexadecimal
-      rq = new TypedRangeQuery('number', ge: "1.0", leq: "0xa");
+      rq = new TypedRangeQuery(ferret, 'number', ge: "1.0", leq: "0xa");
       check_hits(rq, [6, 7, 9, 12]);
     }
 
     // test single bound
-    rq = new TypedRangeQuery('number', leq: "0.0");
+    rq = new TypedRangeQuery(ferret, 'number', leq: "0.0");
     check_hits(rq, [5, 11, 15, 16, 17]);
 
     // test single bound
-    rq = new TypedRangeQuery('number', ge: "0.0");
+    rq = new TypedRangeQuery(ferret, 'number', ge: "0.0");
     check_hits(rq, [0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 12, 13, 14]);
 
     // below range - no results
-    rq = new TypedRangeQuery('number', ge: "10051006", le: "10051010");
+    rq = new TypedRangeQuery(ferret, 'number', ge: "10051006", le: "10051010");
     check_hits(rq, []);
 
     // above range - no results
-    rq = new TypedRangeQuery('number', ge: "-12518421", le: "-12518420");
+    rq =
+        new TypedRangeQuery(ferret, 'number', ge: "-12518421", le: "-12518420");
     check_hits(rq, []);
   }
 
   test_prefix_query() {
-    var pq = new PrefixQuery('category', "cat1");
+    var pq = new PrefixQuery(ferret, 'category', "cat1");
     check_hits(pq, [0, 1, 2, 3, 4, 13, 14, 15, 16, 17]);
 
-    pq = new PrefixQuery('category', "cat1/sub2");
+    pq = new PrefixQuery(ferret, 'category', "cat1/sub2");
     check_hits(pq, [3, 4, 13, 15]);
   }
 
   test_wildcard_query() {
-    var wq = new WildcardQuery('category', "cat1*");
+    var wq = new WildcardQuery(ferret, 'category', "cat1*");
     check_hits(wq, [0, 1, 2, 3, 4, 13, 14, 15, 16, 17]);
 
-    wq = new WildcardQuery('category', "cat1*/su??ub2");
+    wq = new WildcardQuery(ferret, 'category', "cat1*/su??ub2");
     check_hits(wq, [4, 16]);
 
-    wq = new WildcardQuery('category', "*/sub2*");
+    wq = new WildcardQuery(ferret, 'category', "*/sub2*");
     check_hits(wq, [3, 4, 13, 15]);
   }
 
   test_multi_phrase_query() {
-    var mpq = new PhraseQuery('field');
+    var mpq = new PhraseQuery(ferret, 'field');
     mpq.add_term(["quick", "fast"]);
     mpq.add_term(["brown", "red", "hairy"]);
     mpq.add_term("fox");
@@ -276,8 +281,9 @@ abstract class SearcherTests {
   }
 
   test_highlighter() {
-    var dir = new RAMDirectory();
-    var iw = new IndexWriter(dir: dir, analyzer: new WhiteSpaceAnalyzer());
+    var dir = new RAMDirectory(ferret);
+    var iw = new IndexWriter(ferret,
+        dir: dir, analyzer: new WhiteSpaceAnalyzer(ferret));
     var long_text = "big " + "between " * 2000 + 'house';
     [
       {
@@ -290,9 +296,9 @@ abstract class SearcherTests {
     ].forEach((doc) => iw.add_document(doc));
     iw.close();
 
-    var searcher = new Searcher.store(dir);
+    var searcher = new Searcher.store(ferret, dir);
 
-    var q = new TermQuery('field', "one");
+    var q = new TermQuery(ferret, 'field', "one");
     var highlights =
         searcher.highlight(q, 0, 'field', excerpt_length: 10, num_excerpts: 1);
     expect(highlights.length, equals(1));
@@ -343,9 +349,9 @@ abstract class SearcherTests {
             "sometimes looking for them as a phrase like this; <b>one</b> " +
             "two lets see how it goes"));
 
-    q = new BooleanQuery(coord_disable: false);
-    q.add_query(new TermQuery('field', "one"));
-    q.add_query(new TermQuery('field', "two"));
+    q = new BooleanQuery(ferret, coord_disable: false);
+    q.add_query(new TermQuery(ferret, 'field', "one"));
+    q.add_query(new TermQuery(ferret, 'field', "two"));
 
     highlights =
         searcher.highlight(q, 0, 'field', excerpt_length: 15, num_excerpts: 2);
@@ -353,7 +359,8 @@ abstract class SearcherTests {
     expect(highlights[0], equals("...<b>one</b> and <b>two</b>..."));
     expect(highlights[1], equals("...this; <b>one</b> <b>two</b>..."));
 
-    q.add_query(new PhraseQuery('field')..add_term("one")..add_term("two"));
+    q.add_query(
+        new PhraseQuery(ferret, 'field')..add_term("one")..add_term("two"));
 
     highlights =
         searcher.highlight(q, 0, 'field', excerpt_length: 15, num_excerpts: 2);
@@ -371,22 +378,23 @@ abstract class SearcherTests {
         excerpt_length: 15, num_excerpts: 1);
     expect(highlights, isNull);
 
-    q = new TermQuery('wrong_field', "one");
+    q = new TermQuery(ferret, 'wrong_field', "one");
     highlights = searcher.highlight(q, 0, 'wrong_field',
         excerpt_length: 15, num_excerpts: 1);
     expect(highlights, isNull);
 
-    q = new BooleanQuery(coord_disable: false);
-    q.add_query(new PhraseQuery('field')..add_term("the")..add_term("words"));
-    q.add_query(new PhraseQuery('field')
+    q = new BooleanQuery(ferret, coord_disable: false);
+    q.add_query(
+        new PhraseQuery(ferret, 'field')..add_term("the")..add_term("words"));
+    q.add_query(new PhraseQuery(ferret, 'field')
       ..add_term("for")
       ..add_term("are")
       ..add_term("one")
       ..add_term("and")
       ..add_term("two"));
-    q.add_query(new TermQuery('field', "words"));
-    q.add_query(new TermQuery('field', "one"));
-    q.add_query(new TermQuery('field', "two"));
+    q.add_query(new TermQuery(ferret, 'field', "words"));
+    q.add_query(new TermQuery(ferret, 'field', "one"));
+    q.add_query(new TermQuery(ferret, 'field', "two"));
 
     highlights =
         searcher.highlight(q, 0, 'field', excerpt_length: 10, num_excerpts: 1);
@@ -401,15 +409,15 @@ abstract class SearcherTests {
 
     [
       [
-        new RangeQuery('dates', geq: '20081111'),
+        new RangeQuery(ferret, 'dates', geq: '20081111'),
         '20070505 20071230 20060920 <b>20081111</b>'
       ],
       [
-        new RangeQuery('dates', geq: '20070101'),
+        new RangeQuery(ferret, 'dates', geq: '20070101'),
         '<b>20070505</b> <b>20071230</b> 20060920 <b>20081111</b>'
       ],
       [
-        new PrefixQuery('dates', '2007'),
+        new PrefixQuery(ferret, 'dates', '2007'),
         '<b>20070505</b> <b>20071230</b> 20060920 20081111'
       ],
     ].forEach((row) {
@@ -429,16 +437,17 @@ abstract class SearcherTests {
   }
 
   test_highlighter_with_standard_analyzer() {
-    var dir = new RAMDirectory();
-    var iw = new IndexWriter(dir: dir, analyzer: new StandardAnalyzer());
+    var dir = new RAMDirectory(ferret);
+    var iw = new IndexWriter(ferret,
+        dir: dir, analyzer: new StandardAnalyzer(ferret));
     [
       {'field': "field has a url http://ferret.davebalmain.com/trac/ end"},
     ].forEach((doc) => iw.add_document(doc));
     iw.close();
 
-    var searcher = new Searcher.store(dir);
+    var searcher = new Searcher.store(ferret, dir);
 
-    var q = new TermQuery('field', "ferret.davebalmain.com/trac");
+    var q = new TermQuery(ferret, 'field', "ferret.davebalmain.com/trac");
     var highlights = searcher.highlight(q, 0, 'field',
         excerpt_length: 1000, num_excerpts: 1);
     expect(highlights.length, equals(1));

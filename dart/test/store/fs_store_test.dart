@@ -6,10 +6,10 @@ import 'package:ferret/ferret.dart';
 import 'store_test.dart';
 import 'store_lock_test.dart';
 
-fsStoreTest() {
+fsStoreTest(Ferret ferret) {
   const dpath = '/temp/fsdir';
 
-  Directory makeDir() => FSDirectory.create(dpath, create: true);
+  Directory makeDir() => new FSDirectory(ferret, dpath, create: true);
 
   void closeDir(Directory dir) {
     dir.close();

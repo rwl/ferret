@@ -1,6 +1,5 @@
 library ferret.ext.search;
 
-import 'dart:js' as js;
 import 'dart:typed_data' show Int32List, Uint8List;
 
 import '../../ferret.dart';
@@ -22,9 +21,9 @@ part 'span.dart';
 class Hit {
   final int doc;
   final double score;
-  Hit._handle(js.JsObject module, int handle)
-      : doc = module.callMethod('_frjs_hit_get_doc', [handle]),
-        score = module.callMethod('_frjs_hit_get_score', [handle]);
+  Hit._handle(Ferret ferret, int handle)
+      : doc = ferret.callMethod('_frjs_hit_get_doc', [handle]),
+        score = ferret.callMethod('_frjs_hit_get_score', [handle]);
 }
 
 /// A [TopDocs] object holds a result set for a search. The number of
@@ -46,15 +45,15 @@ class TopDocs {
   int max_score;
   Searcher searcher;
 
-  TopDocs._module(js.JsObject module, int handle, this.searcher) {
-    int sz = module.callMethod('_frjs_td_get_size', [handle]);
+  TopDocs._module(Ferret ferret, int handle, this.searcher) {
+    int sz = ferret.callMethod('_frjs_td_get_size', [handle]);
     hits = new List<Hit>(sz);
     for (var i = 0; i < sz; i++) {
-      int p_hit = module.callMethod('_frjs_td_get_hit', [handle, i]);
-      hits[i] = new Hit._handle(module, p_hit);
+      int p_hit = ferret.callMethod('_frjs_td_get_hit', [handle, i]);
+      hits[i] = new Hit._handle(ferret, p_hit);
     }
-    total_hits = module.callMethod('_frjs_td_get_total_hits', [handle]);
-    max_score = module.callMethod('_frjs_td_get_max_score', [handle]);
+    total_hits = ferret.callMethod('_frjs_td_get_total_hits', [handle]);
+    max_score = ferret.callMethod('_frjs_td_get_max_score', [handle]);
   }
 
   /// Returns a string representation of the top_doc in readable format.

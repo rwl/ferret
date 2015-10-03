@@ -6,8 +6,8 @@ import 'package:ferret/ferret.dart';
 import 'store_test.dart';
 import 'store_lock_test.dart';
 
-ramStoreTest() {
-  Directory makeDir() => new RAMDirectory();
+ramStoreTest(Ferret ferret) {
+  Directory makeDir() => new RAMDirectory(ferret);
   void closeDir(Directory dir) => dir.close();
 
   storeTest(makeDir, closeDir);
