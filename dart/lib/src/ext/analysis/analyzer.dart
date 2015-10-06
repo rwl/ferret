@@ -41,10 +41,10 @@ abstract class Analyzer {
   /// created may also depend on the [field_name]. Although this parameter
   /// is typically ignored.
   TokenStream token_stream(String field_name, String input) {
-    int p_field = _ferret.allocString(field_name);
-    int p_text = _ferret.allocString(input);
-    int p_ts = _ferret.callMethod(
-        '_frjs_analyzer_token_stream', [handle, p_field, p_text]);
+    int p_field = _ferret.heapString(field_name);
+    int p_text = _ferret.heapString(input);
+    int p_ts = _ferret.callFunc(
+        'frjs_analyzer_token_stream', [handle, p_field, p_text]);
     _ferret.free(p_field);
     _ferret.free(p_text);
     var ts = _makeTokenStream(p_ts);
@@ -82,7 +82,7 @@ class AsciiLetterAnalyzer extends Analyzer {
   /// ASCII characters.
   AsciiLetterAnalyzer(Ferret ferret, {bool lower: true})
       : super._(ferret,
-            ferret.callMethod('_frt_letter_analyzer_new', [lower ? 1 : 0]));
+            ferret.callFunc('frt_letter_analyzer_new', [lower ? 1 : 0]));
 
   TokenStream _makeTokenStream(int h) =>
       new AsciiLetterTokenizer._handle(_ferret, h);
@@ -109,7 +109,7 @@ class LetterAnalyzer extends Analyzer {
   /// current locale.
   LetterAnalyzer(Ferret ferret, {bool lower: true})
       : super._(ferret,
-            ferret.callMethod('_frjs_letter_analyzer_init', [lower ? 1 : 0]));
+            ferret.callFunc('frjs_letter_analyzer_init', [lower ? 1 : 0]));
 
   TokenStream _makeTokenStream(int h) =>
       new LetterTokenizer._handle(_ferret, h);
@@ -142,7 +142,7 @@ class AsciiWhiteSpaceAnalyzer extends Analyzer {
   /// ASCII characters.
   AsciiWhiteSpaceAnalyzer(Ferret ferret, {bool lower: false})
       : super._(ferret,
-            ferret.callMethod('_frt_whitespace_analyzer_new', [lower ? 1 : 0]));
+            ferret.callFunc('frt_whitespace_analyzer_new', [lower ? 1 : 0]));
 
   TokenStream _makeTokenStream(int h) =>
       new AsciiWhiteSpaceTokenizer._handle(_ferret, h);
@@ -168,10 +168,8 @@ class WhiteSpaceAnalyzer extends Analyzer {
   /// can optionally leave case as is. Lowercasing will be done based on the
   /// current locale.
   WhiteSpaceAnalyzer(Ferret ferret, {bool lower: false})
-      : super._(
-            ferret,
-            ferret.callMethod(
-                '_frjs_white_space_analyzer_init', [lower ? 1 : 0]));
+      : super._(ferret,
+            ferret.callFunc('frjs_white_space_analyzer_init', [lower ? 1 : 0]));
 
   TokenStream _makeTokenStream(int h) =>
       new WhiteSpaceTokenizer._handle(_ferret, h);
@@ -209,8 +207,8 @@ class AsciiStandardAnalyzer extends Analyzer {
       {lower: true, stop_words: 0 /*: FULL_ENGLISH_STOP_WORDS*/})
       : super._(
             ferret,
-            ferret.callMethod(
-                '_frjs_a_standard_analyzer_init', [lower ? 1 : 0, stop_words]));
+            ferret.callFunc(
+                'frjs_a_standard_analyzer_init', [lower ? 1 : 0, stop_words]));
 
   TokenStream _makeTokenStream(int h) =>
       new AsciiStandardTokenizer._handle(_ferret, h);
@@ -243,10 +241,8 @@ class StandardAnalyzer extends Analyzer {
   /// the [StopFilter].
   StandardAnalyzer(Ferret ferret,
       {lower: true /*, stop_words : FULL_ENGLISH_STOP_WORDS*/})
-      : super._(
-            ferret,
-            ferret.callMethod(
-                '_frjs_standard_analyzer_init', [lower ? 1 : 0, 0]));
+      : super._(ferret,
+            ferret.callFunc('frjs_standard_analyzer_init', [lower ? 1 : 0, 0]));
 
   TokenStream _makeTokenStream(int h) {
     return new StandardTokenizer._handle(_ferret, h);

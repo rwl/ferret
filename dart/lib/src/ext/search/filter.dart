@@ -19,14 +19,14 @@ class Filter {
   /// to group filters or apply filters to other filters.
   BitVector bits(IndexReader index_reader) {
     int p_bv =
-        _ferret.callMethod('_frt_filt_get_bv', [handle, index_reader.handle]);
+        _ferret.callFunc('frt_filt_get_bv', [handle, index_reader.handle]);
     return new BitVector.wrap(_ferret, p_bv);
   }
 
   /// Return a human readable string representing the [Filter] object that the
   /// method was called on.
   String to_s() {
-    int p_s = _ferret.callMethod('_frjs_f_to_s', [handle]);
+    int p_s = _ferret.callFunc('frjs_f_to_s', [handle]);
     var s = _ferret.stringify(p_s);
     _ferret.free(p_s);
     return s;
@@ -69,9 +69,7 @@ class RangeFilter extends Filter {
       leq,
       ge,
       geq}) {
-    int p_field = ferret.allocString(field);
-    int symbol = ferret.callMethod('_frt_internal', [p_field]);
-    ferret.free(p_field);
+    int symbol = ferret.intern(field);
 
     RangeParams params = _range_params(lower, upper, lower_exclusive,
         upper_exclusive, include_lower, include_upper, le, leq, ge, geq);
@@ -79,13 +77,13 @@ class RangeFilter extends Filter {
     int lterm = 0;
     int uterm = 0;
     if (params.lterm != null) {
-      lterm = ferret.allocString(params.lterm);
+      lterm = ferret.heapString(params.lterm);
     }
     if (params.uterm != null) {
-      uterm = ferret.allocString(params.uterm);
+      uterm = ferret.heapString(params.uterm);
     }
 
-    int h = ferret.callMethod('_frt_rfilt_new', [
+    int h = ferret.callFunc('frt_rfilt_new', [
       symbol,
       lterm,
       uterm,
@@ -137,9 +135,7 @@ class TypedRangeFilter extends Filter {
       leq,
       ge,
       geq}) {
-    int p_field = ferret.allocString(field);
-    int symbol = ferret.callMethod('_frt_internal', [p_field]);
-    ferret.free(p_field);
+    int symbol = ferret.intern(field);
 
     RangeParams params = _range_params(lower, upper, lower_exclusive,
         upper_exclusive, include_lower, include_upper, le, leq, ge, geq);
@@ -147,13 +143,13 @@ class TypedRangeFilter extends Filter {
     int lterm = 0;
     int uterm = 0;
     if (params.lterm != null) {
-      lterm = ferret.allocString(params.lterm);
+      lterm = ferret.heapString(params.lterm);
     }
     if (params.uterm != null) {
-      uterm = ferret.allocString(params.uterm);
+      uterm = ferret.heapString(params.uterm);
     }
 
-    int h = ferret.callMethod('_frt_trfilt_new', [
+    int h = ferret.callFunc('frt_trfilt_new', [
       symbol,
       lterm,
       uterm,
@@ -187,5 +183,5 @@ class TypedRangeFilter extends Filter {
 class QueryFilter extends Filter {
   /// Create a new [QueryFilter] which applies the query [query].
   QueryFilter(Ferret ferret, Query query)
-      : super.wrap(ferret, ferret.callMethod('_frt_qfilt_new', [query.handle]));
+      : super.wrap(ferret, ferret.callFunc('frt_qfilt_new', [query.handle]));
 }

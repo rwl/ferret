@@ -9,10 +9,8 @@ class AsciiLowerCaseFilter extends TokenStream {
   /// lowercase but only for ASCII characters. For other characters use
   /// [LowerCaseFilter].
   AsciiLowerCaseFilter(Ferret ferret, TokenStream token_stream)
-      : super.wrap(
-            ferret,
-            ferret.callMethod(
-                '_frt_lowercase_filter_new', [token_stream.handle]));
+      : super.wrap(ferret,
+            ferret.callFunc('frt_lowercase_filter_new', [token_stream.handle]));
 }
 
 /// [LowerCaseFilter] normalizes a token's text to lowercase based on the
@@ -25,8 +23,8 @@ class LowerCaseFilter extends TokenStream {
   LowerCaseFilter(Ferret ferret, TokenStream token_stream)
       : super.wrap(
             ferret,
-            ferret.callMethod(
-                '_frjs_lowercase_filter_init', [token_stream.handle]));
+            ferret.callFunc(
+                'frjs_lowercase_filter_init', [token_stream.handle]));
 }
 
 /// [HyphenFilter] filters hyphenated words by adding both the word
@@ -44,7 +42,7 @@ class HyphenFilter extends TokenStream {
   /// This filter is used by default by the [StandardAnalyzer].
   HyphenFilter(Ferret ferret, TokenStream token_stream)
       : super.wrap(ferret,
-            ferret.callMethod('_frt_hyphen_filter_new', [token_stream.handle]));
+            ferret.callFunc('frt_hyphen_filter_new', [token_stream.handle]));
 }
 
 /// A [MappingFilter] maps strings in tokens. This is usually used to map
@@ -98,22 +96,20 @@ class MappingFilter extends TokenStream {
   ///       });
   MappingFilter(Ferret ferret, TokenStream token_stream,
       Map<List<String>, String> mapping)
-      : super.wrap(
-            ferret,
-            ferret.callMethod(
-                '_frt_mapping_filter_new', [token_stream.handle])) {
+      : super.wrap(ferret,
+            ferret.callFunc('_frt_mapping_filter_new', [token_stream.handle])) {
     mapping.forEach((List<String> patterns, String replacement) {
-      int p_replacement = ferret.allocString(replacement);
+      int p_replacement = ferret.heapString(replacement);
       patterns.forEach((String pattern) {
-        int p_pattern = ferret.allocString(pattern);
-        ferret.callMethod(
-            '_frt_mapping_filter_add', [handle, p_pattern, p_replacement]);
+        int p_pattern = ferret.heapString(pattern);
+        ferret.callFunc(
+            'frt_mapping_filter_add', [handle, p_pattern, p_replacement]);
         ferret.free(p_pattern);
       });
       ferret.free(p_replacement);
     });
-    int p_mapping = ferret.callMethod('_frjs_mapping_get_mapper', [handle]);
-    ferret.callMethod('_frt_mulmap_compile', [p_mapping]);
+    int p_mapping = ferret.callFunc('frjs_mapping_get_mapper', [handle]);
+    ferret.callFunc('frt_mulmap_compile', [p_mapping]);
   }
 }
 
@@ -133,24 +129,12 @@ class StopFilter extends TokenStream {
       [List<String> stop_words]) {
     int h;
     if (stop_words != null) {
-      int p_stop_words = ferret.callMethod(
-          '_malloc', [Uint8List.BYTES_PER_ELEMENT * stop_words.length]);
-      for (int i = 0; i < stop_words.length; i++) {
-        int p_stop_word = ferret.allocString(stop_words[i]);
-        ferret.callMethod('setValue', [
-          p_stop_words + (i * Uint8List.BYTES_PER_ELEMENT),
-          p_stop_word,
-          'i8'
-        ]);
-      }
-      h = ferret.callMethod('_frt_stop_filter_new_with_words',
+      int p_stop_words = ferret.heapStrings(stop_words);
+      h = ferret.callFunc('frt_stop_filter_new_with_words',
           [token_stream.handle, p_stop_words]);
-      for (int i = 0; i < stop_words.length; i++) {
-        ferret.free(p_stop_words + (i * Uint8List.BYTES_PER_ELEMENT));
-      }
-      ferret.free(p_stop_words);
+      ferret.freeStrings(p_stop_words, stop_words.length);
     } else {
-      h = ferret.callMethod('_frt_stop_filter_new', [token_stream.handle]);
+      h = ferret.callFunc('frt_stop_filter_new', [token_stream.handle]);
     }
     return new StopFilter._(ferret, h);
   }
@@ -204,13 +188,13 @@ class StemFilter extends TokenStream {
   /// [encoding].
   factory StemFilter(Ferret ferret, TokenStream token_stream,
       {String algorithm: "english", String encoding: "UTF-8"}) {
-    int p_algorithm = ferret.allocString(algorithm);
-    int p_charenc = ferret.allocString(encoding);
-    int h = ferret.callMethod(
-        '_frt_stem_filter_new', [token_stream.handle, p_algorithm, p_charenc]);
+    int p_algorithm = ferret.heapString(algorithm);
+    int p_charenc = ferret.heapString(encoding);
+    int h = ferret.callFunc(
+        'frt_stem_filter_new', [token_stream.handle, p_algorithm, p_charenc]);
     ferret.free(p_algorithm);
     ferret.free(p_charenc);
-    int stemmer = ferret.callMethod('_frjs_stem_filter_has_stemmer', [h]);
+    int stemmer = ferret.callFunc('frjs_stem_filter_has_stemmer', [h]);
     if (stemmer == 0) {
       throw new ArgumentError("No stemmer could be found with the encoding "
           "$encoding and the language $algorithm");

@@ -131,8 +131,8 @@ class FieldInfos {
         store = store,
         index = index,
         term_vector = term_vector,
-        handle = ferret.callMethod(
-            '_frt_fis_new', [store._value, index._value, term_vector._value]);
+        handle = ferret.callFunc(
+            'frt_fis_new', [store._value, index._value, term_vector._value]);
 
   /// Return an array of the [FieldInfo] objects contained but this
   /// [FieldInfos] object.
@@ -140,7 +140,7 @@ class FieldInfos {
     var n = size();
     var a = new List<FieldInfo>(n);
     for (int i = 0; i < n; i++) {
-      var p_fi = _ferret.callMethod('_frjs_fis_get_field_info', [handle, i]);
+      var p_fi = _ferret.callFunc('frjs_fis_get_field_info', [handle, i]);
       a[i] = new FieldInfo._handle(_ferret, p_fi);
     }
     return a;
@@ -156,10 +156,10 @@ class FieldInfos {
     int p_fi;
     if (name_or_num is num) {
       int i = name_or_num.toInt();
-      p_fi = _ferret.callMethod('_frjs_fis_get_field_info', [handle, i]);
+      p_fi = _ferret.callFunc('frjs_fis_get_field_info', [handle, i]);
     } else if (name_or_num is String) {
-      var p_name = _ferret.allocString(name_or_num);
-      p_fi = _ferret.callMethod('_frjs_fis_get_field', [handle, p_name]);
+      var p_name = _ferret.heapString(name_or_num);
+      p_fi = _ferret.callFunc('frjs_fis_get_field', [handle, p_name]);
       _ferret.free(p_name);
     } else {
       throw new ArgumentError.value(
@@ -170,7 +170,7 @@ class FieldInfos {
 
   /// Add a [FieldInfo] object. Use the [add_field] method where possible.
   void add(FieldInfo fi) {
-    _ferret.callMethod('_frjs_fis_add', [handle, fi.handle]);
+    _ferret.callFunc('frjs_fis_add', [handle, fi.handle]);
   }
 
   /// Alias for [add].
@@ -196,8 +196,8 @@ class FieldInfos {
     if (term_vector == null) {
       term_vector = this.term_vector;
     }
-    int p_field = _ferret.allocString(field);
-    _ferret.callMethod('_frjs_fis_add_field', [
+    int p_field = _ferret.heapString(field);
+    _ferret.callFunc('frjs_fis_add_field', [
       handle,
       p_field,
       store._value,
@@ -212,21 +212,19 @@ class FieldInfos {
   void each(fn(FieldInfo fi)) {
     var n = size();
     for (int i = 0; i < n; i++) {
-      var p_fi = _ferret.callMethod('_frjs_fis_get_field_info', [handle, i]);
+      var p_fi = _ferret.callFunc('frjs_fis_get_field_info', [handle, i]);
       fn(new FieldInfo._handle(_ferret, p_fi));
     }
   }
 
   /// Return a string representation of the [FieldInfos] object.
   String to_s() {
-    int p_s = _ferret.callMethod('_frt_fis_to_s', [handle]);
-    var s = _ferret.stringify(p_s);
-    _ferret.free(p_s);
-    return s;
+    int p_s = _ferret.callFunc('frt_fis_to_s', [handle]);
+    return _ferret.stringify(p_s);
   }
 
   /// Return the number of fields in the [FieldInfos] object.
-  int size() => _ferret.callMethod('_frjs_fis_size', [handle]);
+  int size() => _ferret.callFunc('frjs_fis_size', [handle]);
 
   /// Create a new index in the directory specified. The directory [dir] can
   /// either be a string path representing a directory on the file-system or
@@ -237,12 +235,12 @@ class FieldInfos {
     int p_store, p_dir;
     if (dir is String) {
       p_store = 0;
-      p_dir = _ferret.allocString(dir);
+      p_dir = _ferret.heapString(dir);
     } else if (dir is Directory) {
       p_store = dir.handle;
       p_dir = 0;
     }
-    _ferret.callMethod('_frjs_fis_create_index', [handle, p_store, p_dir]);
+    _ferret.callFunc('frjs_fis_create_index', [handle, p_store, p_dir]);
     if (dir is String) {
       _ferret.free(p_dir);
     }
@@ -265,7 +263,7 @@ class FieldInfos {
     var tf = new List<String>();
     for (int i = 0; i < size(); i++) {
       var fi = this[i];
-      var tokd = _ferret.callMethod('_frjs_fi_is_tokenized', [fi.handle]) != 0;
+      var tokd = _ferret.callFunc('frjs_fi_is_tokenized', [fi.handle]) != 0;
       if (tokd) {
         tf.add(fi.name);
       }
@@ -345,8 +343,8 @@ class FieldInfo {
       FieldIndexing index: FieldIndexing.YES,
       TermVectorStorage term_vector: TermVectorStorage.WITH_POSITIONS_OFFSETS,
       double boost: 1.0}) {
-    int p_name = ferret.allocString(name);
-    int h = ferret.callMethod('_frjs_fi_init',
+    int p_name = ferret.heapString(name);
+    int h = ferret.callFunc('frjs_fi_init',
         [p_name, store._value, index._value, term_vector._value, boost]);
     ferret.free(p_name);
     return new FieldInfo._handle(ferret, h);
@@ -354,19 +352,18 @@ class FieldInfo {
 
   /// Return the name of the field.
   String get name {
-    int p_name = _ferret.callMethod('_frjs_fi_name', [handle]);
-    return _ferret.stringify(p_name);
+    int p_name = _ferret.callFunc('frjs_fi_name', [handle]);
+    return _ferret.stringify(p_name, false);
   }
 
   /// Return `true` if the field is stored in the index.
-  bool stored() => _ferret.callMethod('_frjs_fi_is_stored', [handle]) != 0;
+  bool stored() => _ferret.callFunc('frjs_fi_is_stored', [handle]) != 0;
 
   /// Return `true` if the field is stored in the index in compressed format.
-  bool compressed() =>
-      _ferret.callMethod('_frjs_fi_is_compressed', [handle]) != 0;
+  bool compressed() => _ferret.callFunc('frjs_fi_is_compressed', [handle]) != 0;
 
   /// Return `true` if the field is indexed, ie searchable in the index.
-  bool indexed() => _ferret.callMethod('_frjs_fi_is_indexed', [handle]) != 0;
+  bool indexed() => _ferret.callFunc('frjs_fi_is_indexed', [handle]) != 0;
 
   /// Return true if the field is tokenized. Tokenizing is the process of
   /// breaking the field up into tokens. That is "the quick brown fox"
@@ -375,8 +372,7 @@ class FieldInfo {
   ///     ["the", "quick", "brown", "fox"]
   ///
   /// A field can only be tokenized if it is indexed.
-  bool tokenized() =>
-      _ferret.callMethod('_frjs_fi_is_tokenized', [handle]) != 0;
+  bool tokenized() => _ferret.callFunc('frjs_fi_is_tokenized', [handle]) != 0;
 
   /// Return true if the field omits the norm file. The norm file is the file
   /// used to store the field boosts for an indexed field. If you do not boost
@@ -384,36 +380,34 @@ class FieldInfo {
   /// you can omit the norms file. This will give the index a slight
   /// performance boost and it will use less memory, especially for indexes
   /// which have a large number of documents.
-  bool omit_norms() => _ferret.callMethod('_frjs_fi_omit_norms', [handle]) != 0;
+  bool omit_norms() => _ferret.callFunc('frjs_fi_omit_norms', [handle]) != 0;
 
   /// Return `true` if the term-vectors are stored for this field.
   bool store_term_vector() =>
-      _ferret.callMethod('_frjs_fi_store_term_vector', [handle]) != 0;
+      _ferret.callFunc('frjs_fi_store_term_vector', [handle]) != 0;
 
   /// Return `true` if positions are stored with the term-vectors for this
   /// field.
   bool store_positions() =>
-      _ferret.callMethod('_frjs_fi_store_positions', [handle]) != 0;
+      _ferret.callFunc('frjs_fi_store_positions', [handle]) != 0;
 
   /// Return `true` if offsets are stored with the term-vectors for this
   /// field.
   bool store_offsets() =>
-      _ferret.callMethod('_frjs_fi_store_offsets', [handle]) != 0;
+      _ferret.callFunc('frjs_fi_store_offsets', [handle]) != 0;
 
   /// Return `true` if this field has a norms file. This is the same as
   /// calling:
   ///
   ///     fi.indexed() && !fi.omit_norms();
-  bool has_norms() => _ferret.callMethod('_frjs_fi_has_norms', [handle]) != 0;
+  bool has_norms() => _ferret.callFunc('frjs_fi_has_norms', [handle]) != 0;
 
   /// Return the default boost for this field.
-  double boost() => _ferret.callMethod('_frjs_fi_boost', [handle]);
+  double boost() => _ferret.callFunc('frjs_fi_boost', [handle]);
 
   /// Return a string representation of the [FieldInfo] object.
   String to_s() {
-    int p_fi_s = _ferret.callMethod('_frt_fi_to_s', [handle]);
-    var fi_s = _ferret.stringify(p_fi_s);
-    _ferret.free(p_fi_s);
-    return fi_s;
+    int p_fi_s = _ferret.callFunc('frt_fi_to_s', [handle]);
+    return _ferret.stringify(p_fi_s);
   }
 }

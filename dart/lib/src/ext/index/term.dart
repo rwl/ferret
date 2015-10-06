@@ -27,24 +27,24 @@ class TermVector {
   TermVector._handle(this._ferret, this.handle);
 
   String get field {
-    int p_field = _ferret.callMethod('_frjs_tv_get_field', [handle]);
-    return _ferret.stringify(p_field);
+    int p_field = _ferret.callFunc('frjs_tv_get_field', [handle]);
+    return _ferret.stringify(p_field, false);
   }
 
   List<TVTerm> get terms {
-    int term_cnt = _ferret.callMethod('_frjs_tv_get_term_cnt', [handle]);
+    int term_cnt = _ferret.callFunc('frjs_tv_get_term_cnt', [handle]);
     var tt = new List<TVTerm>(term_cnt);
     for (int i = 0; i < term_cnt; i++) {
-      int p_term = _ferret.callMethod('_frjs_tv_get_term', [handle, i]);
+      int p_term = _ferret.callFunc('frjs_tv_get_term', [handle, i]);
 
-      int p_text = _ferret.callMethod('_frjs_tvt_get_text', [p_term]);
-      var text = _ferret.stringify(p_text);
+      int p_text = _ferret.callFunc('frjs_tvt_get_text', [p_term]);
+      var text = _ferret.stringify(p_text, false);
 
-      int freq = _ferret.callMethod('_frjs_tvt_get_freq', [p_term]);
+      int freq = _ferret.callFunc('frjs_tvt_get_freq', [p_term]);
 
       var positions = new List<int>(freq);
       for (int i = 0; i < freq; i++) {
-        int pos = _ferret.callMethod('_frjs_tvt_get_position', [p_term, i]);
+        int pos = _ferret.callFunc('frjs_tvt_get_position', [p_term, i]);
         positions[i] = pos;
       }
 
@@ -54,13 +54,13 @@ class TermVector {
   }
 
   List<TVOffsets> get offsets {
-    int cnt = _ferret.callMethod('_frjs_tv_get_offset_cnt', [handle]);
+    int cnt = _ferret.callFunc('frjs_tv_get_offset_cnt', [handle]);
     var offs = new List<TVOffsets>(cnt);
     for (int i = 0; i < cnt; i++) {
-      int p_off = _ferret.callMethod('_frjs_tv_get_offset', [handle]);
+      int p_off = _ferret.callFunc('frjs_tv_get_offset', [handle]);
 
-      int start = _ferret.callMethod('_frjs_tv_offset_get_start', [p_off]);
-      int end = _ferret.callMethod('_frjs_tv_offset_get_end', [p_off]);
+      int start = _ferret.callFunc('frjs_tv_offset_get_start', [p_off]);
+      int end = _ferret.callFunc('frjs_tv_offset_get_end', [p_off]);
 
       offs[i] = new TVOffsets(start, end);
     }
@@ -122,14 +122,14 @@ class TermEnum {
   TermEnum._handle(this._ferret, this.handle, this._field_num_map);
 
   /// Returns the next term in the enumeration or nil otherwise.
-  String next() => _setTerm(_ferret.callMethod('_frjs_te_next', [handle]));
+  String next() => _setTerm(_ferret.callFunc('frjs_te_next', [handle]));
 
   String _setTerm(int p_term) {
     if (p_term == 0) {
       _term = null;
     } else {
-      int len = _ferret.callMethod('_frjs_te_get_curr_term_len', [handle]);
-      _term = _ferret.stringify(p_term, len);
+      int len = _ferret.callFunc('frjs_te_get_curr_term_len', [handle]);
+      _term = _ferret.stringify(p_term, false, len);
     }
     return _term;
   }
@@ -141,7 +141,7 @@ class TermEnum {
   /// Returns the document frequency of the current term pointed to by the
   /// enum. That is the number of documents that this term appears in. The
   /// method should only be called after a successful call to [next].
-  int doc_freq() => _ferret.callMethod('_frjs_te_doc_freq', [handle]);
+  int doc_freq() => _ferret.callFunc('frjs_te_doc_freq', [handle]);
 
   /// Skip to term [target]. This method can skip forwards or backwards. If
   /// you want to skip back to the start, pass the empty string "". That is:
@@ -150,9 +150,9 @@ class TermEnum {
   ///
   /// Returns the first term greater than or equal to +target+
   String skip_to(String target) {
-    int p_target = _ferret.allocString(target);
+    int p_target = _ferret.heapString(target);
     var retval =
-        _setTerm(_ferret.callMethod('_frjs_te_skip_to', [handle, p_target]));
+        _setTerm(_ferret.callFunc('frjs_te_skip_to', [handle, p_target]));
     _ferret.free(p_target);
     return retval;
   }
@@ -265,24 +265,24 @@ class TermDocEnum {
   /// However the [seek_term_enum] method saves an index lookup so should
   /// offer a large performance improvement.
   void seek_term_enum(TermEnum term_enum) {
-    _ferret.callMethod('_frjs_tde_seek_te', [handle, term_enum.handle]);
+    _ferret.callFunc('frjs_tde_seek_te', [handle, term_enum.handle]);
   }
 
   /// Returns the current document number pointed to by the term_doc_enum.
-  int doc() => _ferret.callMethod('_frjs_tde_doc', [handle]);
+  int doc() => _ferret.callFunc('frjs_tde_doc', [handle]);
 
   /// Returns the frequency of the current document pointed to by the
   /// [term_doc_enum].
-  int freq() => _ferret.callMethod('_frjs_tde_freq', [handle]);
+  int freq() => _ferret.callFunc('frjs_tde_freq', [handle]);
 
   /// Move forward to the next document in the enumeration. Returns `true` if
   /// there is another document or `false` otherwise.
-  bool next() => _ferret.callMethod('_frjs_tde_next', [handle]) != 0;
+  bool next() => _ferret.callFunc('frjs_tde_next', [handle]) != 0;
 
   /// Move forward to the next document in the enumeration. Returns `true` if
   /// there is another document or `false` otherwise.
   bool next_position() {
-    int pos = _ferret.callMethod('_frjs_tde_next_position', [handle]);
+    int pos = _ferret.callFunc('frjs_tde_next_position', [handle]);
     if (pos == -1) {
       throw new UnsupportedError("to scan through positions you must create "
           "the TermDocEnum with Index.term_positions method rather than the "
@@ -317,7 +317,7 @@ class TermDocEnum {
   ///       print("  ${positions.join(', ')}");
   ///     });
   void each_position(fn(int pos)) {
-    int pos = _ferret.callMethod('_frjs_tde_next_position', [handle]);
+    int pos = _ferret.callFunc('frjs_tde_next_position', [handle]);
     if (pos == -1) {
       throw new UnsupportedError("to scan through positions you must create "
           "the TermDocEnum with Index.term_positions method rather than the "
@@ -325,14 +325,14 @@ class TermDocEnum {
     }
     while (pos > 0) {
       fn(pos);
-      pos = _ferret.callMethod('_frjs_tde_next_position', [handle]);
+      pos = _ferret.callFunc('frjs_tde_next_position', [handle]);
     }
   }
 
   /// Skip to the required document number [target] and return `true` if there
   /// is a document >= [target].
   bool skip_to(int target) =>
-      _ferret.callMethod('_frjs_tde_skip_to', [handle, target]);
+      _ferret.callFunc('frjs_tde_skip_to', [handle, target]);
 
   /// Returns a json representation of the term doc enum. It will also add the
   /// term positions if they are available. You can speed this up by having
@@ -357,7 +357,7 @@ class TermDocEnum {
   String to_json({bool fast: false}) {
     const ident = '  ';
     bool do_positions =
-        _ferret.callMethod('_frjs_tde_next_position', [handle]) >= 0;
+        _ferret.callFunc('frjs_tde_next_position', [handle]) >= 0;
 
     var buf = new StringBuffer('[');
     bool loop = next();
@@ -367,10 +367,10 @@ class TermDocEnum {
         buf.write('["${doc()}", ${freq()}');
         if (do_positions) {
           buf.write(", [");
-          int pos = _ferret.callMethod('_frjs_tde_next_position', [handle]);
+          int pos = _ferret.callFunc('frjs_tde_next_position', [handle]);
           while (pos > 0) {
             buf.write('$pos');
-            pos = _ferret.callMethod('_frjs_tde_next_position', [handle]);
+            pos = _ferret.callFunc('frjs_tde_next_position', [handle]);
             if (pos > 0) {
               buf.write(', ');
             }
@@ -381,10 +381,10 @@ class TermDocEnum {
         buf.write('{"term": "${doc()}", "frequency": ${freq()}');
         if (do_positions) {
           buf.write(', "positions": [');
-          int pos = _ferret.callMethod('_frjs_tde_next_position', [handle]);
+          int pos = _ferret.callFunc('frjs_tde_next_position', [handle]);
           while (pos > 0) {
             buf.write('$pos');
-            pos = _ferret.callMethod('_frjs_tde_next_position', [handle]);
+            pos = _ferret.callFunc('frjs_tde_next_position', [handle]);
             if (pos > 0) {
               buf.write(', ');
             }

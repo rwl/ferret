@@ -28,7 +28,6 @@
 library ferret.ext.analysis;
 
 import 'dart:typed_data' show Uint8List;
-
 import '../../ferret.dart';
 
 part 'analyzer.dart';
@@ -96,11 +95,11 @@ class Token implements Comparable {
   Token._handle(Ferret ferret, int h)
       : _ferret = ferret,
         handle = h {
-    int p_text = _ferret.callMethod('_frjs_tk_get_text', [handle]);
+    int p_text = _ferret.callFunc('frjs_tk_get_text', [handle]);
     _text = _ferret.stringify(p_text);
-    _start = _ferret.callMethod('_frjs_tk_get_start', [handle]);
-    _end = _ferret.callMethod('_frjs_tk_get_end', [handle]);
-    _pos_inc = _ferret.callMethod('_frjs_tk_get_pos_inc', [handle]);
+    _start = _ferret.callFunc('frjs_tk_get_start', [handle]);
+    _end = _ferret.callFunc('frjs_tk_get_end', [handle]);
+    _pos_inc = _ferret.callFunc('frjs_tk_get_pos_inc', [handle]);
   }
 
   /// Used to compare two tokens. Token is extended by [Comparable] so you
@@ -129,9 +128,9 @@ class Token implements Comparable {
   }
 
   void _set() {
-    int p_text = _ferret.allocString(_text);
-    _ferret.callMethod(
-        '_frt_tk_set_no_len', [handle, p_text, _start, _end, _pos_inc]);
+    var p_text = _ferret.heapString(_text);
+    _ferret.callFunc(
+        'frt_tk_set_no_len', [handle, p_text, _start, _end, _pos_inc]);
     _ferret.free(p_text);
   }
 
@@ -219,7 +218,7 @@ abstract class TokenStream {
   /// Return the next token from the [TokenStream] or null if there are no
   /// more tokens.
   Token next() {
-    int p_tk = _ferret.callMethod('_frjs_ts_next', [handle]);
+    int p_tk = _ferret.callFunc('frjs_ts_next', [handle]);
     return p_tk != 0 ? new Token._handle(_ferret, p_tk) : null;
   }
 
@@ -228,14 +227,14 @@ abstract class TokenStream {
   ///
   ///     token_stream.text = File.read(file_name);
   void set text(String val) {
-    int p_text = _ferret.allocString(val);
-    _ferret.callMethod('_frjs_ts_set_text', [handle, p_text]);
+    var p_text = _ferret.heapString(val);
+    _ferret.callFunc('frjs_ts_set_text', [handle, p_text]);
 //    free(p_text); FIXME: memory leak?
   }
 
   /// Return the text that the TokenStream is tokenizing.
   String get text {
-    int p_text = _ferret.callMethod('_frjs_ts_get_text', [handle]);
+    int p_text = _ferret.callFunc('frjs_ts_get_text', [handle]);
     return _ferret.stringify(p_text);
   }
 }

@@ -262,38 +262,38 @@ class QueryParser {
 
     if (default_field != null) {
       if (default_field is List) {
-        p_def_fields = ferret.callMethod('_frt_hs_new_ptr', [0]);
+        p_def_fields = ferret.callFunc('frt_hs_new_ptr', [0]);
         for (var field in default_field) {
-          int p_field = ferret.allocString(field.toString());
-          ferret.callMethod('_frt_hs_add', [p_def_fields, p_field]);
+          int p_field = ferret.heapString(field.toString());
+          ferret.callFunc('frt_hs_add', [p_def_fields, p_field]);
         }
       } else {
         var field = default_field.toString();
         if (field != '*') {
-          p_def_fields = ferret.callMethod('_frt_hs_new_ptr', [0]);
-          int p_field = ferret.allocString(field);
-          ferret.callMethod('_frt_hs_add', [p_def_fields, p_field]);
+          p_def_fields = ferret.callFunc('frt_hs_new_ptr', [0]);
+          int p_field = ferret.heapString(field);
+          ferret.callFunc('frt_hs_add', [p_def_fields, p_field]);
         }
       }
     }
 
     if (all_fields != null) {
-      p_all_fields = ferret.callMethod('_frt_hs_new_ptr', [0]);
+      p_all_fields = ferret.callFunc('frt_hs_new_ptr', [0]);
       for (String field in all_fields) {
-        int p_field = ferret.allocString(field);
-        ferret.callMethod('_frt_hs_add', [p_all_fields, p_field]);
+        int p_field = ferret.heapString(field);
+        ferret.callFunc('frt_hs_add', [p_all_fields, p_field]);
       }
     }
 
     if (tokenized_fields != null) {
-      p_tkz_fields = ferret.callMethod('_frt_hs_new_ptr', [0]);
+      p_tkz_fields = ferret.callFunc('frt_hs_new_ptr', [0]);
       for (String field in tokenized_fields) {
-        int p_field = ferret.allocString(field);
-        ferret.callMethod('_frt_hs_add', [p_tkz_fields, p_field]);
+        int p_field = ferret.heapString(field);
+        ferret.callFunc('frt_hs_add', [p_tkz_fields, p_field]);
       }
     }
 
-    int h = ferret.callMethod('_frjs_qp_init', [
+    int h = ferret.callFunc('frjs_qp_init', [
       p_analyzer,
       p_all_fields,
       p_tkz_fields,
@@ -316,22 +316,20 @@ class QueryParser {
   /// Parse a query string returning a [Query] object if parsing was
   /// successful. Will raise a [QueryParseException] if unsuccessful.
   Query parse(String query_string) {
-    int p_str = _ferret.allocString(query_string);
+    int p_str = _ferret.heapString(query_string);
 
-    int pp_msg = _ferret.callMethod('_malloc', [Int32List.BYTES_PER_ELEMENT]);
-    _ferret.callMethod('setValue', [pp_msg, 0, 'i32']);
+    int pp_msg = _ferret.heapInt();
 
-    int p_q = _ferret.callMethod('_frjs_qp_parse', [handle, p_str, pp_msg]);
+    int p_q = _ferret.callFunc('frjs_qp_parse', [handle, p_str, pp_msg]);
     _ferret.free(p_str);
     if (p_q == 0) {
-      int p_msg = _ferret.callMethod('getValue', [pp_msg, 'i32']);
+      int p_msg = _ferret.derefInt(pp_msg);
       var msg = _ferret.stringify(p_msg);
-      _ferret.free(pp_msg);
       throw new QueryParseException(msg);
     }
     _ferret.free(pp_msg);
 
-    int qt_index = _ferret.callMethod('_frjs_q_get_query_type', [p_q]);
+    int qt_index = _ferret.callFunc('frjs_q_get_query_type', [p_q]);
     var qt = QueryType.values[qt_index];
     Query query;
     switch (qt) {
@@ -401,38 +399,38 @@ class QueryParser {
 
   /// Returns the list of all fields that the [QueryParser] knows about.
   List get fields {
-    int p_fields = _ferret.callMethod('_frjs_qp_all_fields', [handle]);
+    int p_fields = _ferret.callFunc('frjs_qp_all_fields', [handle]);
     var a = [];
-    int p_hse = _ferret.callMethod('_frjs_hash_get_first', [p_fields]);
+    int p_hse = _ferret.callFunc('frjs_hash_get_first', [p_fields]);
     while (p_hse != 0) {
-      int p_elem = _ferret.callMethod('_frjs_hash_get_entry_elem', [p_hse]);
+      int p_elem = _ferret.callFunc('frjs_hash_get_entry_elem', [p_hse]);
       a.add(_ferret.stringify(p_elem));
-      p_hse = _ferret.callMethod('_frjs_hash_get_entry_next', [p_hse]);
+      p_hse = _ferret.callFunc('frjs_hash_get_entry_next', [p_hse]);
     }
     return a;
   }
 
   /// Set the list of fields. These fields are expanded for searches on "*".
   void set fields(List flds) {
-    int p_fields = _ferret.callMethod('_frt_hs_new_ptr', [0]);
+    int p_fields = _ferret.callFunc('frt_hs_new_ptr', [0]);
     for (String field in flds) {
-      int p_field = _ferret.allocString(field);
-      _ferret.callMethod('_frt_hs_add', [p_fields, p_field]);
+      int p_field = _ferret.heapString(field);
+      _ferret.callFunc('frt_hs_add', [p_fields, p_field]);
     }
-    _ferret.callMethod('_frjs_qp_set_fields', [handle, p_fields]);
+    _ferret.callFunc('frjs_qp_set_fields', [handle, p_fields]);
   }
 
   /// Returns the list of all tokenized_fields that the [QueryParser] knows
   /// about.
   List get tokenized_fields {
-    int p_fields = _ferret.callMethod('_frjs_qp_tokenized_fields', [handle]);
+    int p_fields = _ferret.callFunc('frjs_qp_tokenized_fields', [handle]);
     var a = [];
     if (p_fields != 0) {
-      int p_hse = _ferret.callMethod('_frjs_hash_get_first', [p_fields]);
+      int p_hse = _ferret.callFunc('frjs_hash_get_first', [p_fields]);
       while (p_hse != 0) {
-        int p_elem = _ferret.callMethod('_frjs_hash_get_entry_elem', [p_hse]);
+        int p_elem = _ferret.callFunc('frjs_hash_get_entry_elem', [p_hse]);
         a.add(_ferret.stringify(p_elem));
-        p_hse = _ferret.callMethod('_frjs_hash_get_entry_next', [p_hse]);
+        p_hse = _ferret.callFunc('frjs_hash_get_entry_next', [p_hse]);
       }
     }
     return a;
@@ -442,12 +440,12 @@ class QueryParser {
   /// in the queries. If this is set to null then all fields will be
   /// tokenized.
   set tokenized_fields(List flds) {
-    int p_fields = _ferret.callMethod('_frt_hs_new_ptr', [0]);
+    int p_fields = _ferret.callFunc('frt_hs_new_ptr', [0]);
     for (String field in flds) {
-      int p_field = _ferret.allocString(field);
-      _ferret.callMethod('_frt_hs_add', [p_fields, p_field]);
+      int p_field = _ferret.heapString(field);
+      _ferret.callFunc('frt_hs_add', [p_fields, p_field]);
     }
-    _ferret.callMethod('_frjs_qp_set_tkz_fields', [handle, p_fields]);
+    _ferret.callFunc('frjs_qp_set_tkz_fields', [handle, p_fields]);
   }
 }
 

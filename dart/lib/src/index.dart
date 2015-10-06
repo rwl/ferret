@@ -138,7 +138,7 @@ class Index {
     //options[:dir] = @dir
     //@options = options
     if (!_dir.exists("segments") || _create) {
-      new IndexWriter(
+      new IndexWriter(_ferret,
           dir: _dir,
           path: _path,
           create_if_missing: _create_if_missing,

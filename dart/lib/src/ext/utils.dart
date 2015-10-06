@@ -55,14 +55,14 @@ class BitVector {
   /// Returns a new empty bit vector object.
   BitVector(Ferret ferret)
       : _ferret = ferret,
-        handle = ferret.callMethod('_frt_bv_new');
+        handle = ferret.callFunc('frt_bv_new');
 
   /// Set the bit at _i_ to *on* (`true`).
   void set(int i) {
     if (i < 0) {
       throw new ArgumentError.value(i);
     }
-    _ferret.callMethod('_frt_bv_set', [handle, i]);
+    _ferret.callFunc('frt_bv_set', [handle, i]);
   }
 
   /// Set the bit at _i_ to *off* (`false`).
@@ -70,7 +70,7 @@ class BitVector {
     if (i < 0) {
       throw new ArgumentError.value(i);
     }
-    _ferret.callMethod('_frjs_bv_unset', [handle, i]);
+    _ferret.callFunc('frjs_bv_unset', [handle, i]);
   }
 
   /// Set the bit and _i_ to *val* (`true` or `false`).
@@ -86,42 +86,42 @@ class BitVector {
   }
 
   /// Get the bit value at _i_.
-  bool get(int i) => _ferret.callMethod('_frt_bv_get', [handle, i]) != 0;
+  bool get(int i) => _ferret.callFunc('frt_bv_get', [handle, i]) != 0;
 
   /// Alias for [get].
   bool operator [](int i) => this.get(i);
 
   /// Count the number of bits set in the bit vector. If the bit vector has
   /// been negated using [not] then count the number of unset bits instead.
-  int count() => _ferret.callMethod('_frjs_bv_count', [handle]);
+  int count() => _ferret.callFunc('frjs_bv_count', [handle]);
 
   /// Clears all set bits in the bit vector. Negated bit vectors will still
   /// have all bits set to *off*.
   void clear() {
-    _ferret.callMethod('_frt_bv_clear', [handle]);
-    _ferret.callMethod('_frt_bv_scan_reset', [handle]);
+    _ferret.callFunc('frt_bv_clear', [handle]);
+    _ferret.callFunc('frt_bv_scan_reset', [handle]);
   }
 
   /// Compares two bit vectors and returns true if both bit vectors have the
   /// same bits set.
   bool eql(BitVector bv2) =>
-      _ferret.callMethod('_frt_bv_eq', [handle, bv2.handle]) != 0;
+      _ferret.callFunc('frt_bv_eq', [handle, bv2.handle]) != 0;
 
   /// Alias for [eql].
   bool operator ==(BitVector bv2) => eql(bv2);
 
   /// Used to store bit vectors in Hashes. Especially useful if you want to
   /// cache them.
-  int hash() => _ferret.callMethod('_frt_bv_hash', [handle]);
+  int hash() => _ferret.callFunc('frt_bv_hash', [handle]);
 
   /// Perform an inplace boolean _and_ operation.
   void andx(BitVector bv2) {
-    _ferret.callMethod('_frjs_bv_and_x', [handle, bv2.handle]);
+    _ferret.callFunc('frjs_bv_and_x', [handle, bv2.handle]);
   }
 
   /// Perform a boolean _and_ operation.
   BitVector and(BitVector bv2) {
-    int h = _ferret.callMethod('_frjs_bv_and', [handle, bv2.handle]);
+    int h = _ferret.callFunc('frjs_bv_and', [handle, bv2.handle]);
     return new BitVector.wrap(_ferret, h);
   }
 
@@ -130,12 +130,12 @@ class BitVector {
 
   /// Perform an inplace boolean _or_ operation.
   void orx(BitVector bv2) {
-    _ferret.callMethod('_frjs_bv_or_x', [handle, bv2.handle]);
+    _ferret.callFunc('frjs_bv_or_x', [handle, bv2.handle]);
   }
 
   /// Perform a boolean _or_ operation.
   BitVector or(BitVector bv2) {
-    int h = _ferret.callMethod('_frjs_bv_or', [handle, bv2.handle]);
+    int h = _ferret.callFunc('frjs_bv_or', [handle, bv2.handle]);
     return new BitVector.wrap(_ferret, h);
   }
 
@@ -144,12 +144,12 @@ class BitVector {
 
   /// Perform an inplace boolean _xor_ operation.
   void xorx(BitVector bv2) {
-    _ferret.callMethod('_frjs_bv_xor_x', [handle, bv2.handle]);
+    _ferret.callFunc('frjs_bv_xor_x', [handle, bv2.handle]);
   }
 
   /// Perform a boolean _or_ operation.
   BitVector xor(BitVector bv2) {
-    int h = _ferret.callMethod('_frjs_bv_xor', [handle, bv2.handle]);
+    int h = _ferret.callFunc('frjs_bv_xor', [handle, bv2.handle]);
     return new BitVector.wrap(_ferret, h);
   }
 
@@ -158,12 +158,12 @@ class BitVector {
 
   /// Perform an inplace boolean _not_ operation.
   void notx() {
-    _ferret.callMethod('_frjs_bv_not_x', [handle]);
+    _ferret.callFunc('frjs_bv_not_x', [handle]);
   }
 
   /// Perform a boolean _not_ operation.
   BitVector not() {
-    int h = _ferret.callMethod('_frjs_bv_not', [handle]);
+    int h = _ferret.callFunc('frjs_bv_not', [handle]);
     return new BitVector.wrap(_ferret, h);
   }
 
@@ -174,21 +174,21 @@ class BitVector {
   /// before calling [next] or [next_unset]. It isn't necessary for the other
   /// scan methods or for the [each] method.
   void reset_scan() {
-    _ferret.callMethod('_frt_bv_scan_reset', [handle]);
+    _ferret.callFunc('frt_bv_scan_reset', [handle]);
   }
 
   /// Returns the next set bit in the bit vector scanning from low order to
   /// high order. You should call [reset_scan] before calling this method if
   /// you want to scan from the beginning. It is automatically reset when you
   /// first create the bit vector.
-  int next() => _ferret.callMethod('_frt_bv_scan_next', [handle]);
+  int next() => _ferret.callFunc('frt_bv_scan_next', [handle]);
 
   /// Returns the next unset bit in the bit vector scanning from low order to
   /// high order. This method should only be called on bit vectors which have
   /// been flipped (negated). You should call [reset_scan] before calling this
   /// method if you want to scan from the beginning. It is automatically reset
   /// when you first create the bit vector.
-  int next_unset() => _ferret.callMethod('_frjs_bv_scan_next_unset', [handle]);
+  int next_unset() => _ferret.callFunc('frjs_bv_scan_next_unset', [handle]);
 
   /// Returns the next set bit in the bit vector scanning from low order to
   /// high order and starting at [from]. The scan is inclusive so if [from] is
@@ -199,7 +199,7 @@ class BitVector {
     if (from < 0) {
       from = 0;
     }
-    return _ferret.callMethod('_frt_bv_scan_next_from', [handle, from]);
+    return _ferret.callFunc('frt_bv_scan_next_from', [handle, from]);
   }
 
   /// Returns the next unset bit in the bit vector scanning from low order to
@@ -211,7 +211,7 @@ class BitVector {
     if (from < 0) {
       from = 0;
     }
-    return _ferret.callMethod('_frjs_bv_scan_next_unset_from', [handle, from]);
+    return _ferret.callFunc('frjs_bv_scan_next_unset_from', [handle, from]);
   }
 
   /// Iterate through all the set bits in the bit vector yielding each one in
@@ -220,7 +220,7 @@ class BitVector {
     var bit;
     reset_scan();
     bool extends_as_ones =
-        _ferret.callMethod('_frjs_bv_extends_as_ones', [handle]) != 0;
+        _ferret.callFunc('frjs_bv_extends_as_ones', [handle]) != 0;
     if (extends_as_ones) {
       while ((bit = next_unset()) >= 0) {
         fn(bit);
@@ -240,7 +240,7 @@ class BitVector {
     var a = <int>[];
     reset_scan();
     bool extends_as_ones =
-        _ferret.callMethod('_frjs_bv_extends_as_ones', [handle]) != 0;
+        _ferret.callFunc('frjs_bv_extends_as_ones', [handle]) != 0;
     if (extends_as_ones) {
       while ((bit = next_unset()) >= 0) {
         a.add(bit);
@@ -295,27 +295,24 @@ class MultiMapper {
   /// Note that MultiMapper is immutable.
   MultiMapper(Ferret ferret, Map<List<String>, String> mappings)
       : _ferret = ferret,
-        handle = ferret.callMethod('_frt_mulmap_new') {
+        handle = ferret.callFunc('frt_mulmap_new') {
     mappings.forEach((from, to) {
       from.forEach((fr) {
-        int p_pattern = _ferret.allocString(fr);
-        int p_rep = _ferret.allocString(to);
-        _ferret.callMethod(
-            '_frt_mulmap_add_mapping', [handle, p_pattern, p_rep]);
+        int p_pattern = _ferret.heapString(fr);
+        int p_rep = _ferret.heapString(to);
+        _ferret.callFunc('frt_mulmap_add_mapping', [handle, p_pattern, p_rep]);
         _ferret.free(p_pattern);
         _ferret.free(p_rep);
       });
     });
-    _ferret.callMethod('_frt_mulmap_compile', [handle]);
+    _ferret.callFunc('frt_mulmap_compile', [handle]);
   }
 
   /// Performs all the mappings on the string.
   String map(String from) {
-    int p_from = _ferret.allocString(from);
-    int p_to = _ferret.callMethod('_frt_mulmap_dynamic_map', [handle, p_from]);
-    var to = _ferret.stringify(p_to);
-    _ferret.free(p_to);
-    return to;
+    int p_from = _ferret.heapString(from);
+    int p_to = _ferret.callFunc('frt_mulmap_dynamic_map', [handle, p_from]);
+    return _ferret.stringify(p_to);
   }
 }
 

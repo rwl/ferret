@@ -39,37 +39,39 @@ abstract class Directory {
 
   /// Return true if a file with the name [file_name] exists in the directory.
   bool exists(String file_name) {
-    int p_fname = _ferret.allocString(file_name);
-    int retval = _ferret.callMethod('_frjs_dir_exists', [handle, p_fname]);
+    int p_fname = _ferret.heapString(file_name);
+    int retval = _ferret.callFunc('frjs_dir_exists', [handle, p_fname]);
     _ferret.free(p_fname);
     return 0 != retval;
   }
 
   /// Create an empty file in the directory with the name [file_name].
   void touch(String file_name) {
-    int p_fname = _ferret.allocString(file_name);
-    _ferret.callMethod('_frjs_dir_touch', [handle, p_fname]);
+    int p_fname = _ferret.heapString(file_name);
+    _ferret.callFunc('frjs_dir_touch', [handle, p_fname]);
     _ferret.free(p_fname);
   }
 
   /// Remove file [file_name] from the directory. Returns true if successful.
   bool delete(String file_name) {
-    int p_fname = _ferret.allocString(file_name);
-    return _ferret.callMethod('_frjs_dir_delete', [handle, p_fname]) != 0;
+    int p_fname = _ferret.heapString(file_name);
+    int succ = _ferret.callFunc('frjs_dir_delete', [handle, p_fname]);
+    _ferret.free(p_fname);
+    return succ != 0;
   }
 
   /// Return a count of the number of files in the directory.
-  int file_count() => _ferret.callMethod('_frjs_dir_file_count', [handle]);
+  int file_count() => _ferret.callFunc('frjs_dir_file_count', [handle]);
 
   /// Delete all files in the directory. It gives you a clean slate.
-  void refresh() => _ferret.callMethod('_frjs_dir_refresh', [handle]);
+  void refresh() => _ferret.callFunc('frjs_dir_refresh', [handle]);
 
   /// Rename a file from [from] to [to]. An error will be raised if the file
   /// doesn't exist or there is some other type of IOError.
   void rename(String from, String to) {
-    int p_from = _ferret.allocString(from);
-    int p_to = _ferret.allocString(to);
-    _ferret.callMethod('_frjs_dir_rename', [handle, p_from, p_to]);
+    int p_from = _ferret.heapString(from);
+    int p_to = _ferret.heapString(to);
+    _ferret.callFunc('frjs_dir_rename', [handle, p_from, p_to]);
     _ferret.free(p_from);
     _ferret.free(p_to);
   }
@@ -79,8 +81,8 @@ abstract class Directory {
   /// you. You should avoid using files with a `.lck` extension as this
   /// extension is reserved for lock files.
   Lock make_lock(String lock_name) {
-    int p_name = _ferret.allocString(lock_name);
-    int p_lock = _ferret.callMethod('_frt_open_lock', [handle]);
+    int p_name = _ferret.heapString(lock_name);
+    int p_lock = _ferret.callFunc('frt_open_lock', [handle]);
     _ferret.free(p_name);
     return new Lock._handle(_ferret, p_lock);
   }
@@ -123,9 +125,9 @@ class Lock {
   /// Returns `true` if lock was successfully obtained. Raises a [LockError]
   /// otherwise.
   bool obtain({double timeout: 1.0}) {
-    int success = _ferret.callMethod('_frjs_lock_obtain', [handle]);
+    int success = _ferret.callFunc('frjs_lock_obtain', [handle]);
     if (success == 0) {
-      int p_name = _ferret.callMethod('_frjs_lock_get_name', [handle]);
+      int p_name = _ferret.callFunc('frjs_lock_get_name', [handle]);
       var name = _ferret.stringify(p_name);
       throw new LockError._("could not obtain lock: $name");
     }
@@ -146,10 +148,10 @@ class Lock {
 
   /// Release the lock. This should only be called by the process which
   /// obtains the lock.
-  void release() => _ferret.callMethod('_frjs_lock_release', [handle]);
+  void release() => _ferret.callFunc('frjs_lock_release', [handle]);
 
   /// Returns `true` if the lock has been obtained.
-  bool locked() => _ferret.callMethod('_frjs_lock_is_locked', [handle]) != 0;
+  bool locked() => _ferret.callFunc('frjs_lock_is_locked', [handle]) != 0;
 }
 
 class LockError implements Exception {
@@ -170,12 +172,12 @@ class RAMDirectory extends Directory {
   /// into memory. This may be useful to speed up search performance but
   /// usually the speedup won't be worth the trouble. Be sure to benchmark.
   factory RAMDirectory(Ferret ferret, {Directory dir: null}) {
-    //handle = _ferret.callMethod('_frjs_ramdir_init');
+    //handle = _ferret.callFunc('frjs_ramdir_init');
     int h;
     if (dir != null) {
-      h = ferret.callMethod('_frt_open_ram_store_and_copy', [dir.handle, 0]);
+      h = ferret.callFunc('frt_open_ram_store_and_copy', [dir.handle, 0]);
     } else {
-      h = ferret.callMethod('_frt_open_ram_store');
+      h = ferret.callFunc('frt_open_ram_store');
     }
     return new RAMDirectory._(ferret, h);
   }

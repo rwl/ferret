@@ -33,7 +33,7 @@ class Searcher {
 //  Searcher.dir(String path) {}
 
   factory Searcher.store(Ferret ferret, Directory dir) {
-    int p_ir = ferret.callMethod('_frt_ir_open', [dir.handle]);
+    int p_ir = ferret.callFunc('frt_ir_open', [dir.handle]);
     return new Searcher._(ferret, p_ir);
   }
 
@@ -43,27 +43,26 @@ class Searcher {
 
   Searcher._(Ferret ferret, int p_ir)
       : _ferret = ferret,
-        handle = ferret.callMethod('_frt_isea_new', [p_ir]) {
-    ferret.callMethod('_frjs_searcher_set_close_ir', [handle, 0]);
+        handle = ferret.callFunc('frt_isea_new', [p_ir]) {
+    ferret.callFunc('frjs_searcher_set_close_ir', [handle, 0]);
   }
 
   /// Close the searcher. The garbage collector will do this for you or you can
   /// call this method explicitly.
-  void close() => _ferret.callMethod('_frjs_sea_close', [handle]);
+  void close() => _ferret.callFunc('frjs_sea_close', [handle]);
 
   /// Return the [IndexReader] wrapped by this searcher.
   IndexReader get reader {
-    int p_ir = _ferret.callMethod('_frjs_sea_get_reader', [handle]);
+    int p_ir = _ferret.callFunc('frjs_sea_get_reader', [handle]);
     return new IndexReader.wrap(_ferret, p_ir);
   }
 
   /// Return the number of documents in which the term [term] appears in the
   /// field [field].
   int doc_freq(String field, String term) {
-    int p_field = _ferret.allocString(field);
-    int p_term = _ferret.allocString(term);
-    int freq =
-        _ferret.callMethod('_frjs_sea_doc_freq', [handle, p_field, p_term]);
+    int p_field = _ferret.heapString(field);
+    int p_term = _ferret.heapString(term);
+    int freq = _ferret.callFunc('frjs_sea_doc_freq', [handle, p_field, p_term]);
     _ferret.free(p_field);
     _ferret.free(p_term);
     return freq;
@@ -73,7 +72,7 @@ class Searcher {
   /// the document returned. Documents are referenced internally by document
   /// ids which are returned by the Searchers search methods.
   LazyDoc get_document(int doc_id) {
-    int p_ld = _ferret.callMethod('_frjs_sea_doc', [handle, doc_id]);
+    int p_ld = _ferret.callFunc('frjs_sea_doc', [handle, doc_id]);
     return new LazyDoc.wrap(_ferret, p_ld);
   }
 
@@ -84,7 +83,7 @@ class Searcher {
   /// document_id that will be used by the next document added to the index.
   /// If there are no deletions, this number also refers to the number of
   /// documents in the index.
-  int max_doc() => _ferret.callMethod('_frjs_sea_max_doc', [handle]);
+  int max_doc() => _ferret.callFunc('frjs_sea_max_doc', [handle]);
 
   /// Run a query through the [Searcher] on the index. A [TopDocs] object is
   /// returned with the relevant results. The [query] is a built in [Query]
@@ -124,7 +123,7 @@ class Searcher {
     if (limit == 0 || limit < -1) {
       throw new ArgumentError.value(limit, 'limit');
     }
-    int p_td = _ferret.callMethod('_frjs_sea_search',
+    int p_td = _ferret.callFunc('frjs_sea_search',
         [handle, query.handle, offset, limit, filter.handle, sort.handle]);
     return new TopDocs._module(_ferret, p_td, this);
   }
@@ -212,19 +211,13 @@ class Searcher {
     if (limit <= 0) {
       throw new ArgumentError("limit must be > 0");
     }
-    int p_count = _ferret.callMethod('_malloc', [Int32List.BYTES_PER_ELEMENT]);
-    _ferret.callMethod('setValue', [p_count, 0, 'i32']);
+    int p_count = _ferret.heapInt();
 
-    int p_array = _ferret.callMethod(
-        '_frjs_sea_scan', [handle, query.handle, start_doc, limit, p_count]);
+    int p_array = _ferret.callFunc(
+        'frjs_sea_scan', [handle, query.handle, start_doc, limit, p_count]);
 
-    int count = _ferret.callMethod('getValue', [p_count, 'i32']);
-    _ferret.free(p_count);
-
-    var array = new List<int>.from(
-        _ferret.callMethod('getInt32Array', [p_array, count]));
-    _ferret.free(p_array);
-    return array;
+    int count = _ferret.derefInt(p_count);
+    return _ferret.derefInts(p_array, count);
   }
 
   /// Create an explanation object to explain the score returned for a
@@ -233,7 +226,7 @@ class Searcher {
   ///     print(searcher.explain(query, doc_id).to_s());
   Explanation explain(Query query, int doc_id) {
     int p_expl =
-        _ferret.callMethod('_frjs_sea_explain', [handle, query.handle, doc_id]);
+        _ferret.callFunc('frjs_sea_explain', [handle, query.handle, doc_id]);
     return new Explanation._handle(_ferret, p_expl);
   }
 
@@ -260,15 +253,14 @@ class Searcher {
     if (excerpt_length == -1) {
       excerpt_length = 65536 ~/ 2;
     }
-    int p_field = _ferret.allocString(field);
-    int p_pre_tag = _ferret.allocString(pre_tag);
-    int p_post_tag = _ferret.allocString(post_tag);
-    int p_ellipsis = _ferret.allocString(ellipsis);
+    int p_field = _ferret.heapString(field);
+    int p_pre_tag = _ferret.heapString(pre_tag);
+    int p_post_tag = _ferret.heapString(post_tag);
+    int p_ellipsis = _ferret.heapString(ellipsis);
 
-    int p_size = _ferret.callMethod('_malloc', [Int32List.BYTES_PER_ELEMENT]);
-    _ferret.callMethod('setValue', [p_size, 0, 'i32']);
+    int p_size = _ferret.heapInt();
 
-    int pp_high = _ferret.callMethod('_frjs_sea_highlight', [
+    int pp_high = _ferret.callFunc('frjs_sea_highlight', [
       handle,
       query.handle,
       doc_id,
@@ -281,20 +273,12 @@ class Searcher {
       p_size
     ]);
 
-    int size = _ferret.callMethod('getValue', [p_size, 'i32']);
-    _ferret.free(p_size);
+    int size = _ferret.derefInt(p_size);
 
     if (pp_high == 0) {
       return null;
     }
-    var p_high = _ferret.callMethod('getUint8List', [pp_high, size]);
-    var high = new List<String>(size);
-    for (var i = 0; i < size; i++) {
-      high[i] = _ferret.stringify(p_high[i]);
-      _ferret.free(p_high[i]);
-    }
-    _ferret.free(pp_high);
-    return high;
+    return _ferret.derefStrings(pp_high, size);
   }
 }
 
@@ -309,16 +293,9 @@ class MultiSearcher extends Searcher {
   /// constructor.
   factory MultiSearcher(Ferret ferret, List<Searcher> searchers) {
     int top = searchers.length;
-    int p_seas =
-        ferret.callMethod('_malloc', [Uint8List.BYTES_PER_ELEMENT * top]);
-    for (int i = 0; i < top; i++) {
-      ferret.callMethod('setValue', [
-        p_seas + (i * Uint8List.BYTES_PER_ELEMENT),
-        searchers[i].handle,
-        'i8'
-      ]);
-    }
-    int h = ferret.callMethod('_frt_msea_new', [p_seas, top, 0]);
+    Int32List s = new Int32List.fromList(searchers.map((s) => s.handle));
+    int p_seas = ferret.heapInts(s);
+    int h = ferret.callFunc('frt_msea_new', [p_seas, top, 0]);
     ferret.free(p_seas);
     return new MultiSearcher._(ferret, h);
   }

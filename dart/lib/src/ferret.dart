@@ -1,19 +1,13 @@
 library ferret.module;
 
 import 'dart:js' as js;
+import 'package:emscripten/emscripten.dart';
 import './ext/search/search.dart' show SortField, Sort;
 
-class Ferret {
-  /// Emscripten module.
-  final js.JsObject module;
-
+class Ferret extends Module {
   Ferret({String moduleName: 'Ferret', js.JsObject context})
-      : module = (context == null ? js.context : context)[moduleName] {
-    if (module == null) {
-      throw new ArgumentError.notNull('Ferret module');
-    }
-
-    module.callMethod('_frjs_init');
+      : super(context: context, moduleName: moduleName) {
+    callFunc('frjs_init');
 
     SortField.SCORE =
         new SortField.wrap(this, module.callMethod('_frjs_sort_field_score'));
@@ -28,40 +22,26 @@ class Ferret {
     Sort.INDEX_ORDER = new Sort(this, sort_fields: [SortField.DOC]);
   }
 
-  callMethod(String method, [List args]) => module.callMethod(method, args);
-
-  int allocString(String s) {
-    if (s == null) {
-      return 0;
-    }
-    var ptr = module.callMethod('_malloc', [s.length + 1]);
-    module.callMethod('writeStringToMemory', [s, ptr]);
-    return ptr;
-  }
-
-  void free(int ptr) => module.callMethod('_free', [ptr]);
-
-  String stringify(int ptr, [int len]) {
-    var args = [ptr];
-    if (len != null) {
-      args.add(len);
-    }
-    return module.callMethod('Pointer_stringify', args);
-  }
-
   /// Returns a string corresponding to the locale set. For example:
   ///
   ///     get_locale() //=> "en_US.UTF-8"
   String get_locale() {
-    int p_l = module.callMethod('_frjs_get_locale');
-    return stringify(p_l);
+    var p_l = callFunc('frjs_get_locale');
+    return stringify(p_l, false);
   }
 
   /// Set the global locale. You should use this method to set different locales
   /// when indexing documents with different encodings.
   void set_locale(String locale) {
-    int p_l = allocString(locale);
-    module.callMethod('_frjs_set_locale', [p_l]);
+    var p_l = heapString(locale);
+    callFunc('frjs_set_locale', [p_l]);
     //free(p_l); FIXME: mem leak?
+  }
+
+  int intern(String name) {
+    int p_field = heapString(name);
+    int symbol = callFunc('frt_intern', [p_field]);
+    free(p_field);
+    return symbol;
   }
 }

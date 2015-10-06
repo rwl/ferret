@@ -22,8 +22,8 @@ class Hit {
   final int doc;
   final double score;
   Hit._handle(Ferret ferret, int handle)
-      : doc = ferret.callMethod('_frjs_hit_get_doc', [handle]),
-        score = ferret.callMethod('_frjs_hit_get_score', [handle]);
+      : doc = ferret.callFunc('frjs_hit_get_doc', [handle]),
+        score = ferret.callFunc('frjs_hit_get_score', [handle]);
 }
 
 /// A [TopDocs] object holds a result set for a search. The number of
@@ -46,14 +46,14 @@ class TopDocs {
   Searcher searcher;
 
   TopDocs._module(Ferret ferret, int handle, this.searcher) {
-    int sz = ferret.callMethod('_frjs_td_get_size', [handle]);
+    int sz = ferret.callFunc('frjs_td_get_size', [handle]);
     hits = new List<Hit>(sz);
     for (var i = 0; i < sz; i++) {
-      int p_hit = ferret.callMethod('_frjs_td_get_hit', [handle, i]);
+      int p_hit = ferret.callFunc('frjs_td_get_hit', [handle, i]);
       hits[i] = new Hit._handle(ferret, p_hit);
     }
-    total_hits = ferret.callMethod('_frjs_td_get_total_hits', [handle]);
-    max_score = ferret.callMethod('_frjs_td_get_max_score', [handle]);
+    total_hits = ferret.callFunc('frjs_td_get_total_hits', [handle]);
+    max_score = ferret.callFunc('frjs_td_get_max_score', [handle]);
   }
 
   /// Returns a string representation of the top_doc in readable format.
@@ -118,23 +118,19 @@ class Explanation {
 
   /// Returns a string representation of the explanation in readable format.
   String to_s() {
-    int p_s = _ferret.callMethod('_frt_expl_to_s_depth', [handle, 0]);
-    var s = _ferret.stringify(p_s);
-    _ferret.free(p_s);
-    return s;
+    int p_s = _ferret.callFunc('frt_expl_to_s_depth', [handle, 0]);
+    return _ferret.stringify(p_s);
   }
 
   /// Returns an html representation of the explanation in readable format.
   String to_html() {
-    int p_html = _ferret.callMethod('_frt_expl_to_html', [handle]);
-    var html = _ferret.stringify(p_html);
-    _ferret.free(p_html);
-    return html;
+    int p_html = _ferret.callFunc('frt_expl_to_html', [handle]);
+    return _ferret.stringify(p_html);
   }
 
   /// Returns the score represented by the query. This can be used for
   /// debugging purposes mainly to check that the score returned by the
   /// explanation matches that of the score for the document in the original
   /// query.
-  double score() => _ferret.callMethod('_frjs_expl_get_score', [handle]);
+  double score() => _ferret.callFunc('frjs_expl_get_score', [handle]);
 }

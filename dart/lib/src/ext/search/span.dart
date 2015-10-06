@@ -14,11 +14,9 @@ class SpanTermQuery extends Query {
   /// Create a new [SpanTermQuery] which matches all documents with the term
   /// [term] in the field [field].
   factory SpanTermQuery(Ferret ferret, field, term) {
-    int p_field = ferret.allocString(field);
-    int symbol = ferret.callMethod('_frt_intern', [p_field]);
-    int p_term = ferret.allocString(term);
-    int h = ferret.callMethod('_frt_spantq_new', [symbol, p_term]);
-    ferret.free(p_field);
+    int symbol = ferret.intern(field);
+    int p_term = ferret.heapString(term);
+    int h = ferret.callFunc('frt_spantq_new', [symbol, p_term]);
     ferret.free(p_term);
     return new SpanTermQuery.handle(ferret, h);
   }
@@ -33,13 +31,11 @@ class SpanMultiTermQuery extends Query {
   /// Create a new [SpanMultiTermQuery] which matches all documents with the
   /// terms [terms] in the field [field].
   factory SpanMultiTermQuery(Ferret ferret, field, List<String> terms) {
-    int p_field = ferret.allocString(field);
-    int symbol = ferret.callMethod('_frt_intern', [p_field]);
-    int h = ferret.callMethod('_frt_spanmtq_new', [symbol]);
-    ferret.free(p_field);
+    int symbol = ferret.intern(field);
+    int h = ferret.callFunc('frt_spanmtq_new', [symbol]);
     for (var term in terms) {
-      int p_term = ferret.allocString(term);
-      ferret.callMethod('_frt_spanmtq_add_term', [h, p_term]);
+      int p_term = ferret.heapString(term);
+      ferret.callFunc('frt_spanmtq_add_term', [h, p_term]);
       ferret.free(p_term);
     }
     return new SpanMultiTermQuery.handle(ferret, h);
@@ -56,12 +52,10 @@ class SpanPrefixQuery extends Query {
   /// prefix [prefix] in the field [field].
   factory SpanPrefixQuery(Ferret ferret, String field, String prefix,
       {int max_terms: 256}) {
-    int p_field = ferret.allocString(field);
-    int symbol = ferret.callMethod('_frt_intern', [p_field]);
-    int p_prefix = ferret.allocString(prefix);
-    int h = ferret.callMethod('_frt_spanprq_new', [symbol, p_prefix]);
-    ferret.callMethod('_frjs_spq_set_max_terms', [h, max_terms]);
-    ferret.free(p_field);
+    int symbol = ferret.intern(field);
+    int p_prefix = ferret.heapString(prefix);
+    int h = ferret.callFunc('frt_spanprq_new', [symbol, p_prefix]);
+    ferret.callFunc('frjs_spq_set_max_terms', [h, max_terms]);
     ferret.free(p_prefix);
     return new SpanPrefixQuery.handle(ferret, h);
   }
@@ -85,7 +79,7 @@ class SpanFirstQuery extends Query {
   /// start of the field.
   SpanFirstQuery(Ferret ferret, Query span_query, int end)
       : super._(ferret,
-            ferret.callMethod('_frt_spanfq_new', [span_query.handle, end]));
+            ferret.callFunc('frt_spanfq_new', [span_query.handle, end]));
 }
 
 /// A [SpanNearQuery] is like a combination between a [PhraseQuery] and a
@@ -140,7 +134,7 @@ class SpanNearQuery extends Query {
   SpanNearQuery(Ferret ferret,
       {List<Query> clauses, int slop: 0, bool in_order: false})
       : super._(ferret,
-            ferret.callMethod('_frt_spannq_new', [slop, in_order ? 1 : 0])) {
+            ferret.callFunc('frt_spannq_new', [slop, in_order ? 1 : 0])) {
     for (var clause in clauses) {
       this.add(clause);
     }
@@ -150,7 +144,7 @@ class SpanNearQuery extends Query {
   /// they are added to the query which is important for matching. Note that
   /// clauses must be SpanQueries, not other types of query.
   void add(Query span_query) {
-    _ferret.callMethod('_frt_spannq_add_clause', [handle, span_query.handle]);
+    _ferret.callFunc('frt_spannq_add_clause', [handle, span_query.handle]);
   }
 
   /// Alias for [add].
@@ -192,7 +186,7 @@ class SpanOrQuery extends Query {
   /// clauses with the occur value of `should`. The difference is that it can
   /// be passed to other SpanQuerys like [SpanNearQuery].
   SpanOrQuery(Ferret ferret, [List<Query> clauses])
-      : super._(ferret, ferret.callMethod('_frt_spanoq_new')) {
+      : super._(ferret, ferret.callFunc('frt_spanoq_new')) {
     for (var clause in clauses) {
       this.add(clause);
     }
@@ -201,7 +195,7 @@ class SpanOrQuery extends Query {
   /// Add a clause to the [SpanOrQuery]. Note that clauses must be SpanQueries,
   /// not other types of query.
   void add(Query span_query) {
-    _ferret.callMethod('_frt_spanoq_add_clause', [handle, span_query.handle]);
+    _ferret.callFunc('frt_spanoq_add_clause', [handle, span_query.handle]);
   }
 
   /// Alias for [add].
@@ -229,6 +223,6 @@ class SpanNotQuery extends Query {
   SpanNotQuery(Ferret ferret, Query include_query, Query exclude_query)
       : super._(
             ferret,
-            ferret.callMethod('_frt_spanxq_new',
+            ferret.callFunc('frt_spanxq_new',
                 [include_query.handle, exclude_query.handle]));
 }

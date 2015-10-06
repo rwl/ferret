@@ -1,6 +1,8 @@
 name: ferret
 dependencies:
   browser: any
+  emscripten:
+    path: /home/rwl/dart/emscripten
   test: any
   yaml: any
 dev_dependencies:

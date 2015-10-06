@@ -13,11 +13,9 @@
 library ferret.ext.index;
 
 import 'dart:collection' show MapBase, MapMixin;
-import 'dart:js' as js;
 
 import '../../ferret.dart';
 import '../analysis/analysis.dart' as analysis;
-import '../search/search.dart' show SortField;
 import '../store.dart' show Directory;
 
 part 'field_info.dart';
@@ -25,20 +23,3 @@ part 'lazy_doc.dart';
 part 'reader.dart';
 part 'term.dart';
 part 'writer.dart';
-
-//void initFerret({String moduleName: 'Ferret', js.JsObject context}) {
-//  js.JsObject module = (context == null ? js.context : context)[moduleName];
-//  if (module == null) {
-//    throw new ArgumentError.notNull('Ferret module');
-//  }
-//  module.callMethod('_frjs_init');
-//
-//  SortField.SCORE =
-//      new SortField.handle(module.callMethod('_frjs_sort_field_score'));
-//  SortField.SCORE_REV =
-//      new SortField.handle(module.callMethod('_frjs_sort_field_score_rev'));
-//  SortField.DOC =
-//      new SortField.handle(module.callMethod('_frjs_sort_field_doc'));
-//  SortField.DOC_REV =
-//      new SortField.handle(module.callMethod('_frjs_sort_field_doc_rev'));
-//}

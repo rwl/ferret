@@ -39,22 +39,20 @@ abstract class Query {
   /// you began with. This can be a good way to explore how the [QueryParser]
   /// works.
   String to_s([String field]) {
-    int p_field = _ferret.allocString(field);
-    int p_str = _ferret.callMethod('_frjs_q_to_s', [handle, p_field]);
-    var str = _ferret.stringify(p_str);
+    int p_field = _ferret.heapString(field);
+    int p_str = _ferret.callFunc('frjs_q_to_s', [handle, p_field]);
     _ferret.free(p_field);
-    _ferret.free(p_str);
-    return str;
+    return _ferret.stringify(p_str);
   }
 
   /// Returns the queries boost value. See the [Query] description for more
   /// information on [Query] boosts.
-  double get boost => _ferret.callMethod('_frjs_q_get_boost', [handle]);
+  double get boost => _ferret.callFunc('frjs_q_get_boost', [handle]);
 
   /// Set the boost for a query. See the [Query] description for more
   /// information on [Query] boosts.
   void set boost(double b) {
-    _ferret.callMethod('_frjs_q_set_boost', [handle, b]);
+    _ferret.callFunc('frjs_q_set_boost', [handle, b]);
   }
 
   /// Return true if query equals [other_query]. Theoretically, two queries
@@ -65,14 +63,14 @@ abstract class Query {
   /// for example, although their result sets will be identical. Most queries
   /// should match as expected however.
   bool eql(Query other_query) =>
-      _ferret.callMethod('_frjs_q_eql', [handle, other_query.handle]) != 0;
+      _ferret.callFunc('frjs_q_eql', [handle, other_query.handle]) != 0;
 
   /// Alias for [eql].
   bool operator ==(Query other_query) => eql(other_query);
 
   /// Return a hash value for the query. This is used for caching query results
   /// in a hash object.
-  int hash() => _ferret.callMethod('_frjs_q_hash', [handle]);
+  int hash() => _ferret.callFunc('frjs_q_hash', [handle]);
 
   /// Returns an array of terms searched for by this query. This can be used
   /// for implementing an external query highlighter for example. You must
@@ -80,22 +78,22 @@ abstract class Query {
   /// it would be in a real search.
   List<Term> terms(Searcher searcher) {
     int p_terms =
-        _ferret.callMethod('_frjs_q_get_terms', [handle, searcher.handle]);
+        _ferret.callFunc('frjs_q_get_terms', [handle, searcher.handle]);
 
     var terms = <Term>[];
-    int p_hse = _ferret.callMethod('_frjs_hash_get_first', [p_terms]);
+    int p_hse = _ferret.callFunc('frjs_hash_get_first', [p_terms]);
     while (p_hse != 0) {
-      int p_term = _ferret.callMethod('_frjs_hash_get_entry_elem', [p_hse]);
+      int p_term = _ferret.callFunc('frjs_hash_get_entry_elem', [p_hse]);
 
-      int p_field = _ferret.callMethod('_frjs_term_get_field', [p_term]);
-      int p_text = _ferret.callMethod('_frjs_term_get_text', [p_term]);
+      int p_field = _ferret.callFunc('frjs_term_get_field', [p_term]);
+      int p_text = _ferret.callFunc('frjs_term_get_text', [p_term]);
 
-      terms.add(
-          new Term._(_ferret.stringify(p_field), _ferret.stringify(p_text)));
+      terms.add(new Term._(
+          _ferret.stringify(p_field, false), _ferret.stringify(p_text, false)));
 
-      p_hse = _ferret.callMethod('_frjs_hash_get_entry_next', [p_hse]);
+      p_hse = _ferret.callFunc('frjs_hash_get_entry_next', [p_hse]);
     }
-    _ferret.callMethod('_frt_hs_destroy', [p_terms]);
+    _ferret.callFunc('frt_hs_destroy', [p_terms]);
     return terms;
   }
 }
@@ -126,11 +124,9 @@ class TermQuery extends Query {
   /// Create a new [TermQuery] object which will match all documents with the
   /// term [term] in the field [field].
   factory TermQuery(Ferret ferret, String field, String term) {
-    int p_field = ferret.allocString(field);
-    int symbol = ferret.callMethod('_frt_intern', [p_field]);
-    int p_term = ferret.allocString(term);
-    int h = ferret.callMethod('_frt_tq_new', [symbol, p_term]);
-    ferret.free(p_field);
+    int symbol = ferret.intern(field);
+    int p_term = ferret.heapString(term);
+    int h = ferret.callFunc('frt_tq_new', [symbol, p_term]);
     ferret.free(p_term);
     return new TermQuery.handle(ferret, h);
   }
@@ -178,11 +174,9 @@ class MultiTermQuery extends Query {
     if (max_terms == null) {
       max_terms = default_max_terms;
     }
-    int p_field = ferret.allocString(field);
-    int symbol = ferret.callMethod('_frt_intern', [p_field]);
-    int h = ferret.callMethod(
-        '_frt_multi_tq_new_conf', [symbol, max_terms, min_score]);
-    ferret.free(p_field);
+    int symbol = ferret.intern(field);
+    int h = ferret.callFunc(
+        'frt_multi_tq_new_conf', [symbol, max_terms, min_score]);
     return new MultiTermQuery.handle(ferret, h);
   }
 
@@ -197,8 +191,8 @@ class MultiTermQuery extends Query {
   /// Add a term to the [MultiTermQuery] with the score 1.0 unless specified
   /// otherwise.
   void add_term(String term, [double score = 1.0]) {
-    int p_term = _ferret.allocString(term);
-    _ferret.callMethod('_multi_tq_add_term_boost', [handle, p_term, score]);
+    int p_term = _ferret.heapString(term);
+    _ferret.callFunc('multi_tq_add_term_boost', [handle, p_term, score]);
     _ferret.free(p_term);
   }
 
@@ -229,8 +223,7 @@ class BooleanClause {
   BooleanClause(Ferret ferret, Query query, {BCType occur: BCType.SHOULD})
       : _ferret = ferret,
         query = query,
-        handle =
-            ferret.callMethod('_frjs_bc_init', [query.handle, occur.index]) {
+        handle = ferret.callFunc('frjs_bc_init', [query.handle, occur.index]) {
     _occur = occur;
   }
 
@@ -244,18 +237,17 @@ class BooleanClause {
 
   /// Return `true` if this clause is required. ie, this will be true if occur
   /// was equal to `must`.
-  bool required() => _ferret.callMethod('_frjs_bc_is_required', [handle]) != 0;
+  bool required() => _ferret.callFunc('frjs_bc_is_required', [handle]) != 0;
 
   /// Return `true` if this clause is prohibited. ie, this will be true if
   /// occur was equal to `must_not`.
-  bool prohibited() =>
-      _ferret.callMethod('_frjs_bc_is_prohibited', [handle]) != 0;
+  bool prohibited() => _ferret.callFunc('frjs_bc_is_prohibited', [handle]) != 0;
 
   /// Set the [occur] value for this [BooleanClause]. [occur] must be one of
   /// `must`, `should` or `must_not`.
   void set occur(BCType val) {
     _occur = val;
-    _ferret.callMethod('_frt_bc_set_occur', [handle, val.index]);
+    _ferret.callFunc('frt_bc_set_occur', [handle, val.index]);
   }
 
   /// Return a string representation of this clause. This will not be used by
@@ -307,8 +299,7 @@ class BooleanQuery extends Query {
   /// score. This will slightly improve performance for the query. Usually you
   /// should leave this parameter as is.
   BooleanQuery(Ferret ferret, {bool coord_disable: false})
-      : super._(
-            ferret, ferret.callMethod('_frt_bq_new', [coord_disable ? 1 : 0]));
+      : super._(ferret, ferret.callFunc('frt_bq_new', [coord_disable ? 1 : 0]));
 
   /// Us this method to add sub-queries to a [BooleanQuery]. You can either
   /// add a straight [Query] or a [BooleanClause]. When adding a [Query], the
@@ -322,11 +313,11 @@ class BooleanQuery extends Query {
   /// case.
   BooleanClause add_query(query, {BCType occur: BCType.SHOULD}) {
     if (query is BooleanClause) {
-      _ferret.callMethod('_frt_bq_add_clause', [handle, query.handle]);
+      _ferret.callFunc('frt_bq_add_clause', [handle, query.handle]);
       return query;
     } else if (query is Query) {
-      int p_bc = _ferret.callMethod(
-          '_frt_bq_add_query', [handle, query.handle, occur.index]);
+      int p_bc = _ferret.callFunc(
+          'frt_bq_add_query', [handle, query.handle, occur.index]);
       return new BooleanClause._handle(_ferret, p_bc, query);
     } else {
       throw new ArgumentError.value(
@@ -454,9 +445,7 @@ class RangeQuery extends Query {
       leq,
       ge,
       geq}) {
-    int p_field = ferret.allocString(field);
-    int symbol = ferret.callMethod('_frt_internal', [p_field]);
-    ferret.free(p_field);
+    int symbol = ferret.intern(field);
 
     RangeParams params = _range_params(lower, upper, lower_exclusive,
         upper_exclusive, include_lower, include_upper, le, leq, ge, geq);
@@ -464,13 +453,13 @@ class RangeQuery extends Query {
     int lterm = 0;
     int uterm = 0;
     if (params.lterm != null) {
-      lterm = ferret.allocString(params.lterm);
+      lterm = ferret.heapString(params.lterm);
     }
     if (params.uterm != null) {
-      uterm = ferret.allocString(params.uterm);
+      uterm = ferret.heapString(params.uterm);
     }
 
-    int h = ferret.callMethod('_frt_rq_new', [
+    int h = ferret.callFunc('frt_rq_new', [
       symbol,
       lterm,
       uterm,
@@ -534,8 +523,7 @@ class TypedRangeQuery extends Query {
       leq,
       ge,
       geq}) {
-    int p_field = ferret.allocString(field);
-    int symbol = ferret.callMethod('_frt_internal', [p_field]);
+    int symbol = ferret.intern(field);
 
     RangeParams params = _range_params(lower, upper, lower_exclusive,
         upper_exclusive, include_lower, include_upper, le, leq, ge, geq);
@@ -543,20 +531,19 @@ class TypedRangeQuery extends Query {
     int lterm = 0;
     int uterm = 0;
     if (params.lterm != null) {
-      lterm = ferret.allocString(params.lterm);
+      lterm = ferret.heapString(params.lterm);
     }
     if (params.uterm != null) {
-      uterm = ferret.allocString(params.uterm);
+      uterm = ferret.heapString(params.uterm);
     }
 
-    int h = ferret.callMethod('_frt_trq_new', [
+    int h = ferret.callFunc('frt_trq_new', [
       symbol,
       lterm,
       uterm,
       params.include_lower ? 1 : 0,
       params.include_upper ? 1 : 0
     ]);
-    ferret.free(p_field);
     ferret.free(lterm);
     ferret.free(uterm);
     return new TypedRangeQuery.handle(ferret, h);
@@ -630,10 +617,8 @@ class PhraseQuery extends Query {
   /// Create a new [PhraseQuery] on the field [field]. You need to add terms
   /// to the query it will do anything of value. See [add_term].
   factory PhraseQuery(Ferret ferret, String field, {int slop: 0}) {
-    int p_field = ferret.allocString(field);
-    int symbol = ferret.callMethod('_frt_intern', [p_field]);
-    int h = ferret.callMethod('_frt_phq_new', [symbol]);
-    ferret.free(p_field);
+    int symbol = ferret.intern(field);
+    int h = ferret.callFunc('frt_phq_new', [symbol]);
     return new PhraseQuery.handle(ferret, h, slop);
   }
 
@@ -649,9 +634,9 @@ class PhraseQuery extends Query {
   ///     // doesn't match => "big house"
   void add_term(term, [int position_increment = 1]) {
     if (term is String) {
-      int p_term = _ferret.allocString(term);
-      _ferret.callMethod(
-          '_frt_phq_add_term', [handle, p_term, position_increment]);
+      int p_term = _ferret.heapString(term);
+      _ferret.callFunc(
+          'frt_phq_add_term', [handle, p_term, position_increment]);
       _ferret.free(p_term);
     } else if (term is List) {
       if (term.length == 0) {
@@ -660,13 +645,13 @@ class PhraseQuery extends Query {
             "an array of strings");
       }
       var t = term[0];
-      int p_term = _ferret.allocString(t);
-      _ferret.callMethod(
-          '_frt_phq_add_term', [handle, p_term, position_increment]);
+      int p_term = _ferret.heapString(t);
+      _ferret.callFunc(
+          'frt_phq_add_term', [handle, p_term, position_increment]);
       _ferret.free(p_term);
       for (int i = 1; i < term.length; i++) {
-        int p_term = _ferret.allocString(term[i]);
-        _ferret.callMethod('_frt_phq_append_multi_term', [handle, p_term]);
+        int p_term = _ferret.heapString(term[i]);
+        _ferret.callFunc('frt_phq_append_multi_term', [handle, p_term]);
         _ferret.free(p_term);
       }
     } else {
@@ -680,11 +665,11 @@ class PhraseQuery extends Query {
 
   /// Return the slop set for this phrase query. See the [PhraseQuery]
   /// description for more information on slop.
-  int get slop => _ferret.callMethod('_frjs_phq_get_slop', [handle]);
+  int get slop => _ferret.callFunc('frjs_phq_get_slop', [handle]);
 
   /// Set the slop set for this phrase query. See the [PhraseQuery]
   /// description for more information on slop.
-  void set slop(int s) => _ferret.callMethod('_frjs_phq_set_slop', [handle, s]);
+  void set slop(int s) => _ferret.callFunc('frjs_phq_set_slop', [handle, s]);
 }
 
 /// A prefix query is like a [TermQuery] except that it matches any term with
@@ -729,12 +714,10 @@ class PrefixQuery extends Query {
     if (max_terms == null) {
       max_terms = MultiTermQuery.default_max_terms;
     }
-    int p_field = ferret.allocString(field);
-    int symbol = ferret.callMethod('_frt_intern', [p_field]);
-    int p_prefix = ferret.allocString(prefix);
-    int h = ferret.callMethod('_frt_prefixq_new', [symbol, p_prefix]);
-    ferret.callMethod('_frjs_mtq_set_max_terms', [h, max_terms]);
-    ferret.free(p_field);
+    int symbol = ferret.intern(field);
+    int p_prefix = ferret.heapString(prefix);
+    int h = ferret.callFunc('frt_prefixq_new', [symbol, p_prefix]);
+    ferret.callFunc('frjs_mtq_set_max_terms', [h, max_terms]);
     ferret.free(p_prefix);
     return new PrefixQuery.handle(ferret, h);
   }
@@ -779,12 +762,10 @@ class WildcardQuery extends Query {
     if (max_terms == null) {
       max_terms = MultiTermQuery.default_max_terms;
     }
-    int p_field = ferret.allocString(field);
-    int symbol = ferret.callMethod('_frt_intern', [p_field]);
-    int p_pattern = ferret.allocString(pattern);
-    int h = ferret.callMethod('_frt_wcq_new', [symbol, p_pattern]);
-    ferret.callMethod('_frjs_mtq_set_max_terms', [h, max_terms]);
-    ferret.free(p_field);
+    int symbol = ferret.intern(field);
+    int p_pattern = ferret.heapString(pattern);
+    int h = ferret.callFunc('frt_wcq_new', [symbol, p_pattern]);
+    ferret.callFunc('frjs_mtq_set_max_terms', [h, max_terms]);
     ferret.free(p_pattern);
     return new WildcardQuery.handle(ferret, h);
   }
@@ -880,23 +861,21 @@ class FuzzyQuery extends Query {
           "max_terms must be >= 0");
     }
 
-    int p_field = ferret.allocString(field);
-    int symbol = ferret.callMethod('_frt_intern', [p_field]);
-    int p_term = ferret.allocString(term);
+    int symbol = ferret.intern(field);
+    int p_term = ferret.heapString(term);
 
-    int h = ferret.callMethod('_frt_fuzq_new_conf',
+    int h = ferret.callFunc('frt_fuzq_new_conf',
         [symbol, p_term, min_similarity, prefix_length, max_terms]);
 
-    ferret.free(p_field);
     ferret.free(p_term);
     return new FuzzyQuery.handle(ferret, h);
   }
 
   /// Get the [prefix_length] for the query.
-  int get prefix_length => _ferret.callMethod('_frjs_fq_pre_len', [handle]);
+  int get prefix_length => _ferret.callFunc('frjs_fq_pre_len', [handle]);
 
   /// Get the [min_similarity] for the query.
-  double min_similarity() => _ferret.callMethod('_frjs_fq_min_sim', [handle]);
+  double min_similarity() => _ferret.callFunc('frjs_fq_min_sim', [handle]);
 }
 
 /// [MatchAllQuery] matches all documents in the index. You might want use
@@ -907,7 +886,7 @@ class MatchAllQuery extends Query {
 
   /// Create a query which matches all documents.
   MatchAllQuery(Ferret ferret)
-      : super._(ferret, ferret.callMethod('_frt_maq_new'));
+      : super._(ferret, ferret.callFunc('frt_maq_new'));
 }
 
 /// [ConstantScoreQuery] is a way to turn a Filter into a [Query]. It matches
@@ -928,7 +907,7 @@ class ConstantScoreQuery extends Query {
   /// Create a [ConstantScoreQuery] which uses [filter] to match documents
   /// giving each document a constant score.
   ConstantScoreQuery(Ferret ferret, Filter filter)
-      : super._(ferret, ferret.callMethod('_frt_csq_new', [filter.handle]));
+      : super._(ferret, ferret.callFunc('frt_csq_new', [filter.handle]));
 }
 
 /// [FilteredQuery] offers you a way to apply a filter to a specific query.
@@ -942,5 +921,5 @@ class FilteredQuery extends Query {
   /// Create a new FilteredQuery which filters [query] with [filter].
   FilteredQuery(Ferret ferret, Query query, Filter filter)
       : super._(ferret,
-            ferret.callMethod('_frjs_fqq_init', [query.handle, filter.handle]));
+            ferret.callFunc('frjs_fqq_init', [query.handle, filter.handle]));
 }

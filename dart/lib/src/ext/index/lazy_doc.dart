@@ -31,12 +31,12 @@ class LazyDoc extends MapBase<String, dynamic> {
   List<String> _fields;
 
   LazyDoc.wrap(this._ferret, this.handle) {
-    int size = _ferret.callMethod('_frjs_lzd_size', [handle]);
+    int size = _ferret.callFunc('frjs_lzd_size', [handle]);
     _fields = new List<String>(size);
     for (int i = 0; i < size; i++) {
-      int p_lazy_df = _ferret.callMethod('_frjs_lzd_field', [handle, i]);
+      int p_lazy_df = _ferret.callFunc('frjs_lzd_field', [handle, i]);
 
-      int p_name = _ferret.callMethod('_frjs_lzd_field_name', [p_lazy_df]);
+      int p_name = _ferret.callFunc('frjs_lzd_field_name', [p_lazy_df]);
       _fields[i] = _ferret.stringify(p_name);
     }
   }
@@ -54,20 +54,18 @@ class LazyDoc extends MapBase<String, dynamic> {
   String _df_load(String key, int p_lazy_df) {
     var value;
     if (p_lazy_df != 0) {
-      int size = _ferret.callMethod('_frjs_lzd_field_size', [p_lazy_df]);
+      int size = _ferret.callFunc('frjs_lzd_field_size', [p_lazy_df]);
       if (size == 1) {
-        int p_data =
-            _ferret.callMethod('_frt_lazy_df_get_data', [p_lazy_df, 0]);
-        int len = _ferret.callMethod('_frjs_lzd_field_length', [p_lazy_df]);
-        value = _ferret.stringify(p_data, len);
+        int p_data = _ferret.callFunc('frt_lazy_df_get_data', [p_lazy_df, 0]);
+        int len = _ferret.callFunc('frjs_lzd_field_length', [p_lazy_df]);
+        value = _ferret.stringify(p_data, false, len);
       } else {
         value = new List<String>(size);
         for (int i = 0; i < size; i++) {
-          int p_data =
-              _ferret.callMethod('_frt_lazy_df_get_data', [p_lazy_df, i]);
+          int p_data = _ferret.callFunc('frt_lazy_df_get_data', [p_lazy_df, i]);
           int len =
-              _ferret.callMethod('_frjs_lzd_field_data_length', [p_lazy_df, i]);
-          value[i] = _ferret.stringify(p_data, len);
+              _ferret.callFunc('frjs_lzd_field_data_length', [p_lazy_df, i]);
+          value[i] = _ferret.stringify(p_data, false, len);
         }
       }
     }
@@ -77,21 +75,18 @@ class LazyDoc extends MapBase<String, dynamic> {
   /// This method is used internally to lazily load fields. You should never
   /// really need to call it yourself.
   String loadField(String key) {
-    int p_field = _ferret.allocString(key);
-    int symbol = _ferret.callMethod('_frt_intern', [p_field]);
-    _ferret.free(p_field);
-
-    int p_lazy_df = _ferret.callMethod('_frt_lazy_doc_get', [handle, symbol]);
+    int symbol = _ferret.intern(key);
+    int p_lazy_df = _ferret.callFunc('frt_lazy_doc_get', [handle, symbol]);
     return _df_load(key, p_lazy_df);
   }
 
   /// Load all unloaded fields in the document from the index.
   LazyDoc load() {
-    int size = _ferret.callMethod('_frjs_lzd_size', [handle]);
+    int size = _ferret.callFunc('frjs_lzd_size', [handle]);
     for (int i = 0; i < size; i++) {
-      int p_lazy_df = _ferret.callMethod('_frjs_lzd_field', [handle, i]);
+      int p_lazy_df = _ferret.callFunc('frjs_lzd_field', [handle, i]);
 
-      int p_name = _ferret.callMethod('_frjs_lzd_field_name', [p_lazy_df]);
+      int p_name = _ferret.callFunc('frjs_lzd_field_name', [p_lazy_df]);
       var key = _ferret.stringify(p_name);
       var value = _df_load(key, p_lazy_df);
       _map[key] = value;
