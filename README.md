@@ -17,6 +17,9 @@ ruby/
     This directory contains the Ruby bindings and tests. See ruby/README.md for
     information on installing Ferret's Ruby bindings
 
+dart/
+    This directory contains the Dart bindings that can be used with Emscripten.
+
 Contributions
 =============
 
