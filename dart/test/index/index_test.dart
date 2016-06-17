@@ -7,7 +7,7 @@ import 'package:quiver/iterables.dart' show range;
 check_results(index, query, expected) {
   var cnt = 0;
   print("${query} - ${expected.inspect}");
-  print(index.size);
+  print(index.length);
   index.search_each(query).forEach((doc, score) {
     print("doc-${doc} score=${score}");
     expect(expected.index(doc), isNotNull,
@@ -28,7 +28,7 @@ do_test_index_with_array(index) {
     ["one"],
     ["two", "three", "four", "five"]
   ].forEach((doc) => index.add(doc));
-  expect(8, equals(index.size));
+  expect(8, equals(index.length));
   var q = "one";
   check_results(index, q, [0, 1, 3, 4, 6]);
   q = "one AND two";
@@ -97,11 +97,11 @@ do_test_index_with_doc_array(index) {
   expect("three", equals(index[5]["field2"]));
   expect(index.has_deletions(), isFalse);
   expect(index.deleted(5), isFalse);
-  expect(8, equals(index.size));
-  index.delete(5);
+  expect(8, equals(index.length));
+  index.deleteAndClose(5);
   expect(index.has_deletions(), isTrue);
   expect(index.deleted(5), isTrue);
-  expect(7, equals(index.size));
+  expect(7, equals(index.length));
   q = "two AND (field3:f*)";
   check_results(index, q, [7]);
 
@@ -110,7 +110,7 @@ do_test_index_with_doc_array(index) {
   index.add(doc);
   check_results(index, q, [7, 8]);
   check_results(index, "*:this", []);
-  expect(8, equals(index.size));
+  expect(8, equals(index.length));
   expect("dave", equals(index[8]['field2']));
   index.optimize();
   check_results(index, q, [6, 7]);
@@ -121,7 +121,7 @@ do_test_index_with_doc_array(index) {
   expect(!index.deleted(7), isTrue);
   expect("one multi2", equals(index["hello"]['xxx']));
   expect("one two multi", equals(index["myid"]['xxx']));
-  index.delete("myid");
+  index.deleteAndClose("myid");
   expect(index.deleted(0), isTrue);
 }
 
@@ -145,7 +145,7 @@ test_fs_index(Ferret ferret) {
 
   Dir[File.join(fs_path, "*")].each((path) {
     try {
-      File.delete(path);
+      File.deleteAndClose(path);
     } catch (_) {}
     assert_raise(FileNotFoundError, () {
       new Index(ferret,
@@ -159,7 +159,7 @@ test_fs_index(Ferret ferret) {
 
   Dir[File.join(fs_path, "*")].each((path) {
     try {
-      File.delete(path);
+      File.deleteAndClose(path);
     } catch (_) {}
   });
   index = new Index(ferret, path: fs_path, default_field: 'xxx');
@@ -168,7 +168,7 @@ test_fs_index(Ferret ferret) {
 
   Dir[File.join(fs_path, "*")].each((path) {
     try {
-      File.delete(path);
+      File.deleteAndClose(path);
     } catch (_) {}
   });
   index =
@@ -669,7 +669,7 @@ test_auto_flush(Ferret ferret) {
       File.expand_path(File.join(File.dirname(__FILE__), '../../temp/fsdir'));
   Dir[File.join(fs_path, "*")].each((path) {
     try {
-      File.delete(path);
+      File.deleteAndClose(path);
     } catch (_) {}
   });
 

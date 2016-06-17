@@ -86,8 +86,8 @@ abstract class IndexReaderCommon {
   }
 
   do_test_term_doc_enum() {
-    expect(IndexTestHelper.INDEX_TEST_DOCS.size, equals(_ir.num_docs()));
-    expect(IndexTestHelper.INDEX_TEST_DOCS.size, equals(_ir.max_doc()));
+    expect(IndexTestHelper.INDEX_TEST_DOCS.length, equals(_ir.num_docs()));
+    expect(IndexTestHelper.INDEX_TEST_DOCS.length, equals(_ir.max_doc()));
 
     expect(4, equals(_ir.doc_freq('body', "Wally")));
 
@@ -344,7 +344,7 @@ abstract class IndexReaderCommon {
   }
 
   test_ir_delete() {
-    var doc_count = IndexTestHelper.INDEX_TEST_DOCS.size;
+    var doc_count = IndexTestHelper.INDEX_TEST_DOCS.length;
     _ir.delete(1000); // non existant doc_num
     expect(_ir.has_deletions(), isFalse);
     expect(_ir.max_doc(), equals(doc_count));
@@ -520,7 +520,7 @@ class MultiExternalReaderTest extends IndexReaderCommon {
     [
       [0, 10],
       [10, 30],
-      [30, IndexTestHelper.INDEX_TEST_DOCS.size]
+      [30, IndexTestHelper.INDEX_TEST_DOCS.length]
     ].forEach((row) {
       var start = row[0], finish = row[1];
       var dir = new RAMDirectory(_ferret);
@@ -569,7 +569,7 @@ class MultiExternalReaderDirTest extends IndexReaderCommon {
     [
       [0, 10],
       [10, 30],
-      [30, IndexTestHelper.INDEX_TEST_DOCS.size]
+      [30, IndexTestHelper.INDEX_TEST_DOCS.length]
     ].forEach((row) {
       var start = row[0], finish = row[1];
       var dir = new RAMDirectory(_ferret);
@@ -626,7 +626,7 @@ class MultiExternalReaderPathTest extends IndexReaderCommon {
     [
       [0, 10],
       [10, 30],
-      [30, IndexTestHelper.INDEX_TEST_DOCS.size]
+      [30, IndexTestHelper.INDEX_TEST_DOCS.length]
     ].each_with_index((row) {
       var start = row[0], finish = row[1];
       var path = _paths[i];
@@ -705,7 +705,7 @@ class IndexReaderTest {
     expect(expected_tv, equals(tv));
 
     var tvs = ir.term_vectors(3);
-    expect(3, equals(tvs.size));
+    expect(3, equals(tvs.length));
 
     expect(expected_tv, equals(tvs['body']));
 

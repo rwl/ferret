@@ -490,7 +490,7 @@ class MyRegExpTokenizer extends TokenStream {
     if (_ss.scan_until(token_re)) {
       term = _ss.matched;
       term_end = _ss.pos;
-      term_start = term_end - term.size;
+      term_start = term_end - term.length;
     } else {
       return null;
     }

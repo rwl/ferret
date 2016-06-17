@@ -15,7 +15,7 @@ fsStoreTest(Ferret ferret) {
     dir.close();
     Dir[File.join(dpath, "*")].each((path) {
       try {
-        File.delete(path);
+        File.deleteAndClose(path);
       } catch (_) {}
     });
   }
@@ -28,7 +28,7 @@ fsStoreTest(Ferret ferret) {
   make_lock_file_path(name) {
     var lock_file_path = File.join(dpath, lfname(name));
     if (File.exists(lock_file_path)) {
-      File.delete(lock_file_path);
+      File.deleteAndClose(lock_file_path);
     }
     return lock_file_path;
   }
@@ -105,7 +105,7 @@ fsStoreTest(Ferret ferret) {
       File.chown(null, 'id -G'.split.last.to_i, dpath2);
       File.chmod(dstat.mode | _S_IRGRP | _S_IWGRP, dpath2);
 
-      var dir2 = FSDirectory.create(dpath2, create: true);
+      var dir2 = FSDirectory._create(dpath2, create: true);
 
       var file_name = 'test_permissions';
       var file_path = File.join(dpath2, file_name);

@@ -6,7 +6,7 @@ import './ext/search/search.dart' show SortField, Sort;
 
 class Ferret extends Module {
   Ferret({String moduleName: 'Ferret', js.JsObject context})
-      : super(context: context, moduleName: moduleName) {
+      : super.func(context: context, moduleName: moduleName) {
     callFunc('frjs_init');
 
     SortField.SCORE =
